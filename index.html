@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="/style.css" >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> Colloseum </title>
+    
+
+</head>
+<body>
+
+    <!-- 1. The Fixed Top Header -->
+    <header class="top-navbar">
+        <div class="nav-left-group">
+
+            <span class="brand-logo">Waater </span>
+
+        </div>
+        
+        <div class="search-container">
+            <input type="text" class="global-search" placeholder="Search the arena...">
+        </div>
+
+ 
+    </header>
+
+    <!-- 2. The Multi-Column Environment -->
+    <div class="app-body">
+        
+        <!-- Left Sidebar Options -->
+        <nav class="sidebar">
+
+            <a href="/" style="text-decoration: none;">
+
+                <div class="nav-item active">Home</div>
+
+            </a>
+            
+            <a href="/dueal" style="text-decoration: none;">
+ 
+                <div class="nav-item"> incoming duels  ⚔️⚔️ </div>
+
+            </a>
+
+            <a href="/Create" style="text-decoration: none;">
+
+                <div class="nav-item"> Create duel 🥷🥷 </div>
+
+            </a>
+
+
+            
+        </nav>
+
+        <!-- 3. The Core Open Blank Canvas -->
+        <main class="main-content-canvas">
+
+            <div class="feed-header" style="display:flex; justify-content:space-between; align-items:center; padding: 24px 28px 12px;">
+                
+                <h2 style="font-size:1.2rem; font-weight:700;">🔴 Live Now</h2>
+                
+                <span id="match-count" style="font-size:.85rem; color:#9ca3af; background:#1f2635; padding:4px 12px; border-radius:999px;">0 live</span>
+           
+            </div>
+
+            
+            <div id="duel-feed">
+                <div class="empty-feed-placeholder">
+                    
+                    <h2>The Arena is Empty</h2>
+                    
+                    <p>No debates live right now.</p>
+                
+                </div>
+            </div>
+
+        </main>
+
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDc6wwJq_iQtLoZT2RMA1-qyqN3U5W2ZL0",
+            authDomain: "waater-65596.firebaseapp.com",
+            projectId: "waater-65596",
+            storageBucket: "waater-65596.firebasestorage.app",
+            messagingSenderId: "840770803135",
+            appId: "1:840770803135:web:1425f583ad04315b87fd0a",
+            measurementId: "G-48T9GVZF3N"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // ROUTING CHECK: Check if the user is logged in
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                // Not logged in? Redirect immediately to sign-in page
+                window.location.href = "Sigh-in";
+            }
+        });
+
+        // Handle Log Out click
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            signOut(auth).then(() => {
+                window.location.href = "Sigh-in.html";
+            });
+        });
+    </script>
+
+
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script>
+        console.log("Reached the index html! ")
+
+
+        const socket  = io();
+        
+        const feed    = document.getElementById('duel-feed');
+        const countEl = document.getElementById('match-count');
+
+        socket.on('update_live_matches', (matches) => {
+            feed.innerHTML = '';
+            countEl.textContent = `${matches.length} live`;
+
+            if (matches.length === 0) {
+                feed.innerHTML = `
+                    <div class="empty-feed-placeholder">
+                        <h2>The Arena is Empty</h2>
+                        <p>No debates live right now.</p>
+                    </div>`;
+                return;
+            }
+
+            matches.forEach(match => {
+                const card = document.createElement('div');
+                card.className = 'duel-card';
+                card.innerHTML = `
+                    <div class="duel-card-body">
+                        <p class="duel-thesis">${escapeHtml(match.thesis)}</p>
+                        <span class="duel-age">👁 ${match.spectatorCount} watching</span>
+                    </div>
+                    <button class="join-btn" data-room="${match.roomId}">
+                        👁 Watch Live
+                    </button>
+                `;
+
+                card.querySelector('.join-btn').addEventListener('click', () => {
+                    window.location.href = `/live?match=${match.roomId}`;
+                });
+
+                feed.appendChild(card);
+
+            
+
+            });
+
+        });
+
+        console.log("finished making the div it was succesful!")
+
+        function escapeHtml(str) {
+            return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        console.log("finished making the div it was succesful! 2 ")
+
+    </script>
+
+
+
+
+</body>
+</html>

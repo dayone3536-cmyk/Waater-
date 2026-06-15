@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Debate Arena</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Inter,system-ui,sans-serif;
+}
+
+body{
+    background:#0f1117;
+    color:white;
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+}
+
+/* TOP BAR */
+
+.top-bar{
+    height:75px;
+    background:#151924;
+    border-bottom:1px solid rgba(255,255,255,0.08);
+
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+
+    padding:0 30px;
+}
+
+.topic{
+    font-size:1.2rem;
+    font-weight:700;
+    color:#46c2ff;
+    min-width: 90%;
+
+
+}
+
+.timer{
+    background:#22283a;
+    padding:10px 18px;
+    border-radius:999px;
+    font-weight:700;
+}
+
+.watchers{
+    color:#9ca3af;
+}
+
+/* DEBATERS */
+
+.debaters{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+
+    padding:20px 40px;
+}
+
+.user-card{
+    display:flex;
+    align-items:center;
+    gap:15px;
+}
+
+.avatar{
+    width:55px;
+    height:55px;
+    border-radius:50%;
+    background:linear-gradient(
+        135deg,
+        #6d5dfc,
+        #46c2ff
+    );
+}
+
+.name{
+    font-weight:700;
+}
+
+.role{
+    color:#9ca3af;
+    font-size:.9rem;
+}
+
+/* CHAT AREA */
+
+.chat-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 30px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    background: #101521;
+}
+
+
+.argument {
+    max-width: 65%;
+    padding: 16px 20px;
+    border-radius: 18px;
+    line-height: 1.6;
+    font-size: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.25);
+}
+
+.left{
+    align-self:flex-start;
+    background:#1b2333;
+}
+
+.right{
+    align-self:flex-end;
+
+    background:linear-gradient(
+        135deg,
+        #6d5dfc,
+        #4f7cff
+    );
+}
+
+/* INPUT */
+
+.bottom-bar{
+
+    padding:20px;
+
+    background:#151924;
+
+    border-top:1px solid rgba(255,255,255,0.08);
+
+    display:flex;
+    gap:15px;
+}
+
+.bottom-bar textarea{
+
+    flex:1;
+
+    resize:none;
+
+    height:60px;
+
+    border:none;
+
+    outline:none;
+
+    border-radius:16px;
+
+    background:#1f2635;
+
+    color:white;
+
+    padding:16px;
+}
+
+.send-btn{
+
+    border:none;
+
+    cursor:pointer;
+
+    border-radius:16px;
+
+    padding:0 30px;
+
+    color:white;
+
+    font-weight:700;
+
+    background:linear-gradient(
+        135deg,
+        #6d5dfc,
+        #4f7cff
+    );
+}
+
+.send-btn:hover{
+    transform:translateY(-2px);
+}
+
+.message {
+    background: #1f2937;
+    color: white;
+    padding: 12px 16px;
+    margin: 10px 0;
+    border-radius: 12px;
+    max-width: 70%;
+    word-wrap: break-word;
+}
+
+@media (max-width: 600px){
+
+    /* TOP BAR */
+
+    .top-bar{
+        height:auto;
+        padding:16px;
+        flex-direction:column;
+        gap:12px;
+    }
+
+    .topic{
+        text-align:center;
+        font-size:1rem;
+        line-height:1.4;
+
+        border: 20px red solid; /* TEMP - to visualize the topic box boundaries during development */ 
+    }
+
+    /* DEBATERS */
+
+    .debaters{
+        display: none;
+    }
+
+    .user-card{
+
+        display: none;
+    }
+
+    .avatar{
+        display: none;
+    }
+
+    .debaters h2{
+        display: none;
+    }
+
+    /* CHAT */
+
+    .chat-container{
+        padding:16px;
+        gap:14px;
+
+    }
+
+    .argument{
+        max-width:92%;
+        font-size:14px;
+        padding:14px 16px;
+
+    }
+
+    /* INPUT BAR */
+
+    .bottom-bar{
+        padding:12px;
+        gap:10px;
+
+    }
+
+    .bottom-bar textarea{
+        height:54px;
+        font-size:15px;
+        padding:14px;
+
+    }
+
+    .send-btn{
+        height:54px;
+        padding:0 18px;
+        flex-shrink:0;
+    }
+
+}
+
+
+
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+
+    <div class="topic" id="Topic">
+        <!-- Paste the topic of the duel -->
+    </div>
+
+
+
+
+
+</div>
+
+<div class="debaters">
+
+    <div class="user-card">
+
+        <div class="avatar"></div>
+
+        <div>
+            <div class="name">You</div>
+            <div class="role">Pro Position</div>
+        </div>
+
+    </div>
+
+    <h2>VS</h2>
+
+    <div class="user-card">
+
+        <div class="avatar"></div>
+
+        <div>
+            <div class="name">Opponent</div>
+            <div class="role">Against Position</div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<div id="chat" class="chat-container">
+    <!-- messages  -->
+</div>
+
+
+<div class="bottom-bar">
+
+    <textarea
+    id="message"
+        placeholder="Present your argument..."
+    ></textarea>
+
+    <button class="send-btn" id="sendBtn" type="submit">
+        Send
+    </button>
+
+</div>
+
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script type="module">
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+    import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDc6wwJq_iQtLoZT2RMA1-qyqN3U5W2ZL0",
+        authDomain: "waater-65596.firebaseapp.com",
+        projectId: "waater-65596",
+        storageBucket: "waater-65596.firebasestorage.app",
+        messagingSenderId: "840770803135",
+        appId: "1:840770803135:web:1425f583ad04315b87fd0a",
+        measurementId: "G-48T9GVZF3N"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // ROUTING CHECK: Check if the user is logged in
+    onAuthStateChanged(auth, (user) => {
+        if (!user) {
+            // Not logged in? Redirect immediately to sign-in page
+            window.location.href = "Sigh-in";
+        }
+    });
+
+    // Handle Log Out click
+    document.getElementById('logout-btn').addEventListener('click', () => {
+        signOut(auth).then(() => {
+            window.location.href = "Sigh-in.html";
+        });
+    });
+    
+</script>
+
+
+<script>
+
+    const socket = io();
+
+    const params =
+        new URLSearchParams(
+            window.location.search
+        );
+
+    const roomId =
+        params.get('match');
+
+    const dynamic_title = document.getElementById("Topic");
+
+    socket.on("macth_info", (data) => {
+
+        console.log("the macth info socket has been recieved from the server")
+
+        const title = data.thesis
+
+        dynamic_title.textContent = "THe htmlis working";
+
+
+    })
+
+
+    socket.emit("join_room", roomId );
+
+
+        console.log("roomId =", roomId);
+
+        const sendBtn =
+            document.getElementById('sendBtn');
+
+        const messageInput =
+            document.getElementById('message');
+
+        messageInput.addEventListener('keydown', (event) => {
+
+            if (event.key === 'Enter' && !event.shiftKey) {
+
+                    event.preventDefault(); // stops new line
+
+                    if (messageInput.value.trim() != "") {
+
+                        sendBtn.click();
+
+                    }
+
+                }
+
+            });
+
+
+
+
+    const chat =
+        document.getElementById('chat');
+
+
+
+    sendBtn.onclick = () => {
+
+        socket.emit(
+            'send_argument',
+            {
+                roomId,
+                message:
+                    messageInput.value
+            }
+        );
+
+        messageInput.value = '';
+    };
+
+
+    socket.on(
+        'new_argument',
+        (data) => {
+
+            const div = document.createElement('div');
+
+            div.classList.add('argument');
+
+            // 2. Compare the sender's ID with YOUR unique socket ID
+
+            if (data.senderId === socket.id) {
+                // It's your message! Put it on the right
+
+                div.classList.add('left');
+
+            } else {
+                // It's the opponent's message! Put it on the left
+
+                div.classList.add('right');
+            }
+            
+
+            div.textContent =
+                data.message;
+
+
+            chat.appendChild(div);
+
+            chat.scrollTop = chat.scrollHeight;
+
+        }
+    );
+
+    let turnUIInterval;
+
+// The server tells us a new 60-second window has begun
+    socket.on('turn_started', (data) => {
+        const { activePlayerId, secondsLeft } = data;
+        const isMyTurn = (activePlayerId === socket.id);
+        
+        const statusLabel = document.getElementById('turn-status-text');
+        const visualClock = document.getElementById('countdown-clock');
+        const inputTextArea = document.getElementById('argument-input-box');
+        const submitBtn = document.getElementById('submit-argument-btn');
+
+        // Wipe any old local UI clock tickers running from the last turn
+        
+        clearInterval(turnUIInterval);
+
+        // Toggle interactive access based on whose turn it is
+
+        if (isMyTurn) {
+            statusLabel.innerHTML = `⚡ <span class="text-green-400 font-bold">YOUR TURN!</span> Reply before the clock hits zero!`;
+            if (inputTextArea) inputTextArea.disabled = false;
+            if (submitBtn) submitBtn.disabled = false;
+        } else {
+            statusLabel.innerHTML = `⏳ Opponent is drafting a counter-argument...`;
+            if (inputTextArea) inputTextArea.disabled = true; // Lock their keyboard!
+            if (submitBtn) submitBtn.disabled = true;
+        }
+
+        // Run a local clock loop purely to make the numbers count down smoothly on screen
+        let currentSeconds = secondsLeft;
+        
+        if (visualClock) {
+            visualClock.innerText = `${currentSeconds}s`;
+            visualClock.style.color = "#f59e0b"; // Default Amber warning color
+        }
+
+        turnUIInterval = setInterval(() => {
+            currentSeconds--;
+            if (visualClock) {
+                visualClock.innerText = `${currentSeconds}s`;
+                
+                // Turn the clock red and flash if they have less than 10 seconds left
+                if (currentSeconds <= 10) {
+                    visualClock.style.color = "#ef4444"; // Red
+                    visualClock.classList.add('animate-pulse');
+                }
+            }
+
+            if (currentSeconds <= 0) {
+                clearInterval(turnUIInterval);
+            }
+        }, 1000);
+    });
+
+
+
+    socket.on('match_ended_lost', (data) => {
+        clearInterval(turnUIInterval);
+        alert(data.reason);
+        window.location.href = '/'; // Kick them to lobby
+    });
+
+
+    socket.on('match_ended_won', (data) => {
+        clearInterval(turnUIInterval);
+        alert(data.reason);
+        window.location.href = '/'; // Take them back victorious
+    });
+
+
+    socket.on('match_ended_draw', (data) => {
+        clearInterval(turnUIInterval);
+        alert(data.reason);
+        window.location.href = '/';
+
+    });
+
+
+    
+    socket.on('you_are_spectator', () => {
+        document.getElementById('message').disabled = true;
+        document.getElementById('sendBtn').disabled = true;
+        document.getElementById('sendBtn').textContent = '👁 Watching';
+
+        document.querySelector('.bottom-bar').insertAdjacentHTML('afterbegin', `
+            <div style="color:#9ca3af; font-size:.9rem; align-self:center;">
+                👁 Spectating — you cannot send messages
+            </div>
+        `);
+    });
+
+    // Also add match ended handler (for when a player disconnects mid-match)
+    socket.on('match_ended', (data) => {
+        alert(data.reason);
+        window.location.href = '/';
+    });
+
+
+</script>
+
+
+</body>
+</html>
+
+
