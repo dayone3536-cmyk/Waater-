@@ -280,7 +280,7 @@
         socket.on('match_found', (data) => {
             clearInterval(countdownInterval);
 
-            window.location.href = `/live?match=${data.matchId}`;
+            window.location.href = `/live?match=${data.matchId}&role=${data.role}`;
 
             
         });
