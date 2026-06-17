@@ -396,6 +396,9 @@ body{
     const roomId =
         params.get('match');
 
+    const role = params.get('role');
+
+
     const dynamic_title = document.getElementById("Topic");
 
     socket.on("macth_info", (data) => {
