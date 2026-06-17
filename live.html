@@ -407,13 +407,13 @@ body{
 
         const title = data.thesis
 
-        dynamic_title.textContent = "THe htmlis working";
+        dynamic_title.textContent = data.thesis;
 
 
     })
 
 
-    socket.emit("join_room", roomId );
+    socket.emit("join_room", {roomId, role });
 
 
         console.log("roomId =", roomId);
