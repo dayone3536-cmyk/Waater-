@@ -189,23 +189,21 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
         );
     });
 
-    socket.on('join_room', (roomId) => {
-
+    socket.on('join_room', ({ roomId, role }) => {
         socket.join(roomId);
-
         const match = activeMatches.find(m => m.roomId === roomId);
         if (!match) return;
 
-        socket.emit('macth_info', { thesis: match.thesis });
+    // Update to the new socket ID after page navigation
+        if (role === 'creator') match.creatorSocketId = socket.id;
+        if (role === 'challenger') match.challengerSocketId = socket.id;
 
-        const isPlayer = match.creatorSocketId === socket.id ||
-                        match.challengerSocketId === socket.id;
+        socket.emit('macth_info', { thesis: match.thesis, role });
 
-        if (!isPlayer) {
+        if (role === 'spectator' || !role) {
             match.spectators.push(socket.id);
             socket.emit('you_are_spectator');
             broadcastLiveMatches();
-
         }
     });
 
