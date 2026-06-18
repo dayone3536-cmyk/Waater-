@@ -150,7 +150,7 @@
         };
 
         socket.on('match_found', (data) => {
-            window.location.href = `/live?match=${data.match}&role=${data.role}`;
+            window.location.href = `/live?match=${data.match}`;
         });
 
         // Add this inside your existing script block
