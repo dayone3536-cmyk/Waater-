@@ -150,7 +150,7 @@
         };
 
         socket.on('match_found', (data) => {
-            window.location.href = `/live?match=${data.match}`;
+            window.location.href = `/live?match=${data.matchId}`;
         });
 
         // Add this inside your existing script block
