@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> ⚔️⚔️ </title>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        /* Premium Inline Customization for Your Minimalist Vision */
+        .minimal-title {
+            font-size: 2.5rem;
+            font-weight: 600;
+            letter-spacing: -0.5px ;
+            color: #ffffff;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .premium-input-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .premium-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #9ca3af; /* Soft slate gray */
+            padding-left: 0.5rem;
+        }
+
+        .premium-input {
+            width: 100%;
+            background: #111827; /* Rich dark container gray */
+            border: 1px solid #1f2937; /* Clean, subtle boundary */
+            border-radius: 16px; /* Smooth rounded interface edge */
+            padding: 18px 24px;
+            color: #ffffff;
+            font-size: 1.1rem;
+            outline: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* The Premium Glow Interaction */
+        .premium-input:focus {
+            border-color: #3b82f6; /* Electric Blue focus line */
+            background: #0b0f19; /* Deep abyss black focus state */
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15), 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Control Panel -->
+    <nav class="sidebar">
+        <a href="/" style="text-decoration: none;">
+            <div class="nav-item">Home</div>
+        </a>
+        <a href="/dueal" style="text-decoration: none;">
+            <div class="nav-item">incoming duels ⚔️⚔️</div>
+        </a>
+        <a href="/Create" style="text-decoration: none;">
+            <div class="nav-item active">Create duel 🥷🥷</div>
+        </a>
+
+    </nav>
+
+
+    <header class="top-navbar">
+
+        <span class="brand-logo">Waater </span>
+
+    </header>
+        
+
+
+
+    <!-- Main Body Layout -->
+    <div class="app-body">
+        <main class="main-content-canvas">
+            
+            <!-- The Clean Input Canvas Workspace -->
+            <div class="creation-card" id="creation-workspace" style="display: flex; flex-direction: column; align-items: center; justify-content: center; border: none; background: transparent; box-shadow: none;">
+                
+                <h1 class="minimal-title">⚔️ Start Duel ⚔️</h1>
+
+                <div class="premium-input-container">
+
+                    <label class="premium-label" for="argument-point">
+
+                        Topic
+
+
+                    </label>
+
+                 <input type="text" id="argument-point"  class="premium-input" placeholder="eg: Ronaldo is better than messi  ">
+
+                </div>
+
+                <!-- Trigger Action Button styled elegantly below -->
+                <button class="arena-submit-btn" id="btn-ignite" style="max-width: 500px; margin-top: 2rem; padding: 1.1rem;">
+
+                    <span> Start </span>
+
+                </button>
+
+                <br>
+
+                <h2 style="color: #f3f4f6;">
+
+                    OR 
+
+                </h2>
+
+
+                <button class = "Invite" id = "Invite_btn" style="max-width: 500px; margin-top: 2rem; padding: 1.1rem;">
+
+                        Invite 
+
+                <button> 
+
+                </button>
+
+            </div>
+
+            <!-- Matchmaking Radar State (Kept intact so the screen shifts to loading nicely) -->
+            <div class="radar-container" id="matchmaking-status" style="display: none;">
+                <div class="radar-circle">
+                    <div class="radar-pulse"></div>
+                    <div class="radar-core">⚔️</div>
+                </div>
+                <h3 class="radar-title">Searching the Arena Grid...</h3>
+                <div class="radar-timer" id="timer-display">03:00</div>
+                <p class="radar-hint">Your topic is locked. We are tracking an opponent...</p>
+                <button class="radar-cancel-btn" id="btn-cancel-queue">Abort Search</button>
+            </div>
+
+        </main>
+    </div>
+
+
+    <!-- <div id="match-toast" class="match-notification-toast" style="display: none;">
+        <div class="toast-header"> Conflict Imminent </div>
+        <div class="toast-body" id="toast-text">An opponent matching your criteria has been found. Engage?</div>
+        <div class="toast-actions">
+
+            <button class="btn-accept" id="toast-accept">Accept Challenge</button>
+
+            <button class="btn-decline" id="toast-decline">Ignore</button>
+        </div>
+    </div> -->
+
+    <script src="/socket.io/socket.io.js"></script>
+
+        <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDc6wwJq_iQtLoZT2RMA1-qyqN3U5W2ZL0",
+            authDomain: "waater-65596.firebaseapp.com",
+            projectId: "waater-65596",
+            storageBucket: "waater-65596.firebasestorage.app",
+            messagingSenderId: "840770803135",
+            appId: "1:840770803135:web:1425f583ad04315b87fd0a",
+            measurementId: "G-48T9GVZF3N"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // ROUTING CHECK: Check if the user is logged in
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                // Not logged in? Redirect immediately to sign-in page
+                window.location.href = "Sigh-in";
+            }
+        });
+
+        // Handle Log Out click
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            signOut(auth).then(() => {
+                window.location.href = "Sigh-in.html";
+            });
+        });
+
+    </script>
+
+    <script>
+    document.getElementById("Invite_btn").addEventListener("click", async function() {
+
+        alert("You can invite your friends for a match!");
+
+        try {
+        await navigator.share({
+            title: "Join a match!",
+
+            text: "You can invite your friends for a match!",
+
+            url: "https://waater-mj2f.onrender.com/"  
+        });
+        } catch (error) {
+        console.log("Share cancelled or failed:", error);
+        }
+    });
+    </script>
+
+
+    <script>
+        const socket = io();
+
+        const btnIgnite = document.getElementById('btn-ignite'); //start button 
+
+        const workspace = document.getElementById('creation-workspace'); //the whole div in which the whole code is present
+
+        const matchmakingStatus = document.getElementById('matchmaking-status'); //that circle which shows the time 
+
+        const timerDisplay = document.getElementById('timer-display');
+        const btnCancel = document.getElementById('btn-cancel-queue');
+
+        const argumentInput = document.getElementById('argument-point'); //the input box itself 
+
+        let countdownInterval; //the time countdown from 3 min to 0s 
+
+        function startTimer(durationInSeconds) { //basically calculates the time 
+
+            let timeRemaining = durationInSeconds; //assighing that time as the parameter in which i will call lateer
+
+            countdownInterval = setInterval(() => {
+                let minutes = Math.floor(timeRemaining / 60);
+                let seconds = timeRemaining % 60;
+                minutes = minutes < 10 ? '0' + minutes : minutes;
+                seconds = seconds < 10 ? '0' + seconds : seconds;
+
+                timerDisplay.textContent = `${minutes}:${seconds}`;
+
+                if (--timeRemaining < 0) {
+                    clearInterval(countdownInterval);
+                    timerDisplay.textContent = "Expired";
+                }
+            }, 1000);
+        }
+
+        btnIgnite.addEventListener('click', () => {
+            const thesis = argumentInput.value.trim();
+
+            if(!thesis) {
+                alert('Please enter a topic before the battle '); //alerts if the input box is not filled 
+                return;
+            }
+
+            workspace.style.display = 'none';
+            matchmakingStatus.style.display = 'flex';
+            
+            startTimer(180); 
+
+            socket.emit('join_queue', { 
+                mode: '1v1',
+                
+                thesis: thesis
+            });
+        });
+
+        btnCancel.addEventListener('click', () => {
+            clearInterval(countdownInterval);
+            matchmakingStatus.style.display = 'none';
+            workspace.style.display = 'flex';
+        });
+
+        socket.on('match_found', (data) => {
+            clearInterval(countdownInterval);
+
+            window.location.href = `/live?match=${data.matchId}&role=${data.role}`;
+
+            
+        });
+    </script>
+
+</body>
+</html>

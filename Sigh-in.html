@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Waater</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0b0f19; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+    .card { background: #fff; border-radius: 24px; padding: 2.5rem 2rem; width: 100%; max-width: 380px; box-shadow: 0 8px 40px rgba(0,0,0,0.25); }
+    .logo { width: 44px; height: 44px; background: #185FA5; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; }
+    .logo i { color: white; font-size: 22px; }
+    .card-title { font-size: 20px; font-weight: 600; color: #111; text-align: center; margin-bottom: 4px; }
+    .card-sub { font-size: 14px; color: #666; text-align: center; margin-bottom: 1.75rem; line-height: 1.5; }
+    .field { margin-bottom: 1rem; }
+    .field label { display: block; font-size: 13px; font-weight: 500; color: #555; margin-bottom: 6px; }
+    .input-wrap { position: relative; }
+    .input-wrap .il { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 16px; color: #aaa; pointer-events: none; }
+    .input-wrap input { width: 100%; padding: 10px 40px 10px 38px; font-size: 14px; border: 1.5px solid #e5e7eb; border-radius: 10px; background: #f9fafb; color: #111; outline: none; transition: border 0.15s, box-shadow 0.15s; font-family: inherit; }
+    .input-wrap input:focus { border-color: #378ADD; background: #fff; box-shadow: 0 0 0 3px rgba(55,138,221,0.12); }
+    .pw-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: #aaa; padding: 4px; }
+    .pw-toggle:hover { color: #555; }
+    .submit-btn { width: 100%; padding: 11px; background: #185FA5; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 500; cursor: pointer; margin-top: 0.25rem; transition: background 0.15s, transform 0.1s; font-family: inherit; }
+    .submit-btn:hover { background: #1470bb; }
+    .submit-btn:active { transform: scale(0.98); }
+    .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .link-row { text-align: center; margin-top: 1.25rem; font-size: 13px; color: #888; }
+    .link-row a { color: #185FA5; cursor: pointer; font-weight: 500; text-decoration: none; }
+    .link-row a:hover { text-decoration: underline; }
+    .back-btn { background: none; border: none; cursor: pointer; font-size: 13px; color: #888; display: flex; align-items: center; gap: 5px; margin-bottom: 1.25rem; padding: 0; font-family: inherit; }
+    .back-btn:hover { color: #111; }
+    .msg-box { border-radius: 10px; padding: 10px 14px; display: flex; align-items: flex-start; gap: 10px; margin-bottom: 1rem; font-size: 13px; animation: fadeSlide 0.2s ease; }
+    .msg-box i { font-size: 17px; flex-shrink: 0; margin-top: 1px; }
+    .msg-box p { line-height: 1.5; }
+    .msg-box a { font-weight: 600; cursor: pointer; text-decoration: underline; }
+    .msg-error { background: #fff0f0; border: 1px solid #fcc; }
+    .msg-error i, .msg-error p { color: #b91c1c; }
+    .msg-info { background: #eff6ff; border: 1px solid #bfdbfe; }
+    .msg-info i, .msg-info p { color: #1d4ed8; }
+    .msg-info a { color: #1d4ed8; }
+    .msg-success { background: #f0fdf4; border: 1px solid #bbf7d0; }
+    .msg-success i, .msg-success p { color: #15803d; }
+    .strength-bar { height: 3px; border-radius: 2px; margin-top: 6px; background: #e5e7eb; overflow: hidden; display: none; }
+    .strength-fill { height: 100%; border-radius: 2px; transition: width 0.2s, background 0.2s; }
+    .hint { font-size: 11px; color: #aaa; margin-top: 4px; display: none; }
+    @keyframes fadeSlide { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: none; } }
+    .spinner { display: inline-block; width: 15px; height: 15px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: -3px; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="card">
+
+    <!-- SIGN UP VIEW -->
+    <div id="view-signup">
+      <div class="logo"><i class="ti ti-droplet"></i></div>
+      <p class="card-title">Create your account</p>
+      <p class="card-sub">Join Waater free — takes less than a minute</p>
+      <div id="msg-signup"></div>
+      <div class="field">
+        <label for="su-username">Username</label>
+        <div class="input-wrap">
+          <i class="ti ti-at il"></i>
+          <input type="text" id="su-username" placeholder="yourname" autocomplete="username" style="padding-right:12px" />
+        </div>
+      </div>
+      <div class="field">
+        <label for="su-email">Email address</label>
+        <div class="input-wrap">
+          <i class="ti ti-mail il"></i>
+          <input type="email" id="su-email" placeholder="you@example.com" autocomplete="email" style="padding-right:12px" />
+        </div>
+      </div>
+      <div class="field">
+        <label for="su-pw">Password</label>
+        <div class="input-wrap">
+          <i class="ti ti-lock il"></i>
+          <input type="password" id="su-pw" placeholder="Create a password" autocomplete="new-password" />
+          <button class="pw-toggle" id="su-pw-btn" aria-label="Show password"><i class="ti ti-eye" id="ic-su"></i></button>
+        </div>
+        <div class="strength-bar" id="sb"><div class="strength-fill" id="sf"></div></div>
+        <p class="hint" id="pw-hint"></p>
+      </div>
+      <button class="submit-btn" id="btn-signup">Create account</button>
+      <div class="link-row">Already have an account? <a id="go-signin">Sign in</a></div>
+    </div>
+
+    <!-- SIGN IN VIEW -->
+    <div id="view-signin" style="display:none">
+      <button class="back-btn" id="back-btn"><i class="ti ti-arrow-left"></i> Back</button>
+      <div class="logo" style="margin-top:0"><i class="ti ti-droplet"></i></div>
+      <p class="card-title">Welcome back</p>
+      <p class="card-sub">Sign in to your Waater account</p>
+      <div id="msg-signin"></div>
+      <div class="field">
+        <label for="si-email">Email address</label>
+        <div class="input-wrap">
+          <i class="ti ti-mail il"></i>
+          <input type="email" id="si-email" placeholder="you@example.com" autocomplete="email" style="padding-right:12px" />
+        </div>
+      </div>
+      <div class="field">
+        <label for="si-pw">Password</label>
+        <div class="input-wrap">
+          <i class="ti ti-lock il"></i>
+          <input type="password" id="si-pw" placeholder="Enter your password" autocomplete="current-password" />
+          <button class="pw-toggle" id="si-pw-btn" aria-label="Show password"><i class="ti ti-eye" id="ic-si"></i></button>
+        </div>
+      </div>
+      <button class="submit-btn" id="btn-signin">Sign in</button>
+      <div class="link-row">No account yet? <a id="go-signup">Create one free</a></div>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDc6wwJq_iQtLoZT2RMA1-qyqN3U5W2ZL0",
+      authDomain: "waater-65596.firebaseapp.com",
+      projectId: "waater-65596",
+      storageBucket: "waater-65596.firebasestorage.app",
+      messagingSenderId: "840770803135",
+      appId: "1:840770803135:web:1425f583ad04315b87fd0a",
+      measurementId: "G-48T9GVZF3N"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    function show(view) {
+      document.getElementById('view-signup').style.display = view === 'signup' ? '' : 'none';
+      document.getElementById('view-signin').style.display = view === 'signin' ? '' : 'none';
+      clearMsg('msg-signup'); clearMsg('msg-signin');
+    }
+
+    function clearMsg(id) { document.getElementById(id).innerHTML = ''; }
+
+    function showMsg(id, type, html) {
+      const icons = { error: 'ti-alert-circle', info: 'ti-info-circle', success: 'ti-circle-check' };
+      document.getElementById(id).innerHTML =
+        `<div class="msg-box msg-${type}"><i class="ti ${icons[type]}"></i><p>${html}</p></div>`;
+    }
+
+    function setLoading(btnId, loading, label) {
+      const btn = document.getElementById(btnId);
+      btn.disabled = loading;
+      btn.innerHTML = loading ? `<span class="spinner"></span>${label}` : label;
+    }
+
+    // Password strength meter
+    document.getElementById('su-pw').addEventListener('input', function() {
+      const val = this.value;
+      const sb = document.getElementById('sb');
+      const sf = document.getElementById('sf');
+      const hint = document.getElementById('pw-hint');
+      if (!val) { sb.style.display = 'none'; hint.style.display = 'none'; return; }
+      sb.style.display = 'block'; hint.style.display = 'block';
+      let score = 0;
+      if (val.length >= 6) score++;
+      if (val.length >= 10) score++;
+      if (/[A-Z]/.test(val) && /[0-9]/.test(val)) score++;
+      const configs = [
+        { w: '30%', bg: '#E24B4A', label: 'Too short' },
+        { w: '60%', bg: '#EF9F27', label: 'Fair' },
+        { w: '80%', bg: '#639922', label: 'Good' },
+        { w: '100%', bg: '#1D9E75', label: 'Strong' }
+      ];
+      const c = configs[score];
+      sf.style.width = c.w; sf.style.background = c.bg;
+      hint.textContent = c.label; hint.style.color = c.bg;
+    });
+
+    // Show/hide password toggles
+    function bindPwToggle(inputId, iconId) {
+      document.getElementById(inputId.replace('pw', 'pw-btn')).addEventListener('click', () => {
+        const inp = document.getElementById(inputId);
+        const vis = inp.type === 'text';
+        inp.type = vis ? 'password' : 'text';
+        document.getElementById(iconId).className = vis ? 'ti ti-eye' : 'ti ti-eye-off';
+      });
+    }
+    bindPwToggle('su-pw', 'ic-su');
+    bindPwToggle('si-pw', 'ic-si');
+
+    // Navigation
+    document.getElementById('go-signin').addEventListener('click', () => show('signin'));
+    document.getElementById('go-signup').addEventListener('click', () => show('signup'));
+    document.getElementById('back-btn').addEventListener('click', () => show('signup'));
+
+    // Sign Up
+    document.getElementById('btn-signup').addEventListener('click', async () => {
+      const username = document.getElementById('su-username').value.trim();
+      const email = document.getElementById('su-email').value.trim();
+      const pw = document.getElementById('su-pw').value;
+      clearMsg('msg-signup');
+      if (!username || !email || !pw) { showMsg('msg-signup', 'error', 'Please fill in all fields.'); return; }
+      if (username.length < 3) { showMsg('msg-signup', 'error', 'Username must be at least 3 characters.'); return; }
+      if (pw.length < 6) { showMsg('msg-signup', 'error', 'Password must be at least 6 characters.'); return; }
+      setLoading('btn-signup', true, 'Creating account…');
+      createUserWithEmailAndPassword(auth, email, pw)
+        .then(async (cred) => {
+          await updateProfile(cred.user, { displayName: username });
+          showMsg('msg-signup', 'success', 'Account created! Welcome to Waater 🎉');
+          setTimeout(() => window.location.href = 'index.html', 900);
+        })
+        .catch(err => {
+          setLoading('btn-signup', false, 'Create account');
+          if (err.code === 'auth/email-already-in-use') {
+            showMsg('msg-signup', 'info',
+              `An account already exists for <strong>${email}</strong>. <a id="switch-to-signin">Sign in instead?</a>`);
+            document.getElementById('switch-to-signin').addEventListener('click', () => show('signin'));
+          } else if (err.code === 'auth/weak-password') {
+            showMsg('msg-signup', 'error', 'Password must be at least 6 characters.');
+          } else {
+            showMsg('msg-signup', 'error', 'Something went wrong. Please try again.');
+          }
+        });
+    });
+
+    // Sign In
+    document.getElementById('btn-signin').addEventListener('click', async () => {
+      const email = document.getElementById('si-email').value.trim();
+      const pw = document.getElementById('si-pw').value;
+      clearMsg('msg-signin');
+      if (!email || !pw) { showMsg('msg-signin', 'error', 'Please fill in both fields.'); return; }
+      setLoading('btn-signin', true, 'Signing in…');
+      signInWithEmailAndPassword(auth, email, pw)
+        .then(() => {
+          showMsg('msg-signin', 'success', 'Signed in! Redirecting…');
+          setTimeout(() => window.location.href = 'index.html', 900);
+        })
+        .catch(err => {
+          setLoading('btn-signin', false, 'Sign in');
+          if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+            showMsg('msg-signin', 'info',
+              `No account found for <strong>${email}</strong>. <a id="switch-to-signup">Create an account</a> instead?`);
+            document.getElementById('switch-to-signup').addEventListener('click', () => show('signup'));
+          } else if (err.code === 'auth/wrong-password') {
+            showMsg('msg-signin', 'error', 'Incorrect password. Please try again.');
+          } else {
+            showMsg('msg-signin', 'error', 'Something went wrong. Please try again.');
+          }
+        });
+    });
+
+    // Enter key support
+    document.getElementById('su-username').addEventListener('keydown', e => e.key === 'Enter' && document.getElementById('su-email').focus());
+    document.getElementById('su-email').addEventListener('keydown', e => e.key === 'Enter' && document.getElementById('su-pw').focus());
+    document.getElementById('su-pw').addEventListener('keydown', e => e.key === 'Enter' && document.getElementById('btn-signup').click());
+    document.getElementById('si-email').addEventListener('keydown', e => e.key === 'Enter' && document.getElementById('si-pw').focus());
+    document.getElementById('si-pw').addEventListener('keydown', e => e.key === 'Enter' && document.getElementById('btn-signin').click());
+  </script>
+</body>
+</html>
