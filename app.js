@@ -57,6 +57,8 @@ app.get('/Invite', (req, res) => {
 
 });
 
+app.get('/health', (req, res) => res.status(200).send('OK'));
+
 app.get('/past-matches', async (req, res) => {
     const { data, error } = await supabase
         .from('past_matches')
