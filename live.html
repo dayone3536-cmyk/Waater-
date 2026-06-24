@@ -202,6 +202,39 @@
         word-wrap: break-word;
     }
 
+
+    .mic-btn {
+
+        border:none;
+        cursor:pointer;
+        border-radius:50%;
+        width:56px;
+        height:56px;
+        flex-shrink:0;
+        color:white;
+        font-size:1.3rem;
+        background:#2a3142;
+        transition: background .2s;
+
+    }
+
+    .mic-btn.recording{
+
+        background:#ff4d4d;
+        animation: pulse 1.2s infinite;
+
+    }
+
+    @keyframes pulse{
+
+        0%   { box-shadow: 0 0 0 0 rgba(255,77,77,.6); }
+        70%  { box-shadow: 0 0 0 14px rgba(255,77,77,0); }
+        100% { box-shadow: 0 0 0 0 rgba(255,77,77,0); }
+
+    }
+
+
+
     @media (max-width: 600px){
 
         /* TOP BAR */
@@ -272,13 +305,17 @@
 
         }
 
-        .send-btn{
+        .send-btn {
             height:54px;
             padding:0 18px;
             flex-shrink:0;
         }
 
     }
+
+
+
+
 
 
 
@@ -344,6 +381,12 @@
     id="message"
         placeholder="Present your argument..."
     ></textarea>
+
+
+    <button class="mic-btn" id="micBtn" type="button" title="Hold to talk">
+        🎤
+    </button>
+
 
     <button class="send-btn" id="sendBtn" type="submit">
         Send
@@ -448,6 +491,7 @@
         socket.emit("join_room", { roomId, role });
     }
 
+    // messageInput 
     async function loadReplayMode(roomId) {
 
         document.querySelector('.bottom-bar').style.display = 'none';
@@ -510,7 +554,77 @@
 
             });
 
+        // ---- VOICE INPUT (WhatsApp style) ----   
 
+        const micBtn = document.getElementById('micBtn');
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (!SpeechRecognition) {
+
+            // Browser doesn't support it (e.g. Firefox) — hide the mic button
+
+            micBtn.style.display = 'none';
+
+        } else {
+
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';      // change to your preferred language
+
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            let isRecording = false;
+
+            micBtn.addEventListener('click', () => {
+
+                if (isRecording) {
+                    recognition.stop();
+                    return;
+
+                }
+                try {
+                    recognition.start();
+                } catch (e) {
+                    console.error('Recognition already started', e);
+
+                }
+            });
+
+            recognition.onstart = () => {
+                isRecording = true;
+                micBtn.classList.add('recording');
+                micBtn.textContent = '⏹️';
+            };
+
+            recognition.onend = () => {
+                isRecording = false;
+                micBtn.classList.remove('recording');
+                micBtn.textContent = '🎤';
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                isRecording = false;
+                micBtn.classList.remove('recording');
+                micBtn.textContent = '🎤';
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript.trim();
+
+            if (transcript) {
+                // Put it in the textbox instead of sending it directly
+                messageInput.value = transcript;
+                messageInput.focus();
+                }
+                
+            };  
+
+        }
+
+
+
+// recognition.onresult
 
 
     const chat =
