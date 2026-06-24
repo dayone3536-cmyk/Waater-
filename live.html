@@ -554,74 +554,82 @@
 
             });
 
-        // ---- VOICE INPUT (WhatsApp style) ----   
 
-        const micBtn = document.getElementById('micBtn');
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      // ---- VOICE INPUT (WhatsApp style) ----
 
-        if (!SpeechRecognition) {
+    const micBtn = document.getElementById('micBtn');
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-            // Browser doesn't support it (e.g. Firefox) — hide the mic button
+    if (!SpeechRecognition) {
+        micBtn.style.display = 'none';
+    } else {
 
-            micBtn.style.display = 'none';
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-US'; // or 'ml-IN', or wire up your language selector
+        recognition.continuous = true;       // keep listening
+        recognition.interimResults = false;
 
-        } else {
+        let isRecording = false;
+        let userStoppedManually = false;
 
-            const recognition = new SpeechRecognition();
-            recognition.lang = 'en-US';      // change to your preferred language
+        micBtn.addEventListener('click', async () => {
+            if (isRecording) {
+                userStoppedManually = true;
+                recognition.stop();
+                return;
+            }
+            userStoppedManually = false;
+            try {
+                await navigator.mediaDevices.getUserMedia({ audio: true });
+                recognition.start();
+            } catch (e) {
+                alert('Microphone access is blocked.');
+            }
+        });
 
-            recognition.continuous = false;
-            recognition.interimResults = false;
+        recognition.onstart = () => {
+            isRecording = true;
+            micBtn.classList.add('recording');
+            micBtn.textContent = '⏹️';
+        };
 
-            let isRecording = false;
+        recognition.onend = () => {
+            isRecording = false;
+            micBtn.classList.remove('recording');
+            micBtn.textContent = '🎤';
 
-            micBtn.addEventListener('click', () => {
-
-                if (isRecording) {
-                    recognition.stop();
-                    return;
-
-                }
+            // If it stopped on its own (not because the user tapped stop), restart it
+            if (!userStoppedManually) {
                 try {
                     recognition.start();
+                    isRecording = true;
+                    micBtn.classList.add('recording');
+                    micBtn.textContent = '⏹️';
                 } catch (e) {
-                    console.error('Recognition already started', e);
-
+                    console.error('Auto-restart failed', e);
                 }
-            });
+            }
+        };
 
-            recognition.onstart = () => {
-                isRecording = true;
-                micBtn.classList.add('recording');
-                micBtn.textContent = '⏹️';
-            };
+        recognition.onerror = (event) => {
+            console.error('Speech recognition error:', event.error);
+            if (event.error === 'not-allowed') {
+                alert('Microphone access is blocked for this site. Click the icon next to the URL bar, go to Site settings, and set Microphone to "Allow".');
+                userStoppedManually = true; // don't loop-restart on permission errors
+            }
+        };
 
-            recognition.onend = () => {
-                isRecording = false;
-                micBtn.classList.remove('recording');
-                micBtn.textContent = '🎤';
-            };
-
-            recognition.onerror = (event) => {
-                console.error('Speech recognition error:', event.error);
-                isRecording = false;
-                micBtn.classList.remove('recording');
-                micBtn.textContent = '🎤';
-            };
-
-            recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript.trim();
+        recognition.onresult = (event) => {
+            const lastResult = event.results[event.results.length - 1];
+            const transcript = lastResult[0].transcript.trim();
 
             if (transcript) {
-                // Put it in the textbox instead of sending it directly
-                messageInput.value = transcript;
+                const existing = messageInput.value.trim();
+                messageInput.value = existing ? existing + ' ' + transcript : transcript;
                 messageInput.focus();
-                }
-                
-            };  
-
-        }
-
+            }
+        };
+    }
 
 
 // recognition.onresult
