@@ -17,8 +17,31 @@ const supabase = createClient(
 );
 
 
-
 app.use(express.static(__dirname));
+
+
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
+
+// Give every visitor a stable anonymous ID via cookie if they don't have one.
+// (This is a fallback identity for the reactions table — separate from Firebase login.)
+app.use((req, res, next) => {
+    if (!req.cookies.anonId) {
+
+        const anonId = crypto.randomUUID();
+        res.cookie('anonId', anonId, {
+
+            maxAge: 365 * 24 * 60 * 60 * 1000,
+            httpOnly: true,
+
+            sameSite: 'lax'
+
+        });
+        req.cookies.anonId = anonId;
+    }
+    next();
+});
+
 
 let globalMatchmakingQueue = [];
 let activeMatches = [];
@@ -60,15 +83,43 @@ app.get('/Invite', (req, res) => {
 app.get('/health', (req, res) => res.status(200).send('OK'));
 
 app.get('/past-matches', async (req, res) => {
-    const { data, error } = await supabase
+    const userId = req.cookies.anonId;
+
+    const { data: matches, error } = await supabase
         .from('past_matches')
         .select('*')
         .order('ended_at', { ascending: false })
         .limit(50);
 
     if (error) return res.status(500).json({ error: error.message });
-    res.json(data);
+
+    if (!matches || matches.length === 0) {
+        return res.json([]);
+    }
+
+    const roomIds = matches.map(m => m.room_id);
+
+    const { data: reactions, error: reactErr } = await supabase
+        .from('match_reactions')
+        .select('room_id, user_id, reaction')
+        .in('room_id', roomIds);
+
+    if (reactErr) return res.status(500).json({ error: reactErr.message });
+
+    const enriched = matches.map(m => {
+        const matchReactions = reactions.filter(r => r.room_id === m.room_id);
+        const mine = matchReactions.find(r => r.user_id === userId);
+        return {
+            ...m,
+            like_count: matchReactions.filter(r => r.reaction === 'like').length,
+            dislike_count: matchReactions.filter(r => r.reaction === 'dislike').length,
+            myReaction: mine ? mine.reaction : null
+        };
+    });
+
+    res.json(enriched);
 });
+
 
 app.get('/past-matches/:roomId/arguments', async (req, res) => {
     const { data, error } = await supabase
@@ -80,6 +131,78 @@ app.get('/past-matches/:roomId/arguments', async (req, res) => {
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 });
+
+
+app.post('/match/:roomId/react', express.json(), async (req, res) => {
+    const { roomId } = req.params;
+    const { reaction } = req.body;
+    const userId = req.cookies.anonId;
+
+    if (!['like', 'dislike'].includes(reaction)) {
+        return res.status(400).json({ error: 'Invalid reaction type' });
+    }
+
+    try {
+        const { data: existing, error: fetchErr } = await supabase
+            .from('match_reactions')
+            .select('*')
+            .eq('room_id', roomId)
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        if (fetchErr) throw fetchErr;
+
+        let myReaction = null;
+
+        if (existing && existing.reaction === reaction) {
+            const { error: delErr } = await supabase
+                .from('match_reactions')
+                .delete()
+                .eq('id', existing.id);
+            if (delErr) throw delErr;
+            myReaction = null;
+
+        } else if (existing && existing.reaction !== reaction) {
+            const { error: updErr } = await supabase
+                .from('match_reactions')
+                .update({ reaction })
+                .eq('id', existing.id);
+            if (updErr) throw updErr;
+            myReaction = reaction;
+
+        } else {
+            const { error: insErr } = await supabase
+                .from('match_reactions')
+                .insert({ room_id: roomId, user_id: userId, reaction });
+            if (insErr) throw insErr;
+            myReaction = reaction;
+        }
+
+        const { count: likeCount } = await supabase
+            .from('match_reactions')
+            .select('*', { count: 'exact', head: true })
+            .eq('room_id', roomId)
+            .eq('reaction', 'like');
+
+        const { count: dislikeCount } = await supabase
+            .from('match_reactions')
+            .select('*', { count: 'exact', head: true })
+            .eq('room_id', roomId)
+            .eq('reaction', 'dislike');
+
+        res.json({
+            myReaction,
+            like_count: likeCount || 0,
+            dislike_count: dislikeCount || 0
+        });
+
+    } catch (err) {
+        console.error('Reaction error:', err);
+        res.status(500).json({ error: 'Failed to update reaction' });
+    }
+});
+
+
 
 app.get('/replay', (req, res) => {
     res.sendFile(__dirname + '/replay.html');
