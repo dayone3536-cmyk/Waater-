@@ -110,6 +110,65 @@
             background: #0e67f7;
         }
 
+        .duel-card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .duel-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            background: #0f1320;
+            border: 1px solid #2a3142;
+            color: #9ca3af;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: .8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background .15s ease, border-color .15s ease;
+        }
+
+        .action-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: none;
+            stroke: #9ca3af;
+            stroke-width: 2;
+            transition: fill .15s ease, stroke .15s ease;
+        }
+
+        .action-btn:hover {
+            border-color: #3b4356;
+        }
+
+        .action-btn:hover svg {
+            stroke: #e5e7eb;
+        }
+
+        /* Active state: icon fills solid white, like Instagram */
+        .action-btn.liked svg,
+        .action-btn.disliked svg {
+            fill: #ffffff;
+            stroke: #ffffff;
+        }
+
+        .action-btn.liked {
+            border-color: #ffffff44;
+        }
+
+        .action-btn.disliked {
+            border-color: #ffffff44;
+        }
+
     </style>
 
 
@@ -198,7 +257,6 @@
 
 
     </div>
-<!-- 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
         import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
@@ -216,21 +274,39 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
-        // ROUTING CHECK: Check if the user is logged in
+        // Resolve the very first auth check once, so requireLogin()
+        // never fires before Firebase has had a chance to load the session.
+        let authReadyResolve;
+        const authReady = new Promise((resolve) => { authReadyResolve = resolve; });
+
+        window.isLoggedIn = false;
+
         onAuthStateChanged(auth, (user) => {
-            if (!user) {
-                // Not logged in? Redirect immediately to sign-in page
-                window.location.href = "Sigh-in";
-            }
+            window.isLoggedIn = !!user;
+            authReadyResolve();
         });
 
-        // Handle Log Out click
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            signOut(auth).then(() => {
-                window.location.href = "Sigh-in.html";
+        // Handle Log Out click (only if you have a #logout-btn on this page)
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                signOut(auth).then(() => {
+                    window.location.href = "/Sigh-in";
+                });
             });
-        });
-    </script> -->
+        }
+
+        // Async helper: waits for Firebase to finish checking the session
+        // before deciding whether to redirect. Call as: await window.requireLogin()
+        window.requireLogin = async function () {
+            await authReady;
+            if (!window.isLoggedIn) {
+                window.location.href = "/Sigh-in";
+                return false;
+            }
+            return true;
+        };
+    </script>
 
 
     <script src="/socket.io/socket.io.js"></script>
@@ -315,24 +391,104 @@
                         ? `Ended: ${escapeHtml(match.end_reason)}`
                         : 'Ended';
 
+                    // myReaction comes from the server: 'like', 'dislike', or null
+                    const myReaction = match.myReaction || null;
+                    const likeCount = match.like_count || 0;
+                    const dislikeCount = match.dislike_count || 0;
+
                     card.innerHTML = `
                         <div class="duel-card-body">
                             <p class="duel-thesis">${escapeHtml(match.thesis)}</p>
                             <span class="duel-age">${endedLabel}${match.winner_role ? ` · Winner: ${escapeHtml(match.winner_role)}` : ''}</span>
                         </div>
-                        <button class="join-btn" data-room="${match.room_id}">
-                            📼 Watch Replay
-                        </button>
+                        <div class="duel-card-footer">
+                            <div class="duel-actions">
+                                <button class="action-btn like-btn ${myReaction === 'like' ? 'liked' : ''}" data-room="${match.room_id}">
+                                    <svg viewBox="0 0 24 24"><path d="M7 10v11M2 13v6a2 2 0 002 2h12.5a2 2 0 002-1.6l1.4-7A2 2 0 0017.5 10H13l1-5a2 2 0 00-2-2.4L11 3 7 10H2z"/></svg>
+                                    <span class="like-count">${likeCount}</span>
+                                </button>
+                                <button class="action-btn dislike-btn ${myReaction === 'dislike' ? 'disliked' : ''}" data-room="${match.room_id}">
+                                    <svg viewBox="0 0 24 24"><path d="M17 14V3M22 11v-6a2 2 0 00-2-2H7.5a2 2 0 00-2 1.6l-1.4 7A2 2 0 006.5 14H11l-1 5a2 2 0 002 2.4L13 21l4-7h5z"/></svg>
+                                    <span class="dislike-count">${dislikeCount}</span>
+                                </button>
+                                <button class="action-btn share-btn" data-room="${match.room_id}">
+                                    <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.5" x2="15.4" y2="6.5"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/></svg>
+                                </button>
+                            </div>
+                            <button class="join-btn" data-room="${match.room_id}">
+                                📼 Watch Replay
+                            </button>
+                        </div>
                     `;
 
                     card.querySelector('.join-btn').addEventListener('click', () => {
                         window.location.href = `/live?match=${match.room_id}&replay=1`;
                     });
 
+                    const likeBtn = card.querySelector('.like-btn');
+                    const dislikeBtn = card.querySelector('.dislike-btn');
+                    const shareBtn = card.querySelector('.share-btn');
+
+                    likeBtn.addEventListener('click', async () => {
+                        if (!(await window.requireLogin())) return;
+                        handleReaction(match.room_id, 'like', card);
+                    });
+
+                    dislikeBtn.addEventListener('click', async () => {
+                        if (!(await window.requireLogin())) return;
+                        handleReaction(match.room_id, 'dislike', card);
+                    });
+
+                    shareBtn.addEventListener('click', async () => {
+                        if (!(await window.requireLogin())) return;
+                        const shareUrl = `${window.location.origin}/live?match=${match.room_id}&replay=1`;
+                        try {
+                            if (navigator.share) {
+                                await navigator.share({ title: match.thesis, url: shareUrl });
+                            } else {
+                                await navigator.clipboard.writeText(shareUrl);
+                                const original = shareBtn.style.borderColor;
+                                shareBtn.style.borderColor = '#ffffff';
+                                setTimeout(() => { shareBtn.style.borderColor = original; }, 1000);
+                            }
+                        } catch (err) {
+                            console.error('Share failed:', err);
+                        }
+                    });
+
                     pastFeed.appendChild(card);
                 });
             } catch (err) {
                 console.error('Failed to load past matches:', err);
+            }
+        }
+
+        // Toggle like/dislike, Instagram-style: clicking the same reaction again removes it.
+        async function handleReaction(roomId, reaction, card) {
+            const likeBtn = card.querySelector('.like-btn');
+            const dislikeBtn = card.querySelector('.dislike-btn');
+            const likeCountEl = card.querySelector('.like-count');
+            const dislikeCountEl = card.querySelector('.dislike-count');
+
+            try {
+                const res = await fetch(`/match/${roomId}/react`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reaction })
+                });
+
+                if (!res.ok) throw new Error('Request failed');
+
+                const data = await res.json();
+                // Expected response: { myReaction: 'like' | 'dislike' | null, like_count, dislike_count }
+
+                likeCountEl.textContent = data.like_count;
+                dislikeCountEl.textContent = data.dislike_count;
+
+                likeBtn.classList.toggle('liked', data.myReaction === 'like');
+                dislikeBtn.classList.toggle('disliked', data.myReaction === 'dislike');
+            } catch (err) {
+                console.error('Failed to react:', err);
             }
         }
 
