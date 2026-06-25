@@ -210,7 +210,7 @@ app.get('/replay', (req, res) => {
 
 
 
-// Put this ABOVE io.on('connection')
+// Put this ABOVE io.on('connection')send_argument 
 
 function broadcastLiveMatches() {
     const liveList = activeMatches.map(m => ({
@@ -489,6 +489,33 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
         });
 
     });
+
+    socket.on('typing', (data) => {
+
+        const roomId = typeof data === 'string' ? data : data?.roomId;
+        if (!roomId) return;
+
+        const match = activeMatches.find(m => m.roomId === roomId);
+        let senderRole = null;
+
+        if (match) {
+            if (socket.id === match.creatorSocketId) senderRole = 'creator';
+            else if (socket.id === match.challengerSocketId) senderRole = 'challenger';
+        }
+
+        // Broadcast to everyone else in the room (opponent + spectators), not back to sender
+        socket.to(roomId).emit('opponent_typing', { senderRole });
+    });
+
+    socket.on('stop_typing', (data) => {
+        const roomId = typeof data === 'string' ? data : data?.roomId;
+        if (!roomId) return;
+
+        socket.to(roomId).emit('opponent_stop_typing');
+        
+    });
+
+
 
     // Global memory object to keep track of running intervals for each room
     const matchTimers = {}; 

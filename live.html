@@ -233,7 +233,33 @@
 
     }
 
+    .typing-indicator {
+    align-self: flex-start;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 14px 18px;
+    background: #1b2333;
+    border-radius: 18px;
+    width: fit-content;
+    }
 
+    .typing-indicator span {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #9ca3af;
+        animation: typingBounce 1.2s infinite ease-in-out;
+    }
+
+    .typing-indicator span:nth-child(1){ animation-delay: 0s; }
+    .typing-indicator span:nth-child(2){ animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3){ animation-delay: 0.4s; }
+
+    @keyframes typingBounce {
+        0%, 60%, 100% { transform: translateY(0); opacity: .5; }
+        30% { transform: translateY(-6px); opacity: 1; }
+    }
 
     @media (max-width: 600px){
 
@@ -492,6 +518,34 @@
     }
 
     // messageInput 
+
+        
+    let typingBubble = null;
+
+    socket.on('opponent_typing', () => {
+
+        if (!typingBubble) {
+            typingBubble = document.createElement('div');
+
+            typingBubble.classList.add('typing-indicator');
+            typingBubble.id = 'typingBubble';
+
+            typingBubble.innerHTML = '<span></span><span></span><span></span>';
+
+            chat.appendChild(typingBubble);
+            chat.scrollTop = chat.scrollHeight;
+        }
+    });
+
+    socket.on('opponent_stop_typing', () => {
+        if (typingBubble) {
+            typingBubble.remove();
+            typingBubble = null;
+        }
+    });
+    
+
+
     async function loadReplayMode(roomId) {
 
         document.querySelector('.bottom-bar').style.display = 'none';
@@ -517,6 +571,13 @@
             div.classList.add(arg.sender_role === 'creator' ? 'right' : 'left');
 
             div.textContent = arg.message;
+
+            if (typingBubble) {
+
+                typingBubble.remove();
+                typingBubble = null;
+            }
+
 
             chat.appendChild(div);
             
@@ -632,7 +693,7 @@
     }
 
 
-// recognition.onresult
+// recognition.onresult chat.appendChild(div)
 
 
     const chat =
@@ -640,19 +701,58 @@
 
 
 
+    let typingTimeout;
+
+    messageInput.addEventListener('input', () => {
+
+        socket.emit('typing', { roomId });
+
+        clearTimeout(typingTimeout);
+
+        typingTimeout = setTimeout(() => {
+
+            socket.emit('stop_typing', { roomId });
+
+        }, 1500); // stops the "typing" status after 1.5s of inactivity
+
+    });
+
+    // Also stop typing indicator immediately when message is sent
+
     sendBtn.onclick = () => {
+
+        clearTimeout(typingTimeout);
+
+        socket.emit('stop_typing', { roomId });
+
 
         socket.emit(
             'send_argument',
-            {
-                roomId,
-                message:
-                    messageInput.value
-            }
+            { roomId, message: messageInput.value }
+
         );
 
         messageInput.value = '';
     };
+
+
+
+    // sendBtn.onclick = () => {
+
+    //     socket.emit(
+    //         'send_argument',
+    //         {
+    //             roomId,
+    //             message:
+    //                 messageInput.value
+    //         }
+    //     );
+
+    //     messageInput.value = '';
+    // };
+
+
+
 
 
     socket.on(
