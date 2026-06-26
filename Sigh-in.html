@@ -47,6 +47,41 @@
     @keyframes fadeSlide { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: none; } }
     .spinner { display: inline-block; width: 15px; height: 15px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: -3px; margin-right: 6px; }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* --- Google button + divider --- */
+    .google-btn {
+      width: 100%;
+      padding: 11px;
+      background: #fff;
+      color: #3c4043;
+      border: 1.5px solid #dadce0;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: box-shadow .15s ease, background .15s ease;
+      font-family: inherit;
+    }
+    .google-btn:hover { box-shadow: 0 1px 6px rgba(0,0,0,0.15); background: #f8f9fa; }
+    .google-btn:disabled { opacity: .6; cursor: not-allowed; }
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 1.25rem 0;
+      color: #aaa;
+      font-size: 12px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e5e7eb;
+    }
   </style>
 </head>
 <body>
@@ -58,6 +93,19 @@
       <p class="card-title">Create your account</p>
       <p class="card-sub">Join Waater free — takes less than a minute</p>
       <div id="msg-signup"></div>
+
+      <button class="google-btn" id="btn-google-signup">
+        <svg width="18" height="18" viewBox="0 0 48 48">
+          <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.3 29.3 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.8 0 5.3 1 7.3 2.7l5.7-5.7C33.6 6.5 29 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.2-.1-2.4-.4-3.5z"/>
+          <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 18.9 13 24 13c2.8 0 5.3 1 7.3 2.7l5.7-5.7C33.6 6.5 29 4.5 24 4.5c-7.7 0-14.4 4.4-17.7 10.2z"/>
+          <path fill="#4CAF50" d="M24 43.5c5 0 9.6-1.9 13-5.1l-6-5.1c-1.9 1.3-4.4 2.2-7 2.2-5.3 0-9.7-2.7-11.3-6.9l-6.6 5.1C9.6 39.1 16.3 43.5 24 43.5z"/>
+          <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.3 5.6l6 5.1c3.5-3.2 5.9-8 5.9-14.7 0-1.2-.1-2.4-.4-3.5z"/>
+        </svg>
+        <span>Continue with Google</span>
+      </button>
+
+      <div class="divider">or use email</div>
+
       <div class="field">
         <label for="su-username">Username</label>
         <div class="input-wrap">
@@ -93,6 +141,19 @@
       <p class="card-title">Welcome back</p>
       <p class="card-sub">Sign in to your Waater account</p>
       <div id="msg-signin"></div>
+
+      <button class="google-btn" id="btn-google-signin">
+        <svg width="18" height="18" viewBox="0 0 48 48">
+          <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.3 29.3 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.8 0 5.3 1 7.3 2.7l5.7-5.7C33.6 6.5 29 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.2-.1-2.4-.4-3.5z"/>
+          <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 18.9 13 24 13c2.8 0 5.3 1 7.3 2.7l5.7-5.7C33.6 6.5 29 4.5 24 4.5c-7.7 0-14.4 4.4-17.7 10.2z"/>
+          <path fill="#4CAF50" d="M24 43.5c5 0 9.6-1.9 13-5.1l-6-5.1c-1.9 1.3-4.4 2.2-7 2.2-5.3 0-9.7-2.7-11.3-6.9l-6.6 5.1C9.6 39.1 16.3 43.5 24 43.5z"/>
+          <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.3 5.6l6 5.1c3.5-3.2 5.9-8 5.9-14.7 0-1.2-.1-2.4-.4-3.5z"/>
+        </svg>
+        <span>Continue with Google</span>
+      </button>
+
+      <div class="divider">or use email</div>
+
       <div class="field">
         <label for="si-email">Email address</label>
         <div class="input-wrap">
@@ -116,7 +177,10 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+    import {
+      getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile,
+      GoogleAuthProvider, signInWithPopup
+    } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDc6wwJq_iQtLoZT2RMA1-qyqN3U5W2ZL0",
@@ -130,6 +194,7 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const googleProvider = new GoogleAuthProvider();
 
     function show(view) {
       document.getElementById('view-signup').style.display = view === 'signup' ? '' : 'none';
@@ -150,6 +215,26 @@
       btn.disabled = loading;
       btn.innerHTML = loading ? `<span class="spinner"></span>${label}` : label;
     }
+
+    // ---- Google sign-in (shared handler for both buttons) ----
+    async function handleGoogleSignIn(msgId) {
+      try {
+        const result = await signInWithPopup(auth, googleProvider);
+        const user = result.user;
+        console.log('Signed in with Google:', user.uid, user.email, user.displayName);
+        window.location.href = 'index.html';
+      } catch (err) {
+        console.error(err.code, err.message);
+        if (err.code === 'auth/popup-closed-by-user') return;
+        if (err.code === 'auth/unauthorized-domain') {
+          showMsg(msgId, 'error', 'This domain isn\'t authorized yet in Firebase Console → Authentication → Settings.');
+        } else {
+          showMsg(msgId, 'error', 'Google sign-in failed. Please try again.');
+        }
+      }
+    }
+    document.getElementById('btn-google-signup').addEventListener('click', () => handleGoogleSignIn('msg-signup'));
+    document.getElementById('btn-google-signin').addEventListener('click', () => handleGoogleSignIn('msg-signin'));
 
     // Password strength meter
     document.getElementById('su-pw').addEventListener('input', function() {
@@ -191,7 +276,7 @@
     document.getElementById('go-signup').addEventListener('click', () => show('signup'));
     document.getElementById('back-btn').addEventListener('click', () => show('signup'));
 
-    // Sign Up
+    // Sign Up (email/password)
     document.getElementById('btn-signup').addEventListener('click', async () => {
       const username = document.getElementById('su-username').value.trim();
       const email = document.getElementById('su-email').value.trim();
@@ -221,7 +306,7 @@
         });
     });
 
-    // Sign In
+    // Sign In (email/password)
     document.getElementById('btn-signin').addEventListener('click', async () => {
       const email = document.getElementById('si-email').value.trim();
       const pw = document.getElementById('si-pw').value;
