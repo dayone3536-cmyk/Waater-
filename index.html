@@ -213,7 +213,7 @@
 
             <a href="/Create" style="text-decoration: none;">
                 <div class="nav-item">
-                    <span class="material-symbols-outlined">add_circle</span>
+                    <span class="material-symbols-outlined">Add_Circle</span>
                     <span class="label">Create</span>
                 </div>
             </a>
@@ -232,7 +232,7 @@
                 
                 <div class="feed-header" style="display:flex; justify-content:space-between; align-items:center; padding: 24px 28px 12px;"> -->
 
-                    <h2 style="font-size:1.2rem; font-weight:700;">📜 Past Duels</h2>
+                    <h2 style="font-size:1.2rem; font-weight:700;">📜 Past Debates</h2>
                 </div>
 
                 <div id="past-feed">
@@ -306,6 +306,23 @@
             }
             return true;
         };
+    </script>
+
+
+    <script>
+        const searchInput = document.querySelector('.global-search');
+
+        searchInput.addEventListener('keydown', (event) => {
+
+            if (event.key === 'Enter') {
+
+                const query = searchInput.value.trim();
+                console.log('searching for:', query);
+                
+                // TODO: filter results or call an API here
+            }
+        });
+
     </script>
 
 
@@ -399,7 +416,9 @@
                     card.innerHTML = `
                         <div class="duel-card-body">
                             <p class="duel-thesis">${escapeHtml(match.thesis)}</p>
-                            <span class="duel-age">${endedLabel}${match.winner_role ? ` · Winner: ${escapeHtml(match.winner_role)}` : ''}</span>
+
+                            <!-- <span class="duel-age">${endedLabel}${match.winner_role ? ` · Winner: ${escapeHtml(match.winner_role)}` : ''}</span>-->
+
                         </div>
                         <div class="duel-card-footer">
                             
@@ -467,6 +486,7 @@
         }
 
         // Toggle like/dislike, Instagram-style: clicking the same reaction again removes it.
+
         async function handleReaction(roomId, reaction, card) {
             const likeBtn = card.querySelector('.like-btn');
             const dislikeBtn = card.querySelector('.dislike-btn');
@@ -474,10 +494,14 @@
             const dislikeCountEl = card.querySelector('.dislike-count');
 
             try {
+
                 const res = await fetch(`/match/${roomId}/react`, {
+
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+
                     body: JSON.stringify({ reaction })
+
                 });
 
                 if (!res.ok) throw new Error('Request failed');
