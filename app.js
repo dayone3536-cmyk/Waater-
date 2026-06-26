@@ -239,7 +239,7 @@ async function archiveMatch(match, endReason, winnerRole = null) {
 }
 
 
-// activeMatches
+// activeMatches loadReplayMode args async
 
 io.on('connection', (socket) => { //wen a new user is connceted run this 
 
