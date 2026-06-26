@@ -234,6 +234,7 @@
     }
 
     .typing-indicator {
+
     align-self: flex-start;
     display: flex;
     align-items: center;
@@ -242,14 +243,30 @@
     background: #1b2333;
     border-radius: 18px;
     width: fit-content;
+
+    }
+
+    .typing-indicator.left {
+
+    align-self: flex-start;
+
+    }
+
+    .typing-indicator.right {
+
+        align-self: flex-end;
+        background: linear-gradient(135deg, #6d5dfc, #4f7cff);
+
     }
 
     .typing-indicator span {
+
         width: 8px;
         height: 8px;
         border-radius: 50%;
         background: #9ca3af;
         animation: typingBounce 1.2s infinite ease-in-out;
+
     }
 
     .typing-indicator span:nth-child(1){ animation-delay: 0s; }
@@ -260,6 +277,8 @@
         0%, 60%, 100% { transform: translateY(0); opacity: .5; }
         30% { transform: translateY(-6px); opacity: 1; }
     }
+
+
 
     @media (max-width: 600px){
 
@@ -407,13 +426,13 @@
     id="message"
         placeholder="Present your argument..."
     ></textarea>
-
+<!-- typingTimeout -->
 
     <button class="mic-btn" id="micBtn" type="button" title="Hold to talk">
         🎤
     </button>
 
-
+<!-- typingTimeout -->
     <button class="send-btn" id="sendBtn" type="submit">
         Send
     </button>
@@ -479,6 +498,7 @@
 
     const dynamic_title = document.getElementById("Topic");
 
+        // opponent_typing
     
 
     console.log("the join_room socket has been sent to the server")
@@ -522,18 +542,20 @@
         
     let typingBubble = null;
 
-    socket.on('opponent_typing', () => {
+    socket.on('opponent_typing', (data) => {
 
         if (!typingBubble) {
             typingBubble = document.createElement('div');
 
             typingBubble.classList.add('typing-indicator');
-            typingBubble.id = 'typingBubble';
+            typingBubble.classList.add(data.senderRole === 'creator' ? 'right' : 'left');
+
 
             typingBubble.innerHTML = '<span></span><span></span><span></span>';
 
             chat.appendChild(typingBubble);
             chat.scrollTop = chat.scrollHeight;
+
         }
     });
 
@@ -693,7 +715,7 @@
     }
 
 
-// recognition.onresult chat.appendChild(div)
+// recognition.onresult chat.appendChild(div) opponent_typing
 
 
     const chat =

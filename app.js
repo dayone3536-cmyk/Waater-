@@ -466,7 +466,7 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
 
         }
 
-
+    // typing
 
         // 3. Broadcast 'new_argument' back down to EVERYONE inside that specific room
         
