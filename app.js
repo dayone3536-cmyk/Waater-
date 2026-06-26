@@ -16,6 +16,7 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// .not('ended_at', 'is', null)
 
 app.use(express.static(__dirname));
 
@@ -88,7 +89,10 @@ app.get('/past-matches', async (req, res) => {
     const { data: matches, error } = await supabase
         .from('past_matches')
         .select('*')
+
+        .not('ended_at', 'is', null)
         .order('ended_at', { ascending: false })
+        
         .limit(50);
 
     if (error) return res.status(500).json({ error: error.message });
@@ -269,7 +273,7 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
 
         // socket.emit("macth_info", (data) => {
         //     thesis
-        // })
+        // }) macth_info
 
         const newMatch = { //when a new duel has been created 
             id: crypto.randomUUID(),
@@ -445,11 +449,24 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
 
         socket.emit('macth_info', { thesis: match.thesis });
 
+        supabase
+            .from('past_arguments')
+            .select('*')
+            .eq('room_id', roomId)
+            .order('created_at', { ascending: true })
+            .then(({ data, error }) => {
+                if (error) {
+                    console.error('Failed to load match history:', error);
+                    return;
+                }
+                socket.emit('match_history', data || []);
+            });
+
     });
 
 
 
-    // 2. Listen for 'send_argument' from your frontend Send button
+    // 2. Listen for 'send_argument' from your frontend Send button  const { data: matches, error } = await supabase
     socket.on('send_argument', (data) => {
 
         console.log(`Message received for room ${data.roomId}: ${data.message}`);
