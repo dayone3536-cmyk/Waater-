@@ -511,7 +511,7 @@
     <button class="send-btn" id="sendBtn" type="button">
 
         Send
-        
+
     </button>
 
 
@@ -677,7 +677,7 @@
 
         dynamic_title.textContent = match ? match.thesis : 'Replay';
 
-
+        // you_are_spectator
         const argsRes = await fetch(`/past-matches/${roomId}/arguments`);
         const args = await argsRes.json();
 
@@ -813,7 +813,7 @@
     }
 
 
-// recognition.onresult chat.appendChild(div) opponent_typing
+// recognition.onresult chat.appendChild(div) opponent_typing you_are_spectator
 
 
     const chat =
