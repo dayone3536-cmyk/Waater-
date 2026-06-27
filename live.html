@@ -508,6 +508,11 @@
         placeholder="Present your argument..."
     ></textarea>
 
+    <button class="send-btn" id="sendBtn" type="button">
+
+        Send
+        
+    </button>
 
 
     <button class="mic-btn" id="micBtn" type="button" title="Hold to talk">
@@ -1041,6 +1046,124 @@
         alert(data.reason);
         window.location.href = '/';
     });
+
+
+
+    /* ---------------- REELS-STYLE SWIPE BETWEEN LIVE DEBATES ---------------- */
+
+    let liveMatches = [];        // [{roomId, thesis, spectatorCount}]
+    let currentRoomId = roomId;  // from the URL, updates as we swipe
+    let isSpectator = false;     // only spectators get to swipe between debates
+    let isSwitching = false;     // debounce so fast swipes don't overlap
+
+    socket.on('update_live_matches', (matches) => {
+        liveMatches = matches;
+    });
+
+    socket.on('you_are_spectator', () => {
+        isSpectator = true;
+        showSwipeHint();
+    });
+
+    function getCurrentIndex() {
+        return liveMatches.findIndex(m => m.roomId === currentRoomId);
+    }
+
+    function switchToMatch(newRoomId) {
+        if (isSwitching || newRoomId === currentRoomId) return;
+        isSwitching = true;
+
+        // Leave old room
+        socket.emit('leave_room', { roomId: currentRoomId });
+
+        // Reset chat UI
+        chat.innerHTML = '';
+        if (typingBubble) { typingBubble.remove(); typingBubble = null; }
+        dynamic_title.textContent = 'loading topic...';
+
+        // Join new room as spectator
+        currentRoomId = newRoomId;
+        socket.emit('join_room', { roomId: newRoomId, role: null });
+
+        // Keep the URL in sync (so refresh/share lands on the right debate)
+        const newUrl = `${window.location.pathname}?match=${newRoomId}`;
+        window.history.replaceState({}, '', newUrl);
+
+        setTimeout(() => { isSwitching = false; }, 400);
+    }
+
+    function goToNextDebate() {
+        if (liveMatches.length === 0) return;
+        const idx = getCurrentIndex();
+        const nextIdx = idx === -1 ? 0 : (idx + 1) % liveMatches.length;
+        switchToMatch(liveMatches[nextIdx].roomId);
+    }
+
+    function goToPrevDebate() {
+        if (liveMatches.length === 0) return;
+        const idx = getCurrentIndex();
+        const prevIdx = idx === -1 ? 0 : (idx - 1 + liveMatches.length) % liveMatches.length;
+        switchToMatch(liveMatches[prevIdx].roomId);
+    }
+
+    /* ---- Touch swipe (mobile, vertical like Reels) ---- */
+    let touchStartY = 0;
+
+    document.addEventListener('touchstart', (e) => {
+        if (!isSpectator) return;
+        touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    document.addEventListener('touchend', (e) => {
+        if (!isSpectator) return;
+        const touchEndY = e.changedTouches[0].clientY;
+        const diff = touchStartY - touchEndY;
+
+        if (Math.abs(diff) < 50) return; // ignore tiny swipes
+
+        if (diff > 0) {
+            goToNextDebate(); // swiped up -> next
+        } else {
+            goToPrevDebate(); // swiped down -> previous
+        }
+    }, { passive: true });
+
+/* ---- Mouse wheel (desktop) ---- */
+    let wheelLock = false;
+
+    document.addEventListener('wheel', (e) => {
+
+        if (!isSpectator || wheelLock) return;
+        if (Math.abs(e.deltaY) < 30) return;
+
+        wheelLock = true;
+        if (e.deltaY > 0) goToNextDebate();
+        else goToPrevDebate();
+
+        setTimeout(() => { wheelLock = false; }, 500);
+    }, { passive: true });
+
+/* ---- Arrow keys (desktop accessibility) ---- */
+
+    document.addEventListener('keydown', (e) => {
+        if (!isSpectator) return;
+        if (e.key === 'ArrowDown') goToNextDebate();
+        if (e.key === 'ArrowUp') goToPrevDebate();
+    });
+
+    function showSwipeHint() {
+        const hint = document.createElement('div');
+        hint.id = 'swipeHint';
+        hint.textContent = '↑↓ Swipe for next debate';
+        hint.style.cssText = `
+            position:fixed; bottom:90px; left:50%; transform:translateX(-50%);
+            background:#1f2635; color:#9ca3af; padding:8px 16px; border-radius:999px;
+            font-size:.8rem; z-index:998; opacity:0.9; pointer-events:none;
+        `;
+        document.body.appendChild(hint);
+        setTimeout(() => hint.remove(), 3000);
+    }
+
 
 
 </script>

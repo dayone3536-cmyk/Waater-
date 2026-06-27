@@ -208,13 +208,13 @@ app.post('/match/:roomId/react', express.json(), async (req, res) => {
 
 
 
-app.get('/replay', (req, res) => {
-    res.sendFile(__dirname + '/replay.html');
-});
+// app.get('/replay', (req, res) => {
+//     res.sendFile(__dirname + '/replay.html');
+// });
 
 
 
-// Put this ABOVE io.on('connection')send_argument 
+// Put this ABOVE io.on('connection')send_argument join_room
 
 function broadcastLiveMatches() {
     const liveList = activeMatches.map(m => ({
@@ -397,7 +397,9 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
             `Match started: ${roomId}`
         );
     });
+
 // activeMatches
+
     socket.on('join_room', (data) => {
 
         const roomId = typeof data === 'string' ? data : data?.roomId;
@@ -463,6 +465,24 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
             });
 
     });
+
+   socket.on('leave_room', (data) => {
+
+        const roomId = typeof data === 'string' ? data : data?.roomId;
+        if (!roomId) return;
+
+        socket.leave(roomId);
+
+        const match = activeMatches.find(m => m.roomId === roomId);
+        
+        if (match) {
+            match.spectators = match.spectators.filter(id => id !== socket.id);
+
+            io.to(match.roomId).emit('spectator_count_changed', { count: match.spectators.length });
+            broadcastLiveMatches();
+        }
+
+    }); 
 
 
 
