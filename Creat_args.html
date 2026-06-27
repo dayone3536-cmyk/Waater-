@@ -128,23 +128,6 @@
 
                 </button>
 
-                <br>
-
-                <h2 style="color: #f3f4f6;">
-
-                    OR 
-
-                </h2>
-
-
-                <button class = "Invite" id = "Invite_btn" style="max-width: 500px; margin-top: 2rem; padding: 1.1rem;">
-
-                        Invite 
-
-                <button> 
-
-                </button>
-
             </div>
 
             <!-- Matchmaking Radar State (Kept intact so the screen shifts to loading nicely) -->
@@ -210,24 +193,6 @@
 
     </script>
 
-    <script>
-    document.getElementById("Invite_btn").addEventListener("click", async function() {
-
-        alert("You can invite your friends for a match!");
-
-        try {
-        await navigator.share({
-            title: "Join a match!",
-
-            text: "You can invite your friends for a match!",
-
-            url: "https://waater-mj2f.onrender.com/"  
-        });
-        } catch (error) {
-        console.log("Share cancelled or failed:", error);
-        }
-    });
-    </script>
 
 
     <script>

@@ -1153,19 +1153,25 @@
     }, { passive: true });
 
     /* ---- Mouse wheel: horizontal scroll OR shift+wheel ---- */
+
+
     let wheelLock = false;
     document.addEventListener('wheel', (e) => {
         if (!canSwipe || wheelLock) return;
 
-        const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-        if (Math.abs(delta) < 30) return;
+        // Only react to horizontal scroll intent (trackpad swipe / shift+wheel)
+        // Ignore vertical scrolling entirely so users can scroll to read messages
+        
+        if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+        if (Math.abs(e.deltaX) < 30) return;
 
         wheelLock = true;
-        if (delta > 0) goToNextDebate();
+        if (e.deltaX > 0) goToNextDebate();
         else goToPrevDebate();
 
         setTimeout(() => { wheelLock = false; }, 500);
     }, { passive: true });
+
 
     /* ---- Arrow keys: LEFT/RIGHT ---- */
     document.addEventListener('keydown', (e) => {
