@@ -291,6 +291,8 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
             `New duel created: ${newMatch.thesis}`
         );
 
+        socket.emit('duel_created', { matchId: newMatch.id });
+
         io.emit(
             'update_duel_list',
             globalMatchmakingQueue
@@ -397,6 +399,26 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
             `Match started: ${roomId}`
         );
     });
+
+    socket.on('leave_queue', (data) => {
+
+        if (!data || !data.matchId) return;
+
+        globalMatchmakingQueue = globalMatchmakingQueue.filter(
+
+            duel => duel.id !== data.matchId
+
+        );
+
+        console.log(`Duel removed from queue: ${data.matchId}`);
+
+        io.emit(
+            'update_duel_list',
+            globalMatchmakingQueue
+        );
+        
+    });
+
 
 // activeMatches
 

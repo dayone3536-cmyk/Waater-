@@ -196,74 +196,136 @@
 
 
     <script>
-        const socket = io();
+    const socket = io();
 
-        const btnIgnite = document.getElementById('btn-ignite'); //start button 
+    const btnIgnite = document.getElementById('btn-ignite');
+    const workspace = document.getElementById('creation-workspace');
+    const matchmakingStatus = document.getElementById('matchmaking-status');
+    const timerDisplay = document.getElementById('timer-display');
+    const btnCancel = document.getElementById('btn-cancel-queue');
+    const btnInviteMatch = document.getElementById('btn-invite-friend'); // matches your existing button id
+    const argumentInput = document.getElementById('argument-point');
 
-        const workspace = document.getElementById('creation-workspace'); //the whole div in which the whole code is present
+    let countdownInterval;
+    let myCurrentMatchId = null; // the id of the duel WE created, once server confirms it
 
-        const matchmakingStatus = document.getElementById('matchmaking-status'); //that circle which shows the time 
+    function startTimer(durationInSeconds) {
+        let timeRemaining = durationInSeconds;
+        countdownInterval = setInterval(() => {
+            let minutes = Math.floor(timeRemaining / 60);
+            let seconds = timeRemaining % 60;
+            minutes = minutes < 10 ? '0' + minutes : minutes;
+            seconds = seconds < 10 ? '0' + seconds : seconds;
+            timerDisplay.textContent = `${minutes}:${seconds}`;
+            if (--timeRemaining < 0) {
+                clearInterval(countdownInterval);
+                timerDisplay.textContent = "Expired";
+            }
+        }, 1000);
+    }
 
-        const timerDisplay = document.getElementById('timer-display');
-        const btnCancel = document.getElementById('btn-cancel-queue');
+    btnIgnite.addEventListener('click', () => {
+        const thesis = argumentInput.value.trim();
 
-        const argumentInput = document.getElementById('argument-point'); //the input box itself 
-
-        let countdownInterval; //the time countdown from 3 min to 0s 
-
-        function startTimer(durationInSeconds) { //basically calculates the time 
-
-            let timeRemaining = durationInSeconds; //assighing that time as the parameter in which i will call lateer
-
-            countdownInterval = setInterval(() => {
-                let minutes = Math.floor(timeRemaining / 60);
-                let seconds = timeRemaining % 60;
-                minutes = minutes < 10 ? '0' + minutes : minutes;
-                seconds = seconds < 10 ? '0' + seconds : seconds;
-
-                timerDisplay.textContent = `${minutes}:${seconds}`;
-
-                if (--timeRemaining < 0) {
-                    clearInterval(countdownInterval);
-                    timerDisplay.textContent = "Expired";
-                }
-            }, 1000);
+        if (!thesis) {
+            alert('Please enter a topic before the battle ');
+            return;
         }
 
-        btnIgnite.addEventListener('click', () => {
-            const thesis = argumentInput.value.trim();
+        workspace.style.display = 'none';
+        matchmakingStatus.style.display = 'flex';
 
-            if(!thesis) {
-                alert('Please enter a topic before the battle '); //alerts if the input box is not filled 
-                return;
-            }
+        startTimer(180);
 
+        socket.emit('join_queue', {
+            mode: '1v1',
+            thesis: thesis
+        });
+    });
+
+    // Server confirms our duel's own ID right after creating it
+
+    socket.on('duel_created', (data) => {
+        myCurrentMatchId = data.matchId;
+    });
+
+    // Invite button — only works once we have a matchId from the server
+
+    btnInviteMatch.addEventListener('click', () => {
+        if (!myCurrentMatchId) {
+            alert('Still setting up your duel — try again in a second.');
+            return;
+        }
+
+        const thesis = argumentInput.value.trim();
+        const inviteLink = `${window.location.origin}/Create?matchId=${myCurrentMatchId}`;
+
+        if (navigator.share) {
+            navigator.share({
+
+                title: 'Want to challenge me ? ',
+
+                text: `Debate me on: "${thesis}"`,
+                url: inviteLink
+
+            }).catch(() => {});
+
+        } else {
+            navigator.clipboard.writeText(inviteLink).then(() => {
+
+                alert('Invite link copied to clipboard!\n' + inviteLink);
+
+            });
+        }
+    });
+
+    btnCancel.addEventListener('click', () => {
+
+        clearInterval(countdownInterval);
+
+        // Tell server to remove this duel from the queue
+
+        if (myCurrentMatchId) {
+            socket.emit('leave_queue', { matchId: myCurrentMatchId });
+        }
+
+        matchmakingStatus.style.display = 'none';
+        workspace.style.display = 'flex';
+        myCurrentMatchId = null;
+
+    });
+
+    // If THIS page load is User B opening an invite link
+
+    window.addEventListener('DOMContentLoaded', () => {
+        
+        const params = new URLSearchParams(window.location.search);
+        const inviteMatchId = params.get('matchId');
+
+        if (inviteMatchId) {
             workspace.style.display = 'none';
             matchmakingStatus.style.display = 'flex';
-            
-            startTimer(180); 
+            timerDisplay.textContent = "Joining...";
 
-            socket.emit('join_queue', { 
-                mode: '1v1',
-                
-                thesis: thesis
-            });
-        });
+            socket.emit('join_match', { matchId: inviteMatchId });
+        }
+    });
 
-        btnCancel.addEventListener('click', () => {
-            clearInterval(countdownInterval);
-            matchmakingStatus.style.display = 'none';
-            workspace.style.display = 'flex';
-        });
+    // If the duel was already claimed/cancelled before User B clicked
+    socket.on('match_error', (data) => {
+        alert(data.message);
+        window.location.href = '/Create';
+    });
 
-        socket.on('match_found', (data) => {
-            clearInterval(countdownInterval);
+    // Fires for BOTH creator and challenger once paired
+    socket.on('match_found', (data) => {
+        clearInterval(countdownInterval);
+        window.location.href = `/live?match=${data.matchId}&role=${data.role}`;
+    });
 
-            window.location.href = `/live?match=${data.matchId}&role=${data.role}`;
+</script>
 
-            
-        });
-    </script>
+
 
 </body>
 </html>
