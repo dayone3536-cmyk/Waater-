@@ -9,7 +9,6 @@
      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" />
 
     <style>
-        /* Premium Inline Customization for Your Minimalist Vision */
         .minimal-title {
             font-size: 2.5rem;
             font-weight: 600;
@@ -32,15 +31,15 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            color: #9ca3af; /* Soft slate gray */
+            color: #9ca3af;
             padding-left: 0.5rem;
         }
 
         .premium-input {
             width: 100%;
-            background: #111827; /* Rich dark container gray */
-            border: 1px solid #1f2937; /* Clean, subtle boundary */
-            border-radius: 16px; /* Smooth rounded interface edge */
+            background: #111827;
+            border: 1px solid #1f2937;
+            border-radius: 16px;
             padding: 18px 24px;
             color: #ffffff;
             font-size: 1.1rem;
@@ -49,88 +48,111 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* The Premium Glow Interaction */
         .premium-input:focus {
-            border-color: #3b82f6; /* Electric Blue focus line */
-            background: #0b0f19; /* Deep abyss black focus state */
+            border-color: #3b82f6;
+            background: #0b0f19;
             box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15), 0 10px 30px rgba(0, 0, 0, 0.4);
         }
+
+
+        .radar-invite-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+
+            width: 100%;
+            max-width: 280px;
+            margin: 1.5rem auto 1.25;
+
+            background: linear-gradient(135deg, #1f2937, #111827);
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            border-radius: 14px;
+
+            padding: 14px 28px;
+
+            color: #ffffff;
+            font-size: 0.95rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+        }
+
+        .radar-invite-btn:hover {
+            border-color: #3b82f6;
+            background: linear-gradient(135deg, #243049, #131722);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15), 0 8px 24px rgba(0, 0, 0, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .radar-invite-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .radar-invite-btn .material-symbols-outlined {
+            font-size: 1.1rem;
+            color: #3b82f6;
+        }
+
+
     </style>
 </head>
 <body>
 
-    <!-- Sidebar Control Panel -->
+    <nav class="sidebar">
 
+        <a href="/" style="text-decoration: none;">
+            <div class="nav-item">
+                <span class="material-symbols-outlined">home</span>
+                <span class="label">Home</span>
+            </div>
+        </a>
 
-        <nav class="sidebar">
+        <a href="/dueal" style="text-decoration: none;">
+            <div class="nav-item">
+                <span class="material-symbols-outlined">swords</span>
+                <span class="label">Duels</span>
+            </div>
+        </a>
 
-            <a href="/" style="text-decoration: none;">
-                <div class="nav-item">
-                    <span class="material-symbols-outlined">home</span>
-                    <span class="label">Home</span>
-                </div>
-            </a>
+        <a href="/Create" style="text-decoration: none;">
+            <div class="nav-item active">
+                <span class="material-symbols-outlined">add_circle</span>
+                <span class="label">Create</span>
+            </div>
+        </a>
 
-            <a href="/dueal" style="text-decoration: none;">
-                <div class="nav-item">
-                    <span class="material-symbols-outlined">swords</span>
-                    <span class="label">Duels</span>
-                </div>
-            </a>
-
-            <a href="/Create" style="text-decoration: none;">
-                <div class="nav-item active">
-                    <span class="material-symbols-outlined">add_circle</span>
-                    <span class="label">Create</span>
-                </div>
-            </a>
-
-        </nav>
-
-
-
+    </nav>
 
     <header class="top-navbar">
-
         <span class="brand-logo">Waater </span>
-
     </header>
-        
 
-
-
-    <!-- Main Body Layout -->
     <div class="app-body">
         <main class="main-content-canvas">
-            
+
             <!-- The Clean Input Canvas Workspace -->
             <div class="creation-card" id="creation-workspace" style="display: flex; flex-direction: column; align-items: center; justify-content: center; border: none; background: transparent; box-shadow: none;">
-                
+
                 <h1 class="minimal-title">⚔️ Start Duel ⚔️</h1>
 
                 <div class="premium-input-container">
-
-                    <label class="premium-label" for="argument-point">
-
-                        Topic
-
-
-                    </label>
-
-                 <input type="text" id="argument-point"  class="premium-input" placeholder="eg: Ronaldo is better than messi  ">
-
+                    <label class="premium-label" for="argument-point">Topic</label>
+                    <input type="text" id="argument-point" class="premium-input" placeholder="eg: Ronaldo is better than messi  ">
                 </div>
 
-                <!-- Trigger Action Button styled elegantly below -->
                 <button class="arena-submit-btn" id="btn-ignite" style="max-width: 500px; margin-top: 2rem; padding: 1.1rem;">
-
                     <span> Start </span>
-
                 </button>
 
             </div>
 
-            <!-- Matchmaking Radar State (Kept intact so the screen shifts to loading nicely) -->
+            <!-- Matchmaking Radar State -->
             <div class="radar-container" id="matchmaking-status" style="display: none;">
                 <div class="radar-circle">
                     <div class="radar-pulse"></div>
@@ -139,27 +161,25 @@
                 <h3 class="radar-title">Searching the Arena Grid...</h3>
                 <div class="radar-timer" id="timer-display">03:00</div>
                 <p class="radar-hint">Your topic is locked. We are tracking an opponent...</p>
+
+                <!-- MOVED HERE: only shows once matchmaking-status is visible -->
+                <button class="radar-invite-btn" id="btn-invite-friend">
+                    <span class="material-symbols-outlined">ios_share</span>
+                    <span>Invite</span>
+                </button>
+
+                <br>
+                <br>
+
                 <button class="radar-cancel-btn" id="btn-cancel-queue">Abort Search</button>
             </div>
-
-
-            <button class="radar-invite-btn" id="btn-invite-friend">
-                <span class="material-symbols-outlined">ios_share</span>
-                
-                <span>Invite</span>
-
-            </button>
-
-
 
         </main>
     </div>
 
-
-
     <script src="/socket.io/socket.io.js"></script>
 
-        <script type="module">
+    <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
         import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
 
@@ -176,156 +196,129 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
-        // ROUTING CHECK: Check if the user is logged in
         onAuthStateChanged(auth, (user) => {
             if (!user) {
-                // Not logged in? Redirect immediately to sign-in page
                 window.location.href = "Sigh-in";
             }
         });
 
-        // Handle Log Out click
         document.getElementById('logout-btn').addEventListener('click', () => {
             signOut(auth).then(() => {
                 window.location.href = "Sigh-in.html";
             });
         });
-
     </script>
 
-
-
     <script>
-    const socket = io();
+        const socket = io();
 
-    const btnIgnite = document.getElementById('btn-ignite');
-    const workspace = document.getElementById('creation-workspace');
-    const matchmakingStatus = document.getElementById('matchmaking-status');
-    const timerDisplay = document.getElementById('timer-display');
-    const btnCancel = document.getElementById('btn-cancel-queue');
-    const btnInviteMatch = document.getElementById('btn-invite-friend'); // matches your existing button id
-    const argumentInput = document.getElementById('argument-point');
+        const btnIgnite = document.getElementById('btn-ignite');
+        const workspace = document.getElementById('creation-workspace');
+        const matchmakingStatus = document.getElementById('matchmaking-status');
+        const timerDisplay = document.getElementById('timer-display');
+        const btnCancel = document.getElementById('btn-cancel-queue');
+        const btnInviteMatch = document.getElementById('btn-invite-friend');
+        const argumentInput = document.getElementById('argument-point');
 
-    let countdownInterval;
-    let myCurrentMatchId = null; // the id of the duel WE created, once server confirms it
+        let countdownInterval;
+        let myCurrentMatchId = null;
 
-    function startTimer(durationInSeconds) {
-        let timeRemaining = durationInSeconds;
-        countdownInterval = setInterval(() => {
-            let minutes = Math.floor(timeRemaining / 60);
-            let seconds = timeRemaining % 60;
-            minutes = minutes < 10 ? '0' + minutes : minutes;
-            seconds = seconds < 10 ? '0' + seconds : seconds;
-            timerDisplay.textContent = `${minutes}:${seconds}`;
-            if (--timeRemaining < 0) {
-                clearInterval(countdownInterval);
-                timerDisplay.textContent = "Expired";
+        function startTimer(durationInSeconds) {
+            let timeRemaining = durationInSeconds;
+            countdownInterval = setInterval(() => {
+                let minutes = Math.floor(timeRemaining / 60);
+                let seconds = timeRemaining % 60;
+                minutes = minutes < 10 ? '0' + minutes : minutes;
+                seconds = seconds < 10 ? '0' + seconds : seconds;
+                timerDisplay.textContent = `${minutes}:${seconds}`;
+                if (--timeRemaining < 0) {
+                    clearInterval(countdownInterval);
+                    timerDisplay.textContent = "Expired";
+                }
+            }, 1000);
+        }
+
+        btnIgnite.addEventListener('click', () => {
+            const thesis = argumentInput.value.trim();
+
+            if (!thesis) {
+                alert('Please enter a topic before the battle ');
+                return;
             }
-        }, 1000);
-    }
 
-    btnIgnite.addEventListener('click', () => {
-        const thesis = argumentInput.value.trim();
-
-        if (!thesis) {
-            alert('Please enter a topic before the battle ');
-            return;
-        }
-
-        workspace.style.display = 'none';
-        matchmakingStatus.style.display = 'flex';
-
-        startTimer(180);
-
-        socket.emit('join_queue', {
-            mode: '1v1',
-            thesis: thesis
-        });
-    });
-
-    // Server confirms our duel's own ID right after creating it
-
-    socket.on('duel_created', (data) => {
-        myCurrentMatchId = data.matchId;
-    });
-
-    // Invite button — only works once we have a matchId from the server
-
-    btnInviteMatch.addEventListener('click', () => {
-        if (!myCurrentMatchId) {
-            alert('Still setting up your duel — try again in a second.');
-            return;
-        }
-
-        const thesis = argumentInput.value.trim();
-        const inviteLink = `${window.location.origin}/Create?matchId=${myCurrentMatchId}`;
-
-        if (navigator.share) {
-            navigator.share({
-
-                title: 'Want to challenge me ? ',
-
-                text: `Debate me on: "${thesis}"`,
-                url: inviteLink
-
-            }).catch(() => {});
-
-        } else {
-            navigator.clipboard.writeText(inviteLink).then(() => {
-
-                alert('Invite link copied to clipboard!\n' + inviteLink);
-
-            });
-        }
-    });
-
-    btnCancel.addEventListener('click', () => {
-
-        clearInterval(countdownInterval);
-
-        // Tell server to remove this duel from the queue
-
-        if (myCurrentMatchId) {
-            socket.emit('leave_queue', { matchId: myCurrentMatchId });
-        }
-
-        matchmakingStatus.style.display = 'none';
-        workspace.style.display = 'flex';
-        myCurrentMatchId = null;
-
-    });
-
-    // If THIS page load is User B opening an invite link
-
-    window.addEventListener('DOMContentLoaded', () => {
-        
-        const params = new URLSearchParams(window.location.search);
-        const inviteMatchId = params.get('matchId');
-
-        if (inviteMatchId) {
             workspace.style.display = 'none';
             matchmakingStatus.style.display = 'flex';
-            timerDisplay.textContent = "Joining...";
 
-            socket.emit('join_match', { matchId: inviteMatchId });
-        }
-    });
+            startTimer(180);
 
-    // If the duel was already claimed/cancelled before User B clicked
-    socket.on('match_error', (data) => {
-        alert(data.message);
-        window.location.href = '/Create';
-    });
+            socket.emit('join_queue', {
+                mode: '1v1',
+                thesis: thesis
+            });
+        });
 
-    // Fires for BOTH creator and challenger once paired
-    socket.on('match_found', (data) => {
-        clearInterval(countdownInterval);
-        window.location.href = `/live?match=${data.matchId}&role=${data.role}`;
-    });
+        socket.on('duel_created', (data) => {
+            myCurrentMatchId = data.matchId;
+        });
 
-</script>
+        btnInviteMatch.addEventListener('click', () => {
+            if (!myCurrentMatchId) {
+                alert('Still setting up your duel — try again in a second.');
+                return;
+            }
 
+            const thesis = argumentInput.value.trim();
+            const inviteLink = `${window.location.origin}/Create?matchId=${myCurrentMatchId}`;
 
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Want to challenge me ? ',
+                    text: `Debate me on: "${thesis}"`,
+                    url: inviteLink
+                }).catch(() => {});
+            } else {
+                navigator.clipboard.writeText(inviteLink).then(() => {
+                    alert('Invite link copied to clipboard!\n' + inviteLink);
+                });
+            }
+        });
+
+        btnCancel.addEventListener('click', () => {
+            clearInterval(countdownInterval);
+
+            if (myCurrentMatchId) {
+                socket.emit('leave_queue', { matchId: myCurrentMatchId });
+            }
+
+            matchmakingStatus.style.display = 'none';
+            workspace.style.display = 'flex';
+            myCurrentMatchId = null;
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const inviteMatchId = params.get('matchId');
+
+            if (inviteMatchId) {
+                workspace.style.display = 'none';
+                matchmakingStatus.style.display = 'flex';
+                timerDisplay.textContent = "Joining...";
+
+                socket.emit('join_match', { matchId: inviteMatchId });
+            }
+        });
+
+        socket.on('match_error', (data) => {
+            alert(data.message);
+            window.location.href = '/Create';
+        });
+
+        socket.on('match_found', (data) => {
+            clearInterval(countdownInterval);
+            window.location.href = `/live?match=${data.matchId}&role=${data.role}`;
+        });
+    </script>
 
 </body>
 </html>
+
