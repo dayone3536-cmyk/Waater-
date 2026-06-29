@@ -485,7 +485,7 @@
         height:24px;
         border-radius:50%;
         background:#fff;
-        
+
         box-shadow:0 0 8px rgba(255,255,255,.8);
         transform:translate(-50%,-50%);
         transition:left .6s cubic-bezier(.4,0,.2,1);
@@ -1285,20 +1285,25 @@
         showSwipeHint();
     });
 
-    let hasVoted = false;
+    let currentVote = null; // 'pro' or 'against', null = not voted yet
     let lastPct = 50;
 
     function castVote(side, evt){
 
-        if (hasVoted) return;
-        hasVoted = true;
+        if (currentVote === side) return; // already voted this side
+        currentVote = side;
 
         const btn = evt.currentTarget;
-        btn.classList.add('pulse' , 'voted');
+        btn.classList.add('pulse', 'voted');
 
         document.querySelectorAll('.vote-avatar-btn').forEach(b => {
 
-            if (b !== btn) b.style.opacity = '0.4';
+            if (b !== btn) {
+                b.style.opacity = '0.4';
+                b.classList.remove('voted');
+            } else {
+                b.style.opacity = '1';
+            }
 
         });
 
@@ -1324,12 +1329,6 @@
 
     // data: { proVotes, againstVotes }
 
-    const marker = document.getElementById('momentumMarker');
-
-    if (marker) marker.style.left = rightPct + '%';
-
-
-
         const total = data.proVotes + data.againstVotes;
 
         const rightPct = total === 0 ? 50 : Math.round((data.proVotes / total) * 100);
@@ -1337,6 +1336,9 @@
 
         const fill = document.getElementById('momentumFill');
         if (fill) fill.style.width = rightPct + '%';
+
+        const marker = document.getElementById('momentumMarker');
+        if (marker) marker.style.left = rightPct + '%';
 
         const leftEl = document.getElementById('leftPct');
         const rightEl = document.getElementById('rightPct');
@@ -1361,8 +1363,6 @@
             lastPct = rightPct;
         }
     });
-
-
 
 
     // Also add match ended handler (for when a player disconnects mid-match)
