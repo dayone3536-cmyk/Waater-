@@ -321,7 +321,7 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
             return;
         }
 
-        // executeAutomaticTimeout
+//   leave_room 
 
         const duel =
             globalMatchmakingQueue[index];
@@ -348,11 +348,14 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
             challengerSocketId: socket.id,
             spectators: [],
             createdAt: Date.now(),
-
-            pendingDisconnect: {           // ADD THIS
+ 
+            pendingDisconnect: {
                 creator: null,
                 challenger: null
-            }
+            },
+
+            votes: {} 
+
         });
 
         supabase.from('past_matches').insert({
@@ -420,7 +423,7 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
     });
 
 
-// activeMatches
+// activeMatches join_match
 
     socket.on('join_room', (data) => {
 
@@ -496,15 +499,44 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
         socket.leave(roomId);
 
         const match = activeMatches.find(m => m.roomId === roomId);
-        
+
         if (match) {
+
             match.spectators = match.spectators.filter(id => id !== socket.id);
+            delete match.votes[socket.id];   // ADD THIS
 
             io.to(match.roomId).emit('spectator_count_changed', { count: match.spectators.length });
             broadcastLiveMatches();
         }
 
-    }); 
+    });
+
+
+
+    socket.on('cast_vote', (data) => {
+
+        const roomId = typeof data === 'string' ? data : data?.roomId;
+        const side = data?.side;
+
+        if (!roomId || !['pro', 'against'].includes(side)) return;
+
+        const match = activeMatches.find(m => m.roomId === roomId);
+        if (!match) return;
+
+        match.votes[socket.id] = side; // overwrite handles vote-switching automatically
+
+        const tally = { pro: 0, against: 0 };
+        Object.values(match.votes).forEach(v => tally[v]++);
+
+        io.to(roomId).emit('vote_update', {
+            proVotes: tally.pro,
+            againstVotes: tally.against
+
+        });
+
+    });
+
+
 
 
 
@@ -614,7 +646,7 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
             }
         }, 1000);
 
-        // Keep track of this room's timer so we can reset it when they send an argument
+        // Keep track of this room's timer so we can reset it when they send an argument else 
         matchTimers[roomId] = { intervalId, activePlayerSocketId };
     }
 
@@ -700,6 +732,7 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
 
             } else {
                 match.spectators = match.spectators.filter(id => id !== socket.id);
+                delete match.votes[socket.id];
                 io.to(match.roomId).emit('spectator_count_changed', { count: match.spectators.length });
             }
 
