@@ -336,6 +336,68 @@
         transform:translateX(-50%) translateY(0);
     }
 
+    .vote-bar{
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        gap:40px;
+        width:100%;
+        padding:8px 0;
+    }
+
+    .vote-emoji-btn{
+        background:rgba(255,255,255,0.04);
+        border:1px solid rgba(255,255,255,0.08);
+        backdrop-filter:blur(10px);
+        border-radius:20px;
+        cursor:pointer;
+        padding:10px 22px;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap:4px;
+        transition:transform .15s ease, background .2s ease, border-color .2s ease;
+    }
+
+    .vote-emoji-btn .emoji{
+        font-size:1.8rem;
+        line-height:1;
+    }
+
+    .vote-emoji-btn .count{
+        font-size:.7rem;
+        color:#9ca3af;
+        font-weight:600;
+    }
+
+    .vote-emoji-btn:hover{
+        transform:translateY(-3px);
+        background:rgba(255,255,255,0.08);
+    }
+
+    .vote-emoji-btn:active{
+        transform:scale(.92);
+    }
+
+    .vote-emoji-btn.selected{
+        border-color:#46c2ff;
+        background:rgba(70,194,255,0.1);
+    }
+
+    .vote-emoji-btn.selected .count{
+        color:#46c2ff;
+    }
+
+    .vote-emoji-btn:disabled{
+        cursor:default;
+    }
+
+    .vote-emoji-btn:disabled:hover{
+        transform:none;
+        background:rgba(255,255,255,0.04);
+    }
+
+
 
 
     @media (max-width: 600px){
@@ -972,7 +1034,7 @@
         
         if (visualClock) {
             visualClock.innerText = `${currentSeconds}s`;
-            visualClock.style.color = "#f59e0b"; // Default Amber warning color
+            visualClock.style.color = "#f59e0b"; // Default Amber warning color you_are_spectator
         }
 
         turnUIInterval = setInterval(() => {
@@ -1027,13 +1089,53 @@
         const bottomBar = document.querySelector('.bottom-bar');
 
         bottomBar.innerHTML = `
-            <div style="width:100%; text-align:center; color:#9ca3af; font-size:.9rem; padding:10px 0;">
-                👁 Spectating — swipe left/right for next debate
+            <div class="vote-bar">
+                <button class="vote-emoji-btn" id="voteWBtn">
+                    <span class="emoji">🏆</span>
+                    <span class="count" id="countW">0</span>
+                </button>
+                <button class="vote-emoji-btn" id="voteLBtn">
+                    <span class="emoji">💀</span>
+                    <span class="count" id="countL">0</span>
+                </button>
             </div>
         `;
 
+        document.getElementById('voteWBtn').addEventListener('click', () => castVote('W'));
+        document.getElementById('voteLBtn').addEventListener('click', () => castVote('L'));
+
         showSwipeHint();
     });
+
+    let hasVoted = false;
+
+    function castVote(side){
+        if (hasVoted) return;
+        hasVoted = true;
+
+        const wBtn = document.getElementById('voteWBtn');
+        const lBtn = document.getElementById('voteLBtn');
+
+        wBtn.disabled = true;
+        lBtn.disabled = true;
+
+        if (side === 'W') wBtn.classList.add('selected');
+        else lBtn.classList.add('selected');
+
+        socket.emit('cast_vote', { roomId: currentRoomId, side });
+    }
+
+    socket.on('vote_update', (data) => {
+        // data: { wVotes, lVotes }
+        const wCount = document.getElementById('countW');
+        const lCount = document.getElementById('countL');
+        if (wCount) wCount.textContent = data.wVotes;
+        if (lCount) lCount.textContent = data.lVotes;
+        
+    });
+
+
+
 
     // Also add match ended handler (for when a player disconnects mid-match)
     socket.on('match_ended', (data) => {
