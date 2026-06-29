@@ -231,7 +231,9 @@
         70%  { box-shadow: 0 0 0 14px rgba(255,77,77,0); }
         100% { box-shadow: 0 0 0 0 rgba(255,77,77,0); }
 
-    }
+    } 
+
+    /* momentum */
 
     .typing-indicator {
 
@@ -345,7 +347,50 @@
         padding:8px 0;
     }
 
-    .vote-emoji-btn{
+
+    .vote-avatar-btn{
+        background:none;
+        border:none;
+        outline:none;
+        -webkit-tap-highlight-color: transparent;
+        cursor:pointer;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap:4px;
+        flex-shrink:0;
+        transition:transform .15s ease;
+    }
+
+    .vote-avatar-btn:hover{ transform:translateY(-2px); }
+    .vote-avatar-btn:active{ transform:scale(.9); }
+
+
+
+    .vote-avatar-btn .ring{
+        width:44px;
+        height:44px;
+        border-radius:50%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size:1.2rem;
+        box-shadow:0 0 0 0 rgba(70,194,255,.5);
+        
+
+    }
+
+    .vote-avatar-btn.left-side .ring{
+        background:#000000;   /* matches your .left bubble */
+    }
+
+    .vote-avatar-btn.right-side .ring{
+        background:#2563eb; /* matches your .right bubble */
+    }
+
+
+
+    /* .vote-emoji-btn{
         background:rgba(255,255,255,0.04);
         border:1px solid rgba(255,255,255,0.08);
         backdrop-filter:blur(10px);
@@ -395,8 +440,80 @@
     .vote-emoji-btn:disabled:hover{
         transform:none;
         background:rgba(255,255,255,0.04);
+    } */
+
+    .momentum-bar{
+
+        position:relative;
+        height:6px;
+        border-radius:999px;
+        background:#1f2635;
+        overflow:hidden;
+        margin:0 20px;
+
+        flex:1;
+
     }
 
+    .momentum-fill{
+
+        position:absolute;
+        top:0; left:0;
+        height:100%;
+        width:50%;
+        border-radius:999px;
+        background:linear-gradient(90deg,#6d5dfc,#46c2ff);
+        transition:width .6s cubic-bezier(.4,0,.2,1);
+    }
+
+    .momentum-row{
+        display:flex;
+        align-items:center;
+        gap:0;
+        padding:4px 0 2px;
+    }
+
+
+    @keyframes votePulse{
+        0%{ box-shadow:0 0 0 0 rgba(70,194,255,.6); }
+        100%{ box-shadow:0 0 0 16px rgba(70,194,255,0); }
+    }
+
+    .vote-pct{
+        font-size:.7rem;
+        font-weight:700;
+        color:#9ca3af;
+        min-width:30px;
+        text-align:center;
+    }
+
+    .crowd-lean{
+        text-align:center;
+        font-size:.72rem;
+        color:#9ca3af;
+        padding-bottom:4px;
+        min-height:14px;
+        transition:opacity .3s;
+    }
+
+    .crowd-lean.shift{
+        color:#46c2ff;
+    }
+
+    .float-vote{
+        position:fixed;
+        pointer-events:none;
+        font-size:1.1rem;
+        font-weight:700;
+        color:#46c2ff;
+        animation:floatUp 1s ease-out forwards;
+        z-index:1000;
+    }
+
+    @keyframes floatUp{
+        0%{ opacity:1; transform:translateY(0); }
+        100%{ opacity:0; transform:translateY(-50px); }
+    }
 
 
 
@@ -1085,53 +1202,107 @@
     socket.on('you_are_spectator', () => {
 
         isSpectator = true;
-
         const bottomBar = document.querySelector('.bottom-bar');
 
         bottomBar.innerHTML = `
-            <div class="vote-bar">
-                <button class="vote-emoji-btn" id="voteWBtn">
-                    <span class="emoji">🏆</span>
-                    <span class="count" id="countW">0</span>
-                </button>
-                <button class="vote-emoji-btn" id="voteLBtn">
-                    <span class="emoji">💀</span>
-                    <span class="count" id="countL">0</span>
-                </button>
+
+            <div style="width:100%;">
+
+                <div class="momentum-row">
+                    <button class="vote-avatar-btn left-side" id="voteLeftBtn">
+
+                        <div class="ring"></div>
+
+                        <span class="vote-pct" id="leftPct">50%</span>
+
+                    </button>
+
+                    <div class="momentum-bar">
+
+                        <div class="momentum-fill" id="momentumFill"></div>
+
+                    </div>
+
+                    <button class="vote-avatar-btn right-side" id="voteRightBtn">
+
+                        <div class="ring"></div>
+                        <span class="vote-pct" id="rightPct">50%</span>
+
+                    </button>
+
+
+
+                </div>
+                <div class="crowd-lean" id="crowdLean">Be the first to vote</div>
             </div>
         `;
 
-        document.getElementById('voteWBtn').addEventListener('click', () => castVote('W'));
-        document.getElementById('voteLBtn').addEventListener('click', () => castVote('L'));
+
+            document.getElementById('voteLeftBtn').addEventListener('click', (e) => castVote('against', e));
+            document.getElementById('voteRightBtn').addEventListener('click', (e) => castVote('pro', e));
+
 
         showSwipeHint();
     });
 
     let hasVoted = false;
+    let lastPct = 50;
 
-    function castVote(side){
+    function castVote(side, evt){
+
         if (hasVoted) return;
         hasVoted = true;
 
-        const wBtn = document.getElementById('voteWBtn');
-        const lBtn = document.getElementById('voteLBtn');
+        const btn = evt.currentTarget;
+        btn.classList.add('pulse');
 
-        wBtn.disabled = true;
-        lBtn.disabled = true;
-
-        if (side === 'W') wBtn.classList.add('selected');
-        else lBtn.classList.add('selected');
+        // floating +1 feedback right where they tapped
+        const rect = btn.getBoundingClientRect();
+        const float = document.createElement('div');
+        float.className = 'float-vote';
+        float.textContent = '+1';
+        float.style.left = rect.left + rect.width / 2 - 10 + 'px';
+        float.style.top = rect.top + 'px';
+        document.body.appendChild(float);
+        setTimeout(() => float.remove(), 1000);
 
         socket.emit('cast_vote', { roomId: currentRoomId, side });
     }
 
     socket.on('vote_update', (data) => {
-        // data: { wVotes, lVotes }
-        const wCount = document.getElementById('countW');
-        const lCount = document.getElementById('countL');
-        if (wCount) wCount.textContent = data.wVotes;
-        if (lCount) lCount.textContent = data.lVotes;
-        
+
+    // data: { proVotes, againstVotes }
+
+        const total = data.proVotes + data.againstVotes;
+
+        const rightPct = total === 0 ? 50 : Math.round((data.proVotes / total) * 100);
+        const leftPct = 100 - rightPct;
+
+        const fill = document.getElementById('momentumFill');
+        if (fill) fill.style.width = rightPct + '%';
+
+        const leftEl = document.getElementById('leftPct');
+        const rightEl = document.getElementById('rightPct');
+        if (leftEl) leftEl.textContent = leftPct + '%';
+        if (rightEl) rightEl.textContent = rightPct + '%';
+
+        const lean = document.getElementById('crowdLean');
+        if (lean && total > 0) {
+            const leadingSide = rightPct >= leftPct ? 'Right' : 'Left';
+            const margin = Math.abs(rightPct - leftPct);
+
+            if (margin < 5) {
+                lean.textContent = `🔥 Dead even — ${total} votes in`;
+            } else {
+                lean.textContent = `Crowd is leaning ${leadingSide} (${Math.max(rightPct,leftPct)}%) · ${total} votes`;
+            }
+
+            if (rightPct !== lastPct) {
+                lean.classList.add('shift');
+                setTimeout(() => lean.classList.remove('shift'), 600);
+            }
+            lastPct = rightPct;
+        }
     });
 
 
