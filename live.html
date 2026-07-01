@@ -740,12 +740,6 @@
         placeholder="Present your argument..."
     ></textarea>
 
-    <button class="send-btn" id="sendBtn" type="button">
-
-        Send
-
-    </button>
-
 
     <button class="mic-btn" id="micBtn" type="button" title="Hold to talk">
         🎤
@@ -838,7 +832,7 @@
 
     let isSpectator = false;
 
-        // opponent_typing typingBubble 
+        // opponent_typing typingBubble  sendBtn  messageInput
     
 
     console.log("the join_room socket has been sent to the server")
@@ -978,23 +972,33 @@
         console.log("roomId =", roomId);
         console.log("role =", role);
 
-        const sendBtn =
-            document.getElementById('sendBtn');
 
         const messageInput =
             document.getElementById('message');
+
+        function sendMessage() {
+
+            if (messageInput.value.trim() === "") return;
+
+            clearTimeout(typingTimeout);
+            socket.emit('stop_typing', { roomId });
+
+            socket.emit(
+                'send_argument',
+                { roomId, message: messageInput.value }
+            );
+
+            messageInput.value = '';
+        }
+
 
         messageInput.addEventListener('keydown', (event) => {
 
             if (event.key === 'Enter' && !event.shiftKey) {
 
                     event.preventDefault(); // stops new line
-
-                    if (messageInput.value.trim() != "") {
-
-                        sendBtn.click();
-
-                    }
+                    sendMessage();
+        
 
                 }
 
@@ -1080,6 +1084,8 @@
 
 // recognition.onresult chat.appendChild(div) opponent_typing you_are_spectator
 
+// messageInput
+
 
     const chat =
         document.getElementById('chat');
@@ -1138,41 +1144,6 @@
     });
 
     // Also stop typing indicator immediately when message is sent
-
-    sendBtn.onclick = () => {
-
-        clearTimeout(typingTimeout);
-
-        socket.emit('stop_typing', { roomId });
-
-
-        socket.emit(
-            'send_argument',
-            { roomId, message: messageInput.value }
-
-        );
-
-        messageInput.value = '';
-    };
-
-
-
-    // sendBtn.onclick = () => {
-
-    //     socket.emit(
-    //         'send_argument',
-    //         {
-    //             roomId,
-    //             message:
-    //                 messageInput.value
-    //         }
-    //     );
-
-    //     messageInput.value = '';
-    // };
-
-
-
 
 
     socket.on(
