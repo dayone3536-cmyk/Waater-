@@ -206,6 +206,20 @@ app.post('/match/:roomId/react', express.json(), async (req, res) => {
     }
 });
 
+app.get('/past-matches/:roomId/votes', async (req, res) => {
+    const { data, error } = await supabase
+        .from('match_votes')
+        .select('side')
+        .eq('room_id', req.params.roomId);
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    const tally = { pro: 0, against: 0 };
+    (data || []).forEach(v => tally[v.side]++);
+
+    res.json(tally);
+});
+
 
 
 // app.get('/replay', (req, res) => {
@@ -300,7 +314,7 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
     });
 
 
-    socket.on('join_match', (data) => { //macthID : macthID 
+    socket.on('join_match', (data) => { //macthID : macthID  cast_vote
 
         if (!data || !data.matchId) {
             return;
@@ -489,7 +503,27 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
                 socket.emit('match_history', data || []);
             });
 
+        supabase
+            .from('match_votes')
+            .select('side')
+            .eq('room_id', roomId)
+            .then(({ data, error }) => {
+                if (error) {
+                    console.error('Failed to load vote tally:', error);
+                    return;
+                }
+                const tally = { pro: 0, against: 0 };
+                (data || []).forEach(v => tally[v.side]++);
+
+                socket.emit('vote_update', {
+                    proVotes: tally.pro,
+                    againstVotes: tally.against
+                });
+            });
+
     });
+
+
 
    socket.on('leave_room', (data) => {
 
@@ -503,7 +537,7 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
         if (match) {
 
             match.spectators = match.spectators.filter(id => id !== socket.id);
-            delete match.votes[socket.id];   // ADD THIS
+            delete match.votes[socket.id];   // ADD THIS 
 
             io.to(match.roomId).emit('spectator_count_changed', { count: match.spectators.length });
             broadcastLiveMatches();
@@ -513,7 +547,7 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
 
 
 
-    socket.on('cast_vote', (data) => {
+    socket.on('cast_vote', async (data) => {
 
         const roomId = typeof data === 'string' ? data : data?.roomId;
         const side = data?.side;
@@ -523,7 +557,16 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
         const match = activeMatches.find(m => m.roomId === roomId);
         if (!match) return;
 
-        match.votes[socket.id] = side; // overwrite handles vote-switching automatically
+        match.votes[socket.id] = side; // keep for the fast broadcast
+
+        const { error } = await supabase
+            .from('match_votes')
+            .upsert(
+                { room_id: roomId, user_id: socket.id, side },
+                { onConflict: 'room_id,user_id' }
+            );
+
+        if (error) console.error('Failed to save vote:', error);
 
         const tally = { pro: 0, against: 0 };
         Object.values(match.votes).forEach(v => tally[v]++);
@@ -531,10 +574,11 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
         io.to(roomId).emit('vote_update', {
             proVotes: tally.pro,
             againstVotes: tally.against
-
         });
 
     });
+
+
 
 
 
@@ -719,7 +763,7 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
                         (role === 'challenger' && match.challengerSocketId === socket.id);
 
                     if (!stillSameSocket) return;
-
+ 
                     archiveMatch(match, 'disconnected');
 
                     io.to(match.roomId).emit('match_ended', { reason: 'A debater disconnected.' });

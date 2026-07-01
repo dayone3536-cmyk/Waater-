@@ -936,6 +936,10 @@
 
         dynamic_title.textContent = match ? match.thesis : 'Replay';
 
+        const votesRes = await fetch(`/past-matches/${roomId}/votes`);
+        const tally = await votesRes.json();
+        renderStaticVoteTally(tally.pro, tally.against);
+
         // you_are_spectator
         const argsRes = await fetch(`/past-matches/${roomId}/arguments`);
         const args = await argsRes.json();
@@ -963,9 +967,9 @@
 
 
         chat.scrollTop = 0;
-    }
+}
 
-// chat
+
 
 
     
@@ -1082,7 +1086,7 @@
     }
 
 
-// recognition.onresult chat.appendChild(div) opponent_typing you_are_spectator
+// recognition.onresult chat.appendChild(div) opponent_typing you_are_spectator setupVotingBar
 
 // messageInput
 
@@ -1282,6 +1286,32 @@
             votingBar.classList.add('view-only'); // debaters see it, can't click it
         }
     }
+
+
+
+
+    function renderStaticVoteTally(proVotes, againstVotes) {
+
+        const votingBar = document.getElementById('votingBar');
+        votingBar.style.display = 'block';
+        votingBar.classList.add('view-only');
+
+        const total = proVotes + againstVotes;
+        const rightPct = total === 0 ? 50 : Math.round((proVotes / total) * 100);
+        const leftPct = 100 - rightPct;
+
+        document.getElementById('momentumFill').style.width = rightPct + '%';
+        document.getElementById('momentumMarker').style.left = rightPct + '%';
+        document.getElementById('leftPct').textContent = leftPct + '%';
+        document.getElementById('rightPct').textContent = rightPct + '%';
+
+        const lean = document.getElementById('crowdLean');
+        lean.textContent = total > 0
+            ? `Final result: ${Math.max(rightPct, leftPct)}% · ${total} votes`
+            : 'No votes were cast in this debate';
+    }
+
+    
 
 
 
