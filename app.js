@@ -136,6 +136,39 @@ app.get('/past-matches/:roomId/arguments', async (req, res) => {
     res.json(data);
 });
 
+app.post('/past-matches/:roomId/vote', express.json(), async (req, res) => {
+    const { roomId } = req.params;
+    const { side } = req.body;
+    const userId = req.cookies.anonId; // same anonymous identity you already use for reactions
+
+    if (!['pro', 'against'].includes(side)) {
+        return res.status(400).json({ error: 'Invalid side' });
+    }
+
+    const { error } = await supabase
+        .from('match_votes')
+        .upsert(
+            { room_id: roomId, user_id: userId, side },
+            { onConflict: 'room_id,user_id' }
+        );
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    const { data, error: fetchErr } = await supabase
+        .from('match_votes')
+        .select('side')
+        .eq('room_id', roomId);
+
+    if (fetchErr) return res.status(500).json({ error: fetchErr.message });
+
+    const tally = { pro: 0, against: 0 };
+    (data || []).forEach(v => tally[v.side]++);
+
+    res.json({ ...tally, myVote: side });
+});
+
+
+
 
 app.post('/match/:roomId/react', express.json(), async (req, res) => {
     const { roomId } = req.params;
@@ -206,10 +239,13 @@ app.post('/match/:roomId/react', express.json(), async (req, res) => {
     }
 });
 
+
 app.get('/past-matches/:roomId/votes', async (req, res) => {
+    const userId = req.cookies.anonId;
+
     const { data, error } = await supabase
         .from('match_votes')
-        .select('side')
+        .select('side, user_id')
         .eq('room_id', req.params.roomId);
 
     if (error) return res.status(500).json({ error: error.message });
@@ -217,14 +253,10 @@ app.get('/past-matches/:roomId/votes', async (req, res) => {
     const tally = { pro: 0, against: 0 };
     (data || []).forEach(v => tally[v.side]++);
 
-    res.json(tally);
+    const mine = (data || []).find(v => v.user_id === userId);
+
+    res.json({ ...tally, myVote: mine ? mine.side : null });
 });
-
-
-
-// app.get('/replay', (req, res) => {
-//     res.sendFile(__dirname + '/replay.html');
-// });
 
 
 

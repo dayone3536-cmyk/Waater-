@@ -480,9 +480,9 @@
         position:absolute;
         top:50%;
         left:50%;
-        width:4px;
+        width:5px;
 
-        height:44px;
+        height:64px;   /* was 44px — increase this to make it taller */
         border-radius:50%;
         background:#fff;
 
@@ -491,7 +491,9 @@
         transition:left .6s cubic-bezier(.4,0,.2,1);
         z-index:2;
 
-    }
+}
+
+
 
 
     .momentum-fill{
@@ -774,7 +776,7 @@
 
 <script src="/socket.io/socket.io.js"></script>
 
-<!-- <script type="module">
+<script type="module">
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
     import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
@@ -809,7 +811,7 @@
     // });
     
 
-</script> -->
+</script>
 
 
 <script>
@@ -832,7 +834,7 @@
 
     let isSpectator = false;
 
-        // opponent_typing typingBubble  sendBtn  messageInput
+        // opponent_typing typingBubble  sendBtn  messageInput  loadReplayMode
     
 
     console.log("the join_room socket has been sent to the server")
@@ -929,45 +931,94 @@
         document.querySelector('.bottom-bar').style.display = 'none';
 
         const matchesRes = await fetch('/past-matches');
-
         const matches = await matchesRes.json();
-
         const match = matches.find(m => m.room_id === roomId);
-
         dynamic_title.textContent = match ? match.thesis : 'Replay';
 
         const votesRes = await fetch(`/past-matches/${roomId}/votes`);
         const tally = await votesRes.json();
-        renderStaticVoteTally(tally.pro, tally.against);
+        renderReplayVoteBar(roomId, tally);
 
-        // you_are_spectator
         const argsRes = await fetch(`/past-matches/${roomId}/arguments`);
         const args = await argsRes.json();
 
         args.forEach(arg => {
-
             const div = document.createElement('div');
-
             div.classList.add('argument');
-
             div.classList.add(arg.sender_role === 'creator' ? 'right' : 'left');
-
             div.textContent = arg.message;
-
-            if (typingBubble) {
-
-                typingBubble.remove();
-                typingBubble = null;
-            }
-
-
             chat.appendChild(div);
-            
         });
 
-
         chat.scrollTop = 0;
-}
+    }
+
+    function renderReplayVoteBar(roomId, tally) {
+
+        const votingBar = document.getElementById('votingBar');
+        votingBar.style.display = 'block';
+        votingBar.classList.remove('view-only'); // <-- key change: replay voting is now interactive
+
+        updateVoteDisplay(tally.pro, tally.against);
+
+        currentVote = tally.myVote || null;
+        if (currentVote) {
+            const votedBtn = currentVote === 'pro'
+                ? document.getElementById('voteRightBtn')
+                : document.getElementById('voteLeftBtn');
+            votedBtn.classList.add('voted');
+        }
+
+        document.getElementById('voteLeftBtn').onclick  = (e) => castReplayVote(roomId, 'against', e);
+        document.getElementById('voteRightBtn').onclick = (e) => castReplayVote(roomId, 'pro', e);
+    }
+
+    function updateVoteDisplay(proVotes, againstVotes) {
+
+        const total = proVotes + againstVotes;
+        const rightPct = total === 0 ? 50 : Math.round((proVotes / total) * 100);
+        const leftPct = 100 - rightPct;
+
+        document.getElementById('momentumFill').style.width = rightPct + '%';
+        document.getElementById('momentumMarker').style.left = rightPct + '%';
+        document.getElementById('leftPct').textContent = leftPct + '%';
+        document.getElementById('rightPct').textContent = rightPct + '%';
+
+        document.getElementById('crowdLean').textContent = total > 0
+            ? `${Math.max(rightPct, leftPct)}% lean · ${total} votes`
+            : 'Be the first to vote';
+    }
+
+    async function castReplayVote(roomId, side, evt) {
+
+        if (currentVote === side) return;
+
+        const btn = evt.currentTarget;
+        document.querySelectorAll('.vote-avatar-btn').forEach(b => b.classList.remove('voted'));
+        btn.classList.add('voted');
+        currentVote = side;
+
+        const rect = btn.getBoundingClientRect();
+        const float = document.createElement('div');
+        float.className = 'float-vote';
+        float.textContent = '+1';
+        float.style.left = rect.left + rect.width / 2 - 10 + 'px';
+        float.style.top = rect.top + 'px';
+        document.body.appendChild(float);
+        setTimeout(() => float.remove(), 1000);
+
+        try {
+            const res = await fetch(`/past-matches/${roomId}/vote`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ side })
+            });
+            const tally = await res.json();
+            updateVoteDisplay(tally.pro, tally.against);
+        } catch (err) {
+            console.error('Vote failed:', err);
+        }
+    }
 
 
 
@@ -1182,63 +1233,66 @@
     let turnUIInterval;
 
 // The server tells us a new 60-second window has begun
-    socket.on('turn_started', (data) => {
-        const { activePlayerId, secondsLeft } = data;
-        const isMyTurn = (activePlayerId === socket.id);
+
+
+// make the timer here if the users priortize thats
+    // socket.on('turn_started', (data) => {
+    //     const { activePlayerId, secondsLeft } = data;
+    //     const isMyTurn = (activePlayerId === socket.id);
         
-        const statusLabel = document.getElementById('turn-status-text');
-        const visualClock = document.getElementById('countdown-clock');
-        const inputTextArea = document.getElementById('argument-input-box');
-        const submitBtn = document.getElementById('submit-argument-btn');
+    //     const statusLabel = document.getElementById('turn-status-text');
+    //     const visualClock = document.getElementById('countdown-clock');
+    //     const inputTextArea = document.getElementById('argument-input-box');
+    //     const submitBtn = document.getElementById('submit-argument-btn');
 
-        // Wipe any old local UI clock tickers running from the last turn
+    //     // Wipe any old local UI clock tickers running from the last turn
         
-        clearInterval(turnUIInterval);
+    //     clearInterval(turnUIInterval);
 
-        // Toggle interactive access based on whose turn it is
+    //     // Toggle interactive access based on whose turn it is
 
-        if (isMyTurn) {
-            statusLabel.innerHTML = `⚡ <span class="text-green-400 font-bold">YOUR TURN!</span> Reply before the clock hits zero!`;
-            if (inputTextArea) inputTextArea.disabled = false;
-            if (submitBtn) submitBtn.disabled = false;
-        } else {
-            statusLabel.innerHTML = `⏳ Opponent is drafting a counter-argument...`;
-            if (inputTextArea) inputTextArea.disabled = true; // Lock their keyboard!
-            if (submitBtn) submitBtn.disabled = true;
-        }
+    //     if (isMyTurn) {
+    //         statusLabel.innerHTML = `⚡ <span class="text-green-400 font-bold">YOUR TURN!</span> Reply before the clock hits zero!`;
+    //         if (inputTextArea) inputTextArea.disabled = false;
+    //         if (submitBtn) submitBtn.disabled = false;
+    //     } else {
+    //         statusLabel.innerHTML = `⏳ Opponent is drafting a counter-argument...`;
+    //         if (inputTextArea) inputTextArea.disabled = true; // Lock their keyboard!
+    //         if (submitBtn) submitBtn.disabled = true;
+    //     }
 
-        // Run a local clock loop purely to make the numbers count down smoothly on screen
-        let currentSeconds = secondsLeft;
+    //     // Run a local clock loop purely to make the numbers count down smoothly on screen
+    //     let currentSeconds = secondsLeft;
         
-        if (visualClock) {
-            visualClock.innerText = `${currentSeconds}s`;
-            visualClock.style.color = "#f59e0b"; // Default Amber warning color you_are_spectator
-        }
+    //     if (visualClock) {
+    //         visualClock.innerText = `${currentSeconds}s`;
+    //         visualClock.style.color = "#f59e0b"; // Default Amber warning color you_are_spectator
+    //     }
 
-        turnUIInterval = setInterval(() => {
-            currentSeconds--;
-            if (visualClock) {
-                visualClock.innerText = `${currentSeconds}s`;
+    //     turnUIInterval = setInterval(() => {
+    //         currentSeconds--;
+    //         if (visualClock) {
+    //             visualClock.innerText = `${currentSeconds}s`;
                 
-                // Turn the clock red and flash if they have less than 10 seconds left
-                if (currentSeconds <= 10) {
-                    visualClock.style.color = "#ef4444"; // Red
-                    visualClock.classList.add('animate-pulse');
-                }
-            }
+    //             // Turn the clock red and flash if they have less than 10 seconds left
+    //             if (currentSeconds <= 10) {
+    //                 visualClock.style.color = "#ef4444"; // Red
+    //                 visualClock.classList.add('animate-pulse');
+    //             }
+    //         }
 
-            if (currentSeconds <= 0) {
-                clearInterval(turnUIInterval);
-            }
-        }, 1000);
-    });
+    //         if (currentSeconds <= 0) {
+    //             clearInterval(turnUIInterval);
+    //         }
+    //     }, 1000);
+    // });
 
 
 
     socket.on('match_ended_lost', (data) => {
         clearInterval(turnUIInterval);
         alert(data.reason);
-        window.location.href = '/'; // Kick them to lobby
+        window.location.href = '/'; // Kick them to lobby match_ended
     });
 
 
@@ -1286,34 +1340,6 @@
             votingBar.classList.add('view-only'); // debaters see it, can't click it
         }
     }
-
-
-
-
-    function renderStaticVoteTally(proVotes, againstVotes) {
-
-        const votingBar = document.getElementById('votingBar');
-        votingBar.style.display = 'block';
-        votingBar.classList.add('view-only');
-
-        const total = proVotes + againstVotes;
-        const rightPct = total === 0 ? 50 : Math.round((proVotes / total) * 100);
-        const leftPct = 100 - rightPct;
-
-        document.getElementById('momentumFill').style.width = rightPct + '%';
-        document.getElementById('momentumMarker').style.left = rightPct + '%';
-        document.getElementById('leftPct').textContent = leftPct + '%';
-        document.getElementById('rightPct').textContent = rightPct + '%';
-
-        const lean = document.getElementById('crowdLean');
-        lean.textContent = total > 0
-            ? `Final result: ${Math.max(rightPct, leftPct)}% · ${total} votes`
-            : 'No votes were cast in this debate';
-    }
-
-    
-
-
 
 
     let currentVote = null; // 'pro' or 'against', null = not voted yet
@@ -1394,14 +1420,6 @@
             lastPct = rightPct;
         }
     });
-
-
-    // Also add match ended handler (for when a player disconnects mid-match)
-    socket.on('match_ended', (data) => {
-        alert(data.reason);
-        window.location.href = '/';
-    });
-
 
     /* ---------------- REELS-STYLE HORIZONTAL SWIPE (LIVE + REPLAY) ---------------- */
 
@@ -1493,7 +1511,7 @@
         }
     }
 
-    /* ---- Touch swipe: HORIZONTAL ---- */
+    /* ---- Touch swipe: HORIZONTAL ---- statusLabel  */
     let touchStartX = 0;
 
     document.addEventListener('touchstart', (e) => {
