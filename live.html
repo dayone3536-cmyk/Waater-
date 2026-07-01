@@ -279,7 +279,7 @@
         0%, 60%, 100% { transform: translateY(0); opacity: .5; }
         30% { transform: translateY(-6px); opacity: 1; }
     }
-    
+     /* .float-vote */
     .share-btn{
         display:flex;
         align-items:center;
@@ -554,6 +554,20 @@
         100%{ opacity:0; transform:translateY(-50px); }
     }
 
+    .voting-bar{
+        padding:10px 20px 16px;
+        background:#151924;
+        border-top:1px solid rgba(255,255,255,0.08);
+        display:none; /* shown via JS once we know the role */
+    }
+
+    .voting-bar.view-only .vote-avatar-btn{
+        cursor:default;
+        pointer-events:none;
+    }
+
+
+
 
 
     @media (max-width: 600px){
@@ -737,8 +751,31 @@
         🎤
     </button>
 
+</div>
+
+    <div class="voting-bar" id="votingBar">
+        <div class="momentum-row">
+            <button class="vote-avatar-btn left-side" id="voteLeftBtn">
+                <div class="ring"></div>
+                <span class="vote-pct" id="leftPct">50%</span>
+            </button>
+
+            <div class="momentum-bar">
+                <div class="momentum-fill" id="momentumFill"></div>
+                <div class="momentum-marker" id="momentumMarker"></div>
+            </div>
+
+            <button class="vote-avatar-btn right-side" id="voteRightBtn">
+                <div class="ring"></div>
+                <span class="vote-pct" id="rightPct">50%</span>
+            </button>
+        </div>
+        <div class="crowd-lean" id="crowdLean">Be the first to vote</div>
+    </div>
 
     <div class="share-toast" id="shareToast"> Link copied! </div>
+
+
 
 
 <script src="/socket.io/socket.io.js"></script>
@@ -799,6 +836,8 @@
 
     const dynamic_title = document.getElementById("Topic");
 
+    let isSpectator = false;
+
         // opponent_typing typingBubble 
     
 
@@ -827,6 +866,7 @@
 
 
 // you_are_spectator
+
     const isReplay = params.get('replay') === '1';
 
     if (isReplay) {
@@ -837,6 +877,13 @@
 
         socket.emit("join_room", { roomId, role });
     }
+
+    if (role === 'creator' || role === 'challenger') {
+
+        setupVotingBar();
+
+    }
+
 
     // messageInput replay 
 
@@ -1241,49 +1288,32 @@
     socket.on('you_are_spectator', () => {
 
         isSpectator = true;
-        const bottomBar = document.querySelector('.bottom-bar');
+        document.querySelector('.bottom-bar').style.display = 'none'; // spectators can't argue
 
-        bottomBar.innerHTML = `
-
-            <div style="width:100%;">
-
-                <div class="momentum-row">
-                    <button class="vote-avatar-btn left-side" id="voteLeftBtn">
-
-                        <div class="ring"></div>
-
-                        <span class="vote-pct" id="leftPct">50%</span>
-
-                    </button>
-
-                    <div class="momentum-bar">
-
-                        <div class="momentum-fill" id="momentumFill"></div>
-                        <div class="momentum-marker" id="momentumMarker"></div>
-
-                    </div>
-
-                    <button class="vote-avatar-btn right-side" id="voteRightBtn">
-
-                        <div class="ring"></div>
-                        <span class="vote-pct" id="rightPct">50%</span>
-
-                    </button>
-
-
-
-                </div>
-                <div class="crowd-lean" id="crowdLean">Be the first to vote</div>
-            </div>
-        `;
-
-
-            document.getElementById('voteLeftBtn').addEventListener('click', (e) => castVote('against', e));
-            document.getElementById('voteRightBtn').addEventListener('click', (e) => castVote('pro', e));
-
-
+        setupVotingBar();
         showSwipeHint();
+
     });
+
+
+    function setupVotingBar() {
+
+        const votingBar = document.getElementById('votingBar');
+        votingBar.style.display = 'block';
+
+        const leftBtn = document.getElementById('voteLeftBtn');
+        const rightBtn = document.getElementById('voteRightBtn');
+
+        if (isSpectator) {
+            leftBtn.addEventListener('click', (e) => castVote('against', e));
+            rightBtn.addEventListener('click', (e) => castVote('pro', e));
+        } else {
+            votingBar.classList.add('view-only'); // debaters see it, can't click it
+        }
+    }
+
+
+
 
     let currentVote = null; // 'pro' or 'against', null = not voted yet
     let lastPct = 50;
@@ -1377,7 +1407,8 @@
     let liveMatches = [];
     let pastMatches = [];
     let currentRoomId = roomId;
-    let isSpectator = false;
+
+
     let canSwipe = false;     // true once we know we're allowed to swipe (spectator OR replay)
     let isSwitching = false;
 
@@ -1478,11 +1509,11 @@
         if (diff > 0) {
             goToNextDebate(); // swiped left -> next
         } else {
-            goToPrevDebate(); // swiped right -> previous
+            goToPrevDebate(); // swiped right -> previous join_room
         }
     }, { passive: true });
 
-    /* ---- Mouse wheel: horizontal scroll OR shift+wheel ---- */
+    /* ---- Mouse wheel: horizontal scroll OR shift+wheel ----  */ 
 
 
     let wheelLock = false;
