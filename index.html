@@ -238,6 +238,52 @@
             border-color: #ffffff44;
         }
 
+        .duel-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: .72rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 999px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-badge.live {
+            color: #22c55e;
+            background: #14291c;
+            border: 1px solid #22c55e44;
+        }
+
+        .status-badge.live .status-dot {
+            background: #22c55e;
+            animation: livePulse 1.5s infinite;
+        }
+
+        .status-badge.finished {
+            color: #9ca3af;
+            background: #1a1e29;
+            border: 1px solid #2a3142;
+        }
+
+        .status-badge.finished .status-dot {
+            background: #6b7280;
+        }
 
 
     </style>
@@ -295,24 +341,23 @@
         <main class="main-content-canvas">
 
             <div class="feed-header">
-                <h2>🔴 Live Now</h2>
+
+                <h2>Debates</h2>
+
                 <span id="match-count" class="live-count-badge">0 live</span>
+
             </div>
 
-            <div id="duel-feed">
-                <div class="empty-feed-placeholder">
-                    <p>No debates live right now </p>
+            <div id="feed">
 
-                    <p> You can wacth past debates </p>
+                <div class="empty-feed-placeholder">
+
+                    <p>Loading debates...</p>
 
                 </div>
+
             </div>
 
-            <div class="feed-header">
-                <h2>📜 Past Debates</h2>
-            </div>
-
-            <div id="past-feed"></div>
 
         </main>
 
@@ -344,10 +389,17 @@
 
         onAuthStateChanged(auth, (user) => {
             window.isLoggedIn = !!user;
+
             authReadyResolve();
+
+            if (!user) {
+
+                window.location.href = "/Sigh-in";
+
+            }
+
         });
 
-        // Handle Log Out click (only if you have a #logout-btn on this page)
         const logoutBtn = document.getElementById('logout-btn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => {
@@ -390,166 +442,140 @@
     <script src="/socket.io/socket.io.js"></script>
 
     <script>
-        console.log("Reached the index html! ")
-
-
         const socket  = io();
-        
-        const feed    = document.getElementById('duel-feed');
-        const countEl = document.getElementById('match-count');
+    const feed    = document.getElementById('feed');
+    const countEl = document.getElementById('match-count');
 
-        socket.on('update_live_matches', (matches) => {
-            feed.innerHTML = '';
+    let liveMatches = [];
+    let pastMatches = [];
 
-            countEl.textContent = `${matches.length} live`;
+    socket.on('update_live_matches', (matches) => {
+        liveMatches = matches;
+        countEl.textContent = `${matches.length} live`;
+        renderFeed();
+    });
 
-            if (matches.length === 0) {
-                feed.innerHTML = `
-                    <div class="empty-feed-placeholder">
-                        <h2>The Arena is Empty</h2>
-                        <p>No debates live right now.</p>
-                    </div>`;
-                return;
-            }
+    function escapeHtml(str) {
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
 
-            matches.forEach(match => {
-                const card = document.createElement('div');
-                card.className = 'duel-card';
+    function renderFeed() {
+        feed.innerHTML = '';
 
-                card.innerHTML = `
+        if (liveMatches.length === 0 && pastMatches.length === 0) {
+            feed.innerHTML = `
+                <div class="empty-feed-placeholder">
+                    <h2>The Arena is Empty</h2>
+                    <p>No debates yet. Be the first to start one.</p>
+                </div>`;
+            return;
+        }
 
-                    <div class="duel-card-body">
-                        <p class="duel-thesis">${escapeHtml(match.thesis)}</p>
-                        <span class="duel-age">👁 ${match.spectatorCount} watching</span>
-                    </div>
-                    <button class="join-btn" data-room="${match.roomId}">
-                        👁 Watch Live
-                    </button>
-                `;
+        liveMatches.forEach(match => feed.appendChild(buildLiveCard(match)));
+        pastMatches.forEach(match => feed.appendChild(buildPastCard(match)));
+    }
 
-                card.querySelector('.join-btn').addEventListener('click', () => {
-                    window.location.href = `/live?match=${match.roomId} `;
-                });
+    function buildLiveCard(match) {
+        const card = document.createElement('div');
+        card.className = 'duel-card';
 
-                feed.appendChild(card);
+        card.innerHTML = `
+            <div class="duel-card-top">
+                <p class="duel-thesis">${escapeHtml(match.thesis)}</p>
+                <span class="status-badge live">
+                    <span class="status-dot"></span> Live
+                </span>
+            </div>
+            <div class="duel-card-body">
+                <span class="duel-age">👁 ${match.spectatorCount} watching</span>
+            </div>
+            <div class="duel-card-footer">
+                <div></div>
+                <button class="join-btn" data-room="${match.roomId}">
+                    👁 Watch Live
+                </button>
+            </div>
+        `;
 
-            
-
-            });
-
+        card.querySelector('.join-btn').addEventListener('click', () => {
+            window.location.href = `/live?match=${match.roomId}`;
         });
 
-        // update_live_matches
+        return card;
+    }
 
-        console.log("finished making the div it was succesful!")
+    function buildPastCard(match) {
+        const card = document.createElement('div');
+        card.className = 'duel-card';
 
-        function escapeHtml(str) {
-            return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-        }
+        const myReaction = match.myReaction || null;
+        const likeCount = match.like_count || 0;
+        const dislikeCount = match.dislike_count || 0;
 
-        console.log("finished making the div it was succesful! 2 ")
+        card.innerHTML = `
+            <div class="duel-card-top">
+                <p class="duel-thesis">${escapeHtml(match.thesis)}</p>
+                <span class="status-badge finished">
+                    <span class="status-dot"></span> Finished
+                </span>
+            </div>
+            <div class="duel-card-footer">
+                <div class="duel-actions">
+                    <button class="action-btn like-btn ${myReaction === 'like' ? 'liked' : ''}" data-room="${match.room_id}">
+                        <svg viewBox="0 0 24 24"><path d="M7 10v11M2 13v6a2 2 0 002 2h12.5a2 2 0 002-1.6l1.4-7A2 2 0 0017.5 10H13l1-5a2 2 0 00-2-2.4L11 3 7 10H2z"/></svg>
+                        <span class="like-count">${likeCount}</span>
+                    </button>
+                    <button class="action-btn dislike-btn ${myReaction === 'dislike' ? 'disliked' : ''}" data-room="${match.room_id}">
+                        <svg viewBox="0 0 24 24"><path d="M17 14V3M22 11v-6a2 2 0 00-2-2H7.5a2 2 0 00-2 1.6l-1.4 7A2 2 0 006.5 14H11l-1 5a2 2 0 002 2.4L13 21l4-7h5z"/></svg>
+                        <span class="dislike-count">${dislikeCount}</span>
+                    </button>
+                    <button class="action-btn share-btn" data-room="${match.room_id}">
+                        <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.5" x2="15.4" y2="6.5"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/></svg>
+                    </button>
+                </div>
+                <button class="join-btn" data-room="${match.room_id}">
+                    📼 Watch Replay
+                </button>
+            </div>
+        `;
 
+        card.querySelector('.join-btn').addEventListener('click', () => {
+            window.location.href = `/live?match=${match.room_id}&replay=1`;
+        });
 
-        async function loadPastMatches() {
+        const likeBtn = card.querySelector('.like-btn');
+        const dislikeBtn = card.querySelector('.dislike-btn');
+        const shareBtn = card.querySelector('.share-btn');
 
+        likeBtn.addEventListener('click', async () => {
+            if (!(await window.requireLogin())) return;
+            handleReaction(match.room_id, 'like', card);
+        });
+
+        dislikeBtn.addEventListener('click', async () => {
+            if (!(await window.requireLogin())) return;
+            handleReaction(match.room_id, 'dislike', card);
+        });
+
+        shareBtn.addEventListener('click', async () => {
+            if (!(await window.requireLogin())) return;
+            const shareUrl = `${window.location.origin}/live?match=${match.room_id}&replay=1`;
             try {
-                const res = await fetch('/past-matches');
-                const matches = await res.json();
-
-                const pastFeed = document.getElementById('past-feed');
-                pastFeed.innerHTML = '';
-
-                if (!matches || matches.length === 0) {
-                    pastFeed.innerHTML = `<div class="empty-feed-placeholder"><p>No past duels yet.</p></div>`;
-                    return;
+                if (navigator.share) {
+                    await navigator.share({ title: match.thesis, url: shareUrl });
+                } else {
+                    await navigator.clipboard.writeText(shareUrl);
+                    const original = shareBtn.style.borderColor;
+                    shareBtn.style.borderColor = '#ffffff';
+                    setTimeout(() => { shareBtn.style.borderColor = original; }, 1000);
                 }
-
-                matches.forEach(match => {
-                    const card = document.createElement('div');
-                    card.className = 'duel-card';
-
-                    const endedLabel = match.end_reason
-                        ? `Ended: ${escapeHtml(match.end_reason)}`
-                        : 'Ended';
-
-                    // myReaction comes from the server: 'like', 'dislike', or null
-                    const myReaction = match.myReaction || null;
-                    const likeCount = match.like_count || 0;
-                    const dislikeCount = match.dislike_count || 0;
-
-                    card.innerHTML = `
-                        <div class="duel-card-body">
-                            <p class="duel-thesis">${escapeHtml(match.thesis)}</p>
-
-                            <!-- <span class="duel-age">${endedLabel}${match.winner_role ? ` · Winner: ${escapeHtml(match.winner_role)}` : ''}</span>-->
-
-                        </div>
-                        <div class="duel-card-footer">
-                            
-                            <div class="duel-actions">
-
-                                <button class="action-btn like-btn ${myReaction === 'like' ? 'liked' : ''}" data-room="${match.room_id}">
-                                    <svg viewBox="0 0 24 24"><path d="M7 10v11M2 13v6a2 2 0 002 2h12.5a2 2 0 002-1.6l1.4-7A2 2 0 0017.5 10H13l1-5a2 2 0 00-2-2.4L11 3 7 10H2z"/></svg>
-                                    <span class="like-count">${likeCount}</span>
-                                </button>
-                                <button class="action-btn dislike-btn ${myReaction === 'dislike' ? 'disliked' : ''}" data-room="${match.room_id}">
-                                    <svg viewBox="0 0 24 24"><path d="M17 14V3M22 11v-6a2 2 0 00-2-2H7.5a2 2 0 00-2 1.6l-1.4 7A2 2 0 006.5 14H11l-1 5a2 2 0 002 2.4L13 21l4-7h5z"/></svg>
-                                    <span class="dislike-count">${dislikeCount}</span>
-                                </button>
-                                <button class="action-btn share-btn" data-room="${match.room_id}">
-                                    <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.5" x2="15.4" y2="6.5"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/></svg>
-                                </button>
-                            </div>
-
-                            <button class="join-btn" data-room="${match.room_id}">
-                                📼 Watch Replay
-                            </button>
-                        </div>
-                    `;
-
-                    card.querySelector('.join-btn').addEventListener('click', () => {
-                        window.location.href = `/live?match=${match.room_id}&replay=1`;
-                    });
-
-                    const likeBtn = card.querySelector('.like-btn');
-                    const dislikeBtn = card.querySelector('.dislike-btn');
-                    const shareBtn = card.querySelector('.share-btn');
-
-                    likeBtn.addEventListener('click', async () => {
-                        if (!(await window.requireLogin())) return;
-                        handleReaction(match.room_id, 'like', card);
-                    });
-
-                    dislikeBtn.addEventListener('click', async () => {
-                        if (!(await window.requireLogin())) return;
-                        handleReaction(match.room_id, 'dislike', card);
-                    });
-
-                    shareBtn.addEventListener('click', async () => {
-                        if (!(await window.requireLogin())) return;
-                        const shareUrl = `${window.location.origin}/live?match=${match.room_id}&replay=1`;
-                        try {
-                            if (navigator.share) {
-                                await navigator.share({ title: match.thesis, url: shareUrl });
-                            } else {
-                                await navigator.clipboard.writeText(shareUrl);
-                                const original = shareBtn.style.borderColor;
-                                shareBtn.style.borderColor = '#ffffff';
-                                setTimeout(() => { shareBtn.style.borderColor = original; }, 1000);
-                            }
-                        } catch (err) {
-                            console.error('Share failed:', err);
-                        }
-                    });
-
-                    pastFeed.appendChild(card);
-                });
             } catch (err) {
-                console.error('Failed to load past matches:', err);
+                console.error('Share failed:', err);
             }
-        }
+        });
 
-        // Toggle like/dislike, Instagram-style: clicking the same reaction again removes it.
+        return card;
+    }
 
         async function handleReaction(roomId, reaction, card) {
             const likeBtn = card.querySelector('.like-btn');
@@ -558,20 +584,15 @@
             const dislikeCountEl = card.querySelector('.dislike-count');
 
             try {
-
                 const res = await fetch(`/match/${roomId}/react`, {
-
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-
                     body: JSON.stringify({ reaction })
-
                 });
 
                 if (!res.ok) throw new Error('Request failed');
 
                 const data = await res.json();
-                // Expected response: { myReaction: 'like' | 'dislike' | null, like_count, dislike_count }
 
                 likeCountEl.textContent = data.like_count;
                 dislikeCountEl.textContent = data.dislike_count;
@@ -583,12 +604,20 @@
             }
         }
 
-    loadPastMatches();
+        async function loadPastMatches() {
+            try {
+                const res = await fetch('/past-matches');
+                pastMatches = await res.json();
+                renderFeed();
+            } catch (err) {
+                console.error('Failed to load past matches:', err);
+            }
+        }
 
+        loadPastMatches();
 
 
     </script>
-
 
 
 
