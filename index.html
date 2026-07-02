@@ -449,7 +449,6 @@
 
     socket.on('update_live_matches', (matches) => {
         liveMatches = matches;
-        countEl.textContent = `${matches.length} live`;
         renderFeed();
     });
 
