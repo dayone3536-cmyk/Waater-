@@ -569,7 +569,102 @@
     }
 
 
+    .forfeit-overlay{
+    position:fixed; inset:0;
+    background:rgba(10,12,20,0.7);
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+    display:flex; align-items:center; justify-content:center;
+    z-index:2000;
+    animation:forfeitFadeIn .2s ease-out;
+}
 
+    @keyframes forfeitFadeIn{
+        from{ opacity:0; }
+        to{ opacity:1; }
+    }
+
+    .forfeit-box{
+        background:#151924;
+        border:1px solid rgba(255,255,255,0.08);
+        border-radius:20px;
+        padding:40px 36px 32px;
+        max-width:420px;
+        width:90%;
+        text-align:center;
+        box-shadow:0 20px 60px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,0.02);
+        animation:forfeitPop .25s cubic-bezier(.34,1.56,.64,1);
+    }
+
+    @keyframes forfeitPop{
+        from{ opacity:0; transform:scale(.9) translateY(10px); }
+        to{ opacity:1; transform:scale(1) translateY(0); }
+    }
+
+    .forfeit-icon{
+        width:60px;
+        height:60px;
+        margin:0 auto 18px;
+        border-radius:50%;
+        background:linear-gradient(135deg, rgba(239,68,68,.18), rgba(239,68,68,.05));
+        border:1px solid rgba(239,68,68,.3);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size:1.6rem;
+    }
+
+    .forfeit-box p{
+        margin-bottom:8px;
+        font-weight:700;
+        font-size:1.25rem;
+    }
+
+    .forfeit-sub{
+        color:#9ca3af;
+        font-size:.92rem;
+        margin-bottom:28px;
+        line-height:1.5;
+    }
+
+    .forfeit-actions{
+        display:flex;
+        gap:12px;
+        justify-content:center;
+    }
+
+    .forfeit-btn{
+        border:none;
+        cursor:pointer;
+        padding:14px 0;
+        flex:1;
+        border-radius:12px;
+        font-weight:700;
+        font-size:1rem;
+        transition:transform .15s ease, filter .15s ease;
+    }
+
+    .forfeit-btn:hover{
+        transform:translateY(-1px);
+        filter:brightness(1.1);
+    }
+
+    .forfeit-btn:active{
+        transform:translateY(0);
+        filter:brightness(.95);
+    }
+
+    .forfeit-btn.no{
+        background:linear-gradient(135deg, #ef4444, #dc2626);
+        color:white;
+        box-shadow:0 4px 14px rgba(239,68,68,.35);
+    }
+
+    .forfeit-btn.yes{
+        background:#242b3d;
+        color:white;
+        border:1px solid rgba(255,255,255,0.06);
+    }
 
 
     @media (max-width: 600px){
@@ -834,7 +929,7 @@
 
     let isSpectator = false;
 
-        // opponent_typing typingBubble  sendBtn  messageInput  loadReplayMode
+        // opponent_typing typingBubble  sendBtn  messageInput  loadReplayMode  cast_vote
     
 
     console.log("the join_room socket has been sent to the server")
@@ -879,6 +974,13 @@
         setupVotingBar();
 
     }
+
+    if ((role === 'creator' || role === 'challenger') && !isReplay) {
+
+        setupForfeitGuard();
+
+    }
+
 
 
     // messageInput replay 
@@ -1021,6 +1123,61 @@
     }
 
 
+    function setupForfeitGuard() {
+    // Push a dummy history entry so the first "back" is caught, not a real navigation
+    history.pushState({ debateGuard: true }, '');
+
+    window.addEventListener('popstate', () => {
+        showForfeitModal();
+        history.pushState({ debateGuard: true }, ''); // re-arm the trap
+    });
+
+    // Best-effort native prompt if they close the tab / refresh (browser controls wording)
+    window.addEventListener('beforeunload', (e) => {
+        e.preventDefault();
+        e.returnValue = '';
+    });
+}
+
+    function showForfeitModal() {
+
+        if (document.getElementById('forfeitOverlay')) return;
+
+        const overlay = document.createElement('div');
+        overlay.id = 'forfeitOverlay';
+        overlay.className = 'forfeit-overlay';
+
+        overlay.innerHTML = `
+
+            <div class="forfeit-box">
+                <p>Do you want to Exit?</p>
+                
+                <br>
+
+                <div class="forfeit-actions">
+                    <button id="forfeitNo" class="forfeit-btn no">No</button>
+
+                    <button id="forfeitYes" class="forfeit-btn yes">Yes</button>
+
+                </div>
+
+            </div>
+
+        `;
+
+        document.body.appendChild(overlay);
+
+        document.getElementById('forfeitNo').onclick = () => overlay.remove();
+
+        document.getElementById('forfeitYes').onclick = () => {
+
+            socket.emit('forfeit_match', { roomId: currentRoomId });
+
+            overlay.remove();
+            window.location.href = '/';
+
+        };
+    }
 
 
     
@@ -1288,7 +1445,8 @@
     // });
 
 
-git commit -m ::
+
+
     socket.on('match_ended_lost', (data) => {
         clearInterval(turnUIInterval);
         alert(data.reason);

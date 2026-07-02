@@ -260,7 +260,7 @@ app.get('/past-matches/:roomId/votes', async (req, res) => {
 
 
 
-// Put this ABOVE io.on('connection')send_argument join_room
+// Put this ABOVE io.on('connection')send_argument join_room     cast_vote
 
 function broadcastLiveMatches() {
     const liveList = activeMatches.map(m => ({
@@ -609,6 +609,51 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
         });
 
     });
+
+
+    socket.on('forfeit_match', (data) => {
+
+        const roomId = typeof data === 'string' ? data : data?.roomId;
+        if (!roomId) return;
+
+        const match = activeMatches.find(m => m.roomId === roomId);
+        if (!match) return;
+
+        const isCreator = match.creatorSocketId === socket.id;
+        const isChallenger = match.challengerSocketId === socket.id;
+
+        if (!isCreator && !isChallenger) return; // only debaters can forfeit
+
+        const winnerRole = isCreator ? 'challenger' : 'creator';
+        const winnerSocketId = isCreator ? match.challengerSocketId : match.creatorSocketId;
+
+        if (match.pendingDisconnect.creator) clearTimeout(match.pendingDisconnect.creator);
+        if (match.pendingDisconnect.challenger) clearTimeout(match.pendingDisconnect.challenger);
+
+        archiveMatch(match, 'forfeit', winnerRole);
+
+        io.to(winnerSocketId).emit('match_ended_won', {
+            reason: 'Your opponent forfeited the debate. You win! 🏆'
+
+        });
+
+        socket.emit('match_ended_lost', {
+            reason: 'You forfeited the debate.'
+
+        });
+
+        match.spectators.forEach(specId => {
+            io.to(specId).emit('match_ended', { reason: 'A debater forfeited the match.' });
+
+        });
+
+        activeMatches = activeMatches.filter(m => m.roomId !== roomId);
+
+        broadcastLiveMatches();
+        
+    });
+
+
 
 
 
