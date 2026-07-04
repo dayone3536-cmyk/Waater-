@@ -471,7 +471,7 @@
 
         overflow:visible;
         margin:0 -8px;
-        
+
 
         flex:1;
 
@@ -1492,6 +1492,29 @@
         showSwipeHint();
 
     });
+
+    function renderFeed() {
+
+        feed.innerHTML = '';
+
+        const liveRoomIds = new Set(liveMatches.map(m => m.roomId));
+        const filteredPastMatches = pastMatches.filter(m => !liveRoomIds.has(m.room_id));
+
+        if (liveMatches.length === 0 && filteredPastMatches.length === 0) {
+            feed.innerHTML = `
+
+                <div class="empty-feed-placeholder">
+                    <h2>The Arena is Empty</h2>
+                    <p>No debates yet. Be the first to start one.</p>
+                </div>`;
+
+            return;
+
+        }
+
+        liveMatches.forEach(match => feed.appendChild(buildLiveCard(match)));
+        filteredPastMatches.forEach(match => feed.appendChild(buildPastCard(match)));
+    }
 
 
     function setupVotingBar() {

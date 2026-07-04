@@ -471,7 +471,7 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
 
 // activeMatches join_match
 
-    socket.on('join_room', (data) => {
+    socket.on('join_room', async  (data) => {
 
         const roomId = typeof data === 'string' ? data : data?.roomId;
         const role = typeof data === 'string' ? null : data?.role;
@@ -495,7 +495,11 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
                 match.pendingDisconnect.creator = null;
             }
 
-        } else if (role === 'challenger') {
+            await supabase.from('past_matches').update({ ended_at: null, end_reason: null }).eq('room_id', roomId);
+
+        }
+
+            else if (role === 'challenger') {
 
             match.challengerSocketId = socket.id;
 
@@ -506,6 +510,9 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
                 match.pendingDisconnect.challenger = null;
 
             }
+
+             await supabase.from('past_matches').update({ ended_at: null, end_reason: null }).eq('room_id', roomId);
+             
         } else {
 
             const isPlayer = match.creatorSocketId === socket.id || match.challengerSocketId === socket.id;
