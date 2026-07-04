@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="/style.css" >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> Colloseum </title>
+
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" />
+    
+
+</head>
+<body>
+
+    <style>
+
+        .main-content-canvas {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .feed-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 28px 12px;
+        }
+
+        .feed-header h2 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #f1f5f9;
+        }
+
+        .live-count-badge {
+            font-size: .8rem;
+            font-weight: 600;
+            color: #f87171;
+            background: #2a1418;
+            border: 1px solid #ef444444;
+            padding: 5px 14px;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .live-count-badge::before {
+            content: '';
+            width: 7px;
+            height: 7px;
+            background: #ef4444;
+            border-radius: 50%;
+            display: inline-block;
+            animation: livePulse 1.5s infinite;
+        }
+
+        @keyframes livePulse {
+            0%   { box-shadow: 0 0 0 0 rgba(239,68,68,.6); }
+            70%  { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+            100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+        }
+
+        .empty-feed-placeholder {
+            text-align: center;
+            padding: 50px 20px;
+            color: #6b7280;
+            margin: 0 28px;
+        }
+
+        .empty-feed-placeholder h2 {
+            font-size: 1rem;
+            color: #9ca3af;
+            margin-bottom: 6px;
+        }
+
+        .empty-feed-placeholder p {
+            font-size: .85rem;
+        }
+
+        #duel-feed {
+            margin-bottom: 12px;
+        }
+
+
+        .duel-card {
+            background: linear-gradient(145deg, #161b27, #1a2030);
+            border: 1px solid #262d3d;
+            border-radius: 14px;
+            padding: 18px 22px;
+            margin: 0 28px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            transition: border-color .2s ease, transform .2s ease;
+        }
+
+        .duel-card:hover {
+            border-color: #3b4356;
+            transform: translateY(-2px);
+        }
+
+        .duel-card-body {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .duel-thesis {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #f1f5f9;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .duel-age {
+            font-size: .8rem;
+            color: #8b94a7;
+        }
+
+        .duel-card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .duel-reactions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .reaction-btn {
+            background: #0f1320;
+            border: 1px solid #2a3142;
+            color: #9ca3af;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: .8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background .15s ease, color .15s ease, border-color .15s ease;
+        }
+
+        .reaction-btn:hover {
+            border-color: #3b4356;
+            color: #e5e7eb;
+        }
+
+        .reaction-btn.liked {
+            color: #22c55e;
+            border-color: #22c55e44;
+            background: #22c55e1a;
+        }
+
+        .reaction-btn.disliked {
+            color: #ef4444;
+            border-color: #ef444444;
+            background: #ef44441a;
+        }
+
+        .join-btn {
+            background: #3b82f6;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 18px;
+            font-size: .85rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background .2s ease;
+        }
+
+        .join-btn:hover {
+            background: #0e67f7;
+        }
+
+        .duel-card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .duel-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            background: #0f1320;
+            border: 1px solid #2a3142;
+            color: #9ca3af;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: .8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background .15s ease, border-color .15s ease;
+        }
+
+        .action-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: none;
+            stroke: #9ca3af;
+            stroke-width: 2;
+            transition: fill .15s ease, stroke .15s ease;
+        }
+
+        .action-btn:hover {
+            border-color: #3b4356;
+        }
+
+        .action-btn:hover svg {
+            stroke: #e5e7eb;
+        }
+
+        /* Active state: icon fills solid white, like Instagram */
+        .action-btn.liked svg,
+        .action-btn.disliked svg {
+            fill: #ffffff;
+            stroke: #ffffff;
+        }
+
+        .action-btn.liked {
+            border-color: #ffffff44;
+        }
+
+        .action-btn.disliked {
+            border-color: #ffffff44;
+        }
+
+        .duel-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: .72rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 999px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-badge.live {
+            color: #22c55e;
+            background: #14291c;
+            border: 1px solid #22c55e44;
+        }
+
+        .status-badge.live .status-dot {
+            background: #22c55e;
+            animation: livePulse 1.5s infinite;
+        }
+
+        .status-badge.finished {
+            color: #9ca3af;
+            background: #1a1e29;
+            border: 1px solid #2a3142;
+        }
+
+        .status-badge.finished .status-dot {
+            background: #6b7280;
+        }
+
+
+    </style>
+
+
+
+    <!-- 1. The Fixed Top Header -->
+
+    <header class="top-navbar">
+        <div class="nav-left-group">
+
+            <span class="brand-logo"> Waater </span>
+
+        </div>
+        
+        <div class="search-container">
+            <input type="text" class="global-search" placeholder="Search the arena...">
+        </div>
+
+ 
+    </header>
+
+    <!-- 2. The Multi-Column Environment -->
+    <div class="app-body">
+        
+        <!-- Left Sidebar Options -->
+        <nav class="sidebar">
+
+            <a href="/" style="text-decoration: none;">
+                <div class="nav-item active">
+                    <span class="material-symbols-outlined">home</span>
+                    <span class="label">Home</span>
+                </div>
+            </a>
+
+            <a href="/dueal" style="text-decoration: none;">
+                <div class="nav-item">
+                    <span class="material-symbols-outlined">swords</span>
+                    <span class="label">Duels</span>
+                </div>
+            </a>
+
+            <a href="/Create" style="text-decoration: none;">
+                <div class="nav-item">
+                    <span class="material-symbols-outlined">Add_Circle</span>
+                    <span class="label">Create</span>
+                </div>
+            </a>
+
+        </nav>
+
+
+        <!-- 3. The Core Open Blank Canvas -->
+
+        <main class="main-content-canvas">
+
+            <div class="feed-header">
+
+                <h2>Debates</h2>
+
+            </div>
+
+            <div id="feed">
+
+                <div class="empty-feed-placeholder">
+
+                    <p>Loading debates...</p>
+
+                </div>
+
+            </div>
+
+
+        </main>
+
+
+    </div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDc6wwJq_iQtLoZT2RMA1-qyqN3U5W2ZL0",
+            authDomain: "waater-65596.firebaseapp.com",
+            projectId: "waater-65596",
+            storageBucket: "waater-65596.firebasestorage.app",
+            messagingSenderId: "840770803135",
+            appId: "1:840770803135:web:1425f583ad04315b87fd0a",
+            measurementId: "G-48T9GVZF3N"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // Resolve the very first auth check once, so requireLogin()
+        // never fires before Firebase has had a chance to load the session.
+        let authReadyResolve;
+        const authReady = new Promise((resolve) => { authReadyResolve = resolve; });
+
+        window.isLoggedIn = false;
+
+        onAuthStateChanged(auth, (user) => {
+            window.isLoggedIn = !!user;
+
+            authReadyResolve();
+
+
+        });
+
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                signOut(auth).then(() => {
+                    window.location.href = "/Sigh-in";
+                });
+            });
+        }
+
+        // Async helper: waits for Firebase to finish checking the session
+        // before deciding whether to redirect. Call as: await window.requireLogin()
+        window.requireLogin = async function () {
+            await authReady;
+            if (!window.isLoggedIn) {
+                window.location.href = "/Sigh-in";
+                return false;
+            }
+            return true;
+        };
+    </script>
+
+
+    <script>
+        const searchInput = document.querySelector('.global-search');
+
+        searchInput.addEventListener('keydown', (event) => {
+
+            if (event.key === 'Enter') {
+
+                const query = searchInput.value.trim();
+                console.log('searching for:', query);
+                
+                // TODO: filter results or call an API here replay
+            }  
+        });
+
+    </script>
+
+
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script>
+
+    const socket  = io();
+    const feed    = document.getElementById('feed');
+    const countEl = document.getElementById('match-count');
+
+    let liveMatches = [];
+    let pastMatches = [];
+
+    socket.on('update_live_matches', (matches) => {
+        liveMatches = matches;
+        renderFeed();
+    });
+
+    function escapeHtml(str) {
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function renderFeed() {
+        feed.innerHTML = '';
+
+        if (liveMatches.length === 0 && pastMatches.length === 0) {
+            feed.innerHTML = `
+                <div class="empty-feed-placeholder">
+                    <h2>The Arena is Empty</h2>
+                    <p>No debates yet. Be the first to start one.</p>
+                </div>`;
+            return;
+        }
+
+        liveMatches.forEach(match => feed.appendChild(buildLiveCard(match)));
+        pastMatches.forEach(match => feed.appendChild(buildPastCard(match)));
+    }
+
+    function buildLiveCard(match) {
+        const card = document.createElement('div');
+        card.className = 'duel-card';
+
+        card.innerHTML = `
+            <div class="duel-card-top">
+                <p class="duel-thesis">${escapeHtml(match.thesis)}</p>
+                <span class="status-badge live">
+                    <span class="status-dot"></span> Live
+                </span>
+            </div>
+            <div class="duel-card-body">
+                <span class="duel-age">👁 ${match.spectatorCount} watching</span>
+            </div>
+            <div class="duel-card-footer">
+                <div></div>
+                <button class="join-btn" data-room="${match.roomId}">
+                    👁 Watch Live
+                </button>
+            </div>
+        `;
+
+        card.querySelector('.join-btn').addEventListener('click', () => {
+            window.location.href = `/live?match=${match.roomId}`;
+        });
+
+        return card;
+    }
+
+    function buildPastCard(match) {
+        const card = document.createElement('div');
+        card.className = 'duel-card';
+
+        const myReaction = match.myReaction || null;
+        const likeCount = match.like_count || 0;
+        const dislikeCount = match.dislike_count || 0;
+
+        card.innerHTML = `
+            <div class="duel-card-top">
+                <p class="duel-thesis">${escapeHtml(match.thesis)}</p>
+                <span class="status-badge finished">
+                    <span class="status-dot"></span> Finished
+                </span>
+            </div>
+            <div class="duel-card-footer">
+                <div class="duel-actions">
+                    <button class="action-btn like-btn ${myReaction === 'like' ? 'liked' : ''}" data-room="${match.room_id}">
+                        <svg viewBox="0 0 24 24"><path d="M7 10v11M2 13v6a2 2 0 002 2h12.5a2 2 0 002-1.6l1.4-7A2 2 0 0017.5 10H13l1-5a2 2 0 00-2-2.4L11 3 7 10H2z"/></svg>
+                        <span class="like-count">${likeCount}</span>
+                    </button>
+                    <button class="action-btn dislike-btn ${myReaction === 'dislike' ? 'disliked' : ''}" data-room="${match.room_id}">
+                        <svg viewBox="0 0 24 24"><path d="M17 14V3M22 11v-6a2 2 0 00-2-2H7.5a2 2 0 00-2 1.6l-1.4 7A2 2 0 006.5 14H11l-1 5a2 2 0 002 2.4L13 21l4-7h5z"/></svg>
+                        <span class="dislike-count">${dislikeCount}</span>
+                    </button>
+                    <button class="action-btn share-btn" data-room="${match.room_id}">
+                        <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.5" x2="15.4" y2="6.5"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/></svg>
+                    </button>
+                </div>
+                <button class="join-btn" data-room="${match.room_id}">
+                    📼 Watch Replay
+                </button>
+            </div>
+        `;
+
+        card.querySelector('.join-btn').addEventListener('click', () => {
+            window.location.href = `/live?match=${match.room_id}&replay=1`;
+        });
+
+        const likeBtn = card.querySelector('.like-btn');
+        const dislikeBtn = card.querySelector('.dislike-btn');
+        const shareBtn = card.querySelector('.share-btn');
+
+        likeBtn.addEventListener('click', async () => {
+            if (!(await window.requireLogin())) return;
+            handleReaction(match.room_id, 'like', card);
+        });
+
+        dislikeBtn.addEventListener('click', async () => {
+            if (!(await window.requireLogin())) return;
+            handleReaction(match.room_id, 'dislike', card);
+        });
+
+        shareBtn.addEventListener('click', async () => {
+            if (!(await window.requireLogin())) return;
+            const shareUrl = `${window.location.origin}/live?match=${match.room_id}&replay=1`;
+            try {
+                if (navigator.share) {
+                    await navigator.share({ title: match.thesis, url: shareUrl });
+                } else {
+                    await navigator.clipboard.writeText(shareUrl);
+                    const original = shareBtn.style.borderColor;
+                    shareBtn.style.borderColor = '#ffffff';
+                    setTimeout(() => { shareBtn.style.borderColor = original; }, 1000);
+                }
+            } catch (err) {
+                console.error('Share failed:', err);
+            }
+        });
+
+        return card;
+    }
+
+        async function handleReaction(roomId, reaction, card) {
+            const likeBtn = card.querySelector('.like-btn');
+            const dislikeBtn = card.querySelector('.dislike-btn');
+            const likeCountEl = card.querySelector('.like-count');
+            const dislikeCountEl = card.querySelector('.dislike-count');
+
+            try {
+                const res = await fetch(`/match/${roomId}/react`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reaction })
+                });
+
+                if (!res.ok) throw new Error('Request failed');
+
+                const data = await res.json();
+
+                likeCountEl.textContent = data.like_count;
+                dislikeCountEl.textContent = data.dislike_count;
+
+                likeBtn.classList.toggle('liked', data.myReaction === 'like');
+                dislikeBtn.classList.toggle('disliked', data.myReaction === 'dislike');
+            } catch (err) {
+                console.error('Failed to react:', err);
+            }
+        }
+
+        async function loadPastMatches() {
+            try {
+                const res = await fetch('/past-matches');
+                pastMatches = await res.json();
+                renderFeed();
+            } catch (err) {
+                console.error('Failed to load past matches:', err);
+            }
+        }
+
+        loadPastMatches();
+
+
+    </script>
+
+
+
+</body>
+</html>

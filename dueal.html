@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="/style.css" >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title> Live duel </title>
+    <style>
+        /* Modern Dark Reset */
+
+    </style>
+
+     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" />
+
+</head>
+<body>
+
+    <!-- 1. The Fixed Top Header -->
+    <header class="top-navbar">
+
+            <span class="brand-logo">Waater </span>
+        </div>
+        
+
+    </header>
+
+    <!-- 2. The Multi-Column Environment -->
+    <div class="app-body">
+        
+        <!-- Left Sidebar Options -->
+        <nav class="sidebar">
+
+            <a href="/" style="text-decoration: none;">
+                <div class="nav-item">
+                    <span class="material-symbols-outlined">home</span>
+                    <span class="label">Home</span>
+                </div>
+            </a>
+
+            <a href="/dueal" style="text-decoration: none;">
+                <div class="nav-item active">
+                    <span class="material-symbols-outlined">swords</span>
+                    <span class="label">Duels</span>
+                </div>
+            </a>
+
+            <a href="/Create" style="text-decoration: none;">
+                <div class="nav-item">
+                    <span class="material-symbols-outlined">add_circle</span>
+                    <span class="label">Create</span>
+                </div>
+            </a>
+
+        </nav>
+
+        <!-- 3. The Core Open Blank Canvas -->
+        <main class="main-content-canvas">
+            
+            <div id="duel-list-container">
+
+                <p style="color: #9ca3af;">Loading duels...</p>
+
+            </div>
+        </main>
+        
+    </div> 
+
+        </main>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+
+        // 2. CRITICAL: Your Firebase settings must exist on this page too
+        const firebaseConfig = {
+            apiKey: "AIzaSyDc6wwJq_iQtLoZT2RMA1-qyqN3U5W2ZL0",
+            authDomain: "waater-65596.firebaseapp.com",
+            projectId: "waater-65596",
+            storageBucket: "waater-65596.firebasestorage.app",
+            messagingSenderId: "840770803135",
+            appId: "1:840770803135:web:1425f583ad04315b87fd0a",
+            measurementId: "G-48T9GVZF3N"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // Auth Gatekeeper Check
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                // Not signed in? Boot them out immediately.
+                // NOTE: Make sure your filename is exactly spelled 'Sigh-in.html' with a capital S!
+                window.location.href = '/Sigh-in'; 
+            } else {
+                console.log("Welcome back:", user.email);
+            }
+        });
+
+    </script> 
+
+    <script>
+
+
+        const socket = io();
+
+        // ✅ Now properly defined
+        const listContainer = document.getElementById('duel-list-container');
+
+        socket.on('update_duel_list', (duels) => {
+            listContainer.innerHTML = '';
+
+            if (duels.length === 0) {
+                listContainer.innerHTML = `<p style="color: #9ca3af;">The arena is currently quiet. Go create a duel to spark a conflict!</p>`;
+                return;
+            }
+
+            duels.forEach(duel => {
+                const duelCard = document.createElement('div');
+                duelCard.style.background = '#111827';
+
+                duelCard.style.border = '1px solid #1f2937';
+                duelCard.style.borderRadius = '16px';
+
+                duelCard.style.padding = '1.5rem';
+
+                duelCard.style.display = 'flex';
+                duelCard.style.flexDirection = 'column';
+                duelCard.style.gap = '1rem';
+
+                duelCard.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.2)';
+                duelCard.style.marginBottom = '1rem';
+
+                duelCard.innerHTML = `
+                    <div>
+                        <h3 style="color: #ffffff; margin: 0;">${duel.thesis}</h3>
+                    </div>
+
+                    <button class="arena-submit-btn" onclick="joinMatch('${duel.id}')">
+                        <span>Fight ⚔️</span>
+                    </button>
+                `;
+
+                listContainer.appendChild(duelCard);
+            });
+        });
+
+        function joinMatch(matchId) {
+        socket.emit('join_match', { matchId: matchId});
+        };
+
+        socket.on('match_found', (data) => {
+            window.location.href = `/live?match=${data.matchId}&role=${data.role}`;
+        });
+
+        // Add this inside your existing script block
+
+
+
+
+    </script>
+
+
+
+</body>
+</html>
