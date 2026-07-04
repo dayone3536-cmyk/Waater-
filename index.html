@@ -550,18 +550,30 @@
             handleReaction(match.room_id, 'dislike', card);
         });
 
+
         shareBtn.addEventListener('click', async () => {
+
             if (!(await window.requireLogin())) return;
             const shareUrl = `${window.location.origin}/live?match=${match.room_id}&replay=1`;
+
             try {
+
                 if (navigator.share) {
+
                     await navigator.share({ title: match.thesis, url: shareUrl });
+
                 } else {
                     await navigator.clipboard.writeText(shareUrl);
                     const original = shareBtn.style.borderColor;
+
                     shareBtn.style.borderColor = '#ffffff';
+
                     setTimeout(() => { shareBtn.style.borderColor = original; }, 1000);
+
                 }
+
+                fetch(`/match/${match.room_id}/share`, { method: 'POST' });
+                
             } catch (err) {
                 console.error('Share failed:', err);
             }

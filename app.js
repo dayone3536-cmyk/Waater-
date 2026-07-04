@@ -168,9 +168,40 @@ app.post('/past-matches/:roomId/vote', express.json(), async (req, res) => {
 });
 
 
+app.post('/engagement/dwell', express.json(), async (req, res) => {
+
+    const { roomId, seconds } = req.body;
+    const userId = req.cookies.anonId;
+    if (!roomId || !seconds) return res.sendStatus(400);
+
+    await supabase.from('user_engagement').insert({
+        user_id: userId,
+        room_id: roomId,
+        event_type: 'view_end',
+        value: seconds
+    });
+
+    const { data: match } = await supabase
+        .from('past_matches')
+        .select('thesis')
+        .eq('room_id', roomId)
+        .maybeSingle();
+
+    if (match) {
+
+        await bumpAffinity(userId, match.thesis, seconds > 30 ? 1 : 0);
+
+    }
+
+
+    res.sendStatus(204);
+});
+
+
 
 
 app.post('/match/:roomId/react', express.json(), async (req, res) => {
+
     const { roomId } = req.params;
     const { reaction } = req.body;
     const userId = req.cookies.anonId;
@@ -233,6 +264,12 @@ app.post('/match/:roomId/react', express.json(), async (req, res) => {
             dislike_count: dislikeCount || 0
         });
 
+        const { data: match } = await supabase.from('past_matches').select('thesis').eq('room_id', roomId).maybeSingle();
+    
+        if (match) {
+            await bumpAffinity(userId, match.thesis, reaction === 'like' ? 3 : -1);
+        }
+
     } catch (err) {
         console.error('Reaction error:', err);
         res.status(500).json({ error: 'Failed to update reaction' });
@@ -259,8 +296,36 @@ app.get('/past-matches/:roomId/votes', async (req, res) => {
 });
 
 
+app.post('/match/:roomId/share', async (req, res) => {
+    const { roomId } = req.params;
+    const userId = req.cookies.anonId;
+
+    const { data: match } = await supabase
+        .from('past_matches')
+        .select('thesis')
+        .eq('room_id', roomId)
+        .maybeSingle();
+
+    if (match) {
+        await supabase.from('user_engagement').insert({
+            user_id: userId,
+            room_id: roomId,
+            event_type: 'share',
+            value: 1
+        });
+        await bumpAffinity(userId, match.thesis, 5);
+    }
+
+    res.sendStatus(204);
+    
+});
+
+
+
 
 // Put this ABOVE io.on('connection')send_argument join_room     cast_vote
+
+
 
 function broadcastLiveMatches() {
     const liveList = activeMatches.map(m => ({
@@ -270,6 +335,7 @@ function broadcastLiveMatches() {
     }));
     io.emit('update_live_matches', liveList);
 }
+
 
 async function archiveMatch(match, endReason, winnerRole = null) {
     const { error } = await supabase
@@ -283,6 +349,47 @@ async function archiveMatch(match, endReason, winnerRole = null) {
 
     if (error) console.error('Failed to archive match:', error);
 }
+
+
+async function bumpAffinity(userId, thesis, weight) {
+
+    const topics = extractTopics(thesis);
+
+    for (const topic of topics) {
+        const { data: existing } = await supabase
+
+            .from('user_topic_affinity')
+            .select('score')
+            .eq('user_id', userId)
+
+            .eq('topic', topic)
+            .maybeSingle();
+
+        const newScore = (existing?.score || 0) + weight;
+
+        await supabase
+            .from('user_topic_affinity')
+
+            .upsert({ user_id: userId, topic, score: newScore, updated_at: new Date().toISOString() },
+
+                     { onConflict: 'user_id,topic' });
+
+    }
+}
+
+const STOPWORDS = new Set(['about','should','their','there','which','would','could','because','other','these','those','where','being']);
+
+function extractTopics(thesis) {
+
+    return thesis
+
+            .toLowerCase()
+            .replace(/[^a-z0-9\s]/g, '')
+            .split(/\s+/)
+            .filter(w => w.length > 4 && !STOPWORDS.has(w))
+            .slice(0, 5); // keep it to a few meaningful words per debate
+
+    }
 
 
 // activeMatches loadReplayMode args async
@@ -512,7 +619,7 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
             }
 
              await supabase.from('past_matches').update({ ended_at: null, end_reason: null }).eq('room_id', roomId);
-             
+
         } else {
 
             const isPlayer = match.creatorSocketId === socket.id || match.challengerSocketId === socket.id;
@@ -777,6 +884,11 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
         // Keep track of this room's timer so we can reset it when they send an argument else 
         matchTimers[roomId] = { intervalId, activePlayerSocketId };
     }
+
+
+
+
+
 
     function executeAutomaticTimeout(roomId, losingPlayerId) {
         console.log(`Match ${roomId}: Player ${losingPlayerId} failed to reply in 60s. Auto-removed.`);

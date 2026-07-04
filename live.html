@@ -1310,9 +1310,69 @@
 // messageInput
 
 
-    const chat =
-        document.getElementById('chat');
+    const chat  = document.getElementById('chat');
 
+    /* ---------------- DWELL TIME TRACKING ---------------- */
+
+    let dwellViewStart = Date.now();
+    let dwellAccumulatedMs = 0;
+
+    let dwellIsVisible = !document.hidden;
+    let dwellRoomId = currentRoomId; // tracks whichever room they're currently viewing
+
+
+    document.addEventListener('visibilitychange', () => {
+
+        if (document.hidden) {
+
+            dwellAccumulatedMs += Date.now() - dwellViewStart;
+
+            dwellIsVisible = false;
+
+        } else {
+            dwellViewStart = Date.now();
+
+            dwellIsVisible = true;
+
+        }
+    });
+
+    function flushDwellTime() {
+
+        if (dwellIsVisible) {
+            dwellAccumulatedMs += Date.now() - dwellViewStart;
+
+        }
+
+        dwellViewStart = Date.now();
+
+
+        if (dwellAccumulatedMs < 1000 || !dwellRoomId) {
+
+            dwellAccumulatedMs = 0;
+            return;
+        }
+
+        const payload = JSON.stringify({
+
+            roomId: dwellRoomId,
+            seconds: Math.round(dwellAccumulatedMs / 1000)
+
+        });
+
+        navigator.sendBeacon('/engagement/dwell', payload);
+
+        dwellAccumulatedMs = 0;
+    }
+
+    // Heartbeat every 20s so long sessions aren't lost
+
+    setInterval(flushDwellTime, 20000);
+
+    // Flush on tab close / navigation away
+
+    window.addEventListener('beforeunload', flushDwellTime);
+    window.addEventListener('pagehide', flushDwellTime);
 
     
     const shareBtn = document.getElementById('shareBtn');
@@ -1399,64 +1459,6 @@
     );
 
     let turnUIInterval;
-
-// The server tells us a new 60-second window has begun
-
-
-// make the timer here if the users priortize thats
-    // socket.on('turn_started', (data) => {
-    //     const { activePlayerId, secondsLeft } = data;
-    //     const isMyTurn = (activePlayerId === socket.id);
-        
-    //     const statusLabel = document.getElementById('turn-status-text');
-    //     const visualClock = document.getElementById('countdown-clock');
-    //     const inputTextArea = document.getElementById('argument-input-box');
-    //     const submitBtn = document.getElementById('submit-argument-btn');
-
-    //     // Wipe any old local UI clock tickers running from the last turn
-        
-    //     clearInterval(turnUIInterval);
-
-    //     // Toggle interactive access based on whose turn it is
-
-    //     if (isMyTurn) {
-    //         statusLabel.innerHTML = `⚡ <span class="text-green-400 font-bold">YOUR TURN!</span> Reply before the clock hits zero!`;
-    //         if (inputTextArea) inputTextArea.disabled = false;
-    //         if (submitBtn) submitBtn.disabled = false;
-    //     } else {
-    //         statusLabel.innerHTML = `⏳ Opponent is drafting a counter-argument...`;
-    //         if (inputTextArea) inputTextArea.disabled = true; // Lock their keyboard!
-    //         if (submitBtn) submitBtn.disabled = true;
-    //     }
-
-    //     // Run a local clock loop purely to make the numbers count down smoothly on screen
-    //     let currentSeconds = secondsLeft;
-        
-    //     if (visualClock) {
-    //         visualClock.innerText = `${currentSeconds}s`;
-    //         visualClock.style.color = "#f59e0b"; // Default Amber warning color you_are_spectator
-    //     }
-
-    //     turnUIInterval = setInterval(() => {
-    //         currentSeconds--;
-    //         if (visualClock) {
-    //             visualClock.innerText = `${currentSeconds}s`;
-                
-    //             // Turn the clock red and flash if they have less than 10 seconds left
-    //             if (currentSeconds <= 10) {
-    //                 visualClock.style.color = "#ef4444"; // Red
-    //                 visualClock.classList.add('animate-pulse');
-    //             }
-    //         }
-
-    //         if (currentSeconds <= 0) {
-    //             clearInterval(turnUIInterval);
-    //         }
-    //     }, 1000);
-    // });
-
-
-
 
     socket.on('match_ended_lost', (data) => {
         clearInterval(turnUIInterval);
@@ -1630,6 +1632,7 @@
     });
 
     // If replaying, fetch past matches once so we have a list to swipe through
+
     if (isReplay) {
         fetch('/past-matches')
             .then(res => res.json())
@@ -1649,10 +1652,14 @@
         if (typingBubble) { typingBubble.remove(); typingBubble = null; }
         dynamic_title.textContent = 'loading topic...';
     }
+    
 
     function switchToLiveMatch(newRoomId) {
+
         if (isSwitching || newRoomId === currentRoomId) return;
         isSwitching = true;
+
+        flushDwellTime();
 
         socket.emit('leave_room', { roomId: currentRoomId });
         clearChatUI();
@@ -1664,12 +1671,21 @@
         setTimeout(() => { isSwitching = false; }, 400);
     }
 
+
     function switchToReplay(newRoomId) {
+
         if (isSwitching || newRoomId === currentRoomId) return;
+
         isSwitching = true;
 
+        flushDwellTime();
+
+
         clearChatUI();
+
         currentRoomId = newRoomId;
+        
+        dwellRoomId = newRoomId;
 
         loadReplayMode(newRoomId).then(() => {
             window.history.replaceState({}, '', `${window.location.pathname}?replay=1&match=${newRoomId}`);
@@ -1774,8 +1790,53 @@
     });
 
 
+    let viewStart = Date.now();
 
-    /* ---------------- REELS-STYLE SWIPE BETWEEN LIVE DEBATES ---------------- */
+    let accumulatedMs = 0;
+    let isVisible = !document.hidden;
+
+
+    document.addEventListener('visibilitychange', () => {
+
+        if (document.hidden) {
+
+            accumulatedMs += Date.now() - viewStart;
+
+            isVisible = false;
+
+        } else {
+
+            viewStart = Date.now();
+
+            isVisible = true;
+
+        }
+    });
+
+    function flushDwellTime(final = false) {
+
+        if (isVisible) accumulatedMs += Date.now() - viewStart;
+        viewStart = Date.now();
+
+        if (accumulatedMs < 1000) return; // nothing meaningful to send
+
+        const payload = JSON.stringify({ roomId: currentRoomId, seconds: Math.round(accumulatedMs / 1000) });
+
+        navigator.sendBeacon('/engagement/dwell', payload); // survives page unload
+        accumulatedMs = 0;
+
+    }
+
+    // heartbeat every 20s so long sessions aren't lost, plus one on unload
+
+    setInterval(() => flushDwellTime(), 20000);
+    window.addEventListener('beforeunload', () => flushDwellTime(true));
+    window.addEventListener('pagehide', () => flushDwellTime(true));
+
+
+
+
+
 
 
 </script>
