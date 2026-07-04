@@ -797,6 +797,7 @@
 
 </div>
 
+
 <div class="debaters">
 
     <div class="user-card">
@@ -929,8 +930,12 @@
             window.location.search
         );
 
-    const roomId =
-        params.get('match');
+    
+
+    const roomId = params.get('match');
+
+
+    let currentRoomId = roomId;
 
     const role = params.get('role');
 
@@ -1312,6 +1317,8 @@
 
     const chat  = document.getElementById('chat');
 
+
+
     /* ---------------- DWELL TIME TRACKING ---------------- */
 
     let dwellViewStart = Date.now();
@@ -1621,7 +1628,6 @@
 
     let liveMatches = [];
     let pastMatches = [];
-    let currentRoomId = roomId;
 
 
     let canSwipe = false;     // true once we know we're allowed to swipe (spectator OR replay)
@@ -1684,13 +1690,15 @@
         clearChatUI();
 
         currentRoomId = newRoomId;
-        
+
         dwellRoomId = newRoomId;
 
         loadReplayMode(newRoomId).then(() => {
             window.history.replaceState({}, '', `${window.location.pathname}?replay=1&match=${newRoomId}`);
             isSwitching = false;
+
         });
+
     }
 
     function goToNextDebate() {
@@ -1813,23 +1821,24 @@
         }
     });
 
-    function flushDwellTime(final = false) {
+    // function flushDwellTime(final = false) {
 
-        if (isVisible) accumulatedMs += Date.now() - viewStart;
-        viewStart = Date.now();
+    //     if (isVisible) accumulatedMs += Date.now() - viewStart;
+    //     viewStart = Date.now();
 
-        if (accumulatedMs < 1000) return; // nothing meaningful to send
+    //     if (accumulatedMs < 1000) return; // nothing meaningful to send
 
-        const payload = JSON.stringify({ roomId: currentRoomId, seconds: Math.round(accumulatedMs / 1000) });
+    //     const payload = JSON.stringify({ roomId: currentRoomId, seconds: Math.round(accumulatedMs / 1000) });
 
-        navigator.sendBeacon('/engagement/dwell', payload); // survives page unload
-        accumulatedMs = 0;
+    //     navigator.sendBeacon('/engagement/dwell', payload); // survives page unload
+    //     accumulatedMs = 0;
 
-    }
+    // }
 
     // heartbeat every 20s so long sessions aren't lost, plus one on unload
 
-    setInterval(() => flushDwellTime(), 20000);
+    // setInterval(() => flushDwellTime(), 20000);
+
     window.addEventListener('beforeunload', () => flushDwellTime(true));
     window.addEventListener('pagehide', () => flushDwellTime(true));
 
