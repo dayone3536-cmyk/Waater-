@@ -66,6 +66,12 @@ app.get('/dueal', (req, res) => {
     res.sendFile(__dirname + '/dueal.html');
 });
 
+app.get('/wake-up', (req, res) => {
+    res.sendFile(__dirname + '/wake.html');
+});
+
+
+
 app.get('/live', (req, res) => {
     res.sendFile(__dirname + '/live.html');
 });
@@ -80,6 +86,13 @@ app.get('/Invite', (req, res) => {
     res.sendFile(__dirname + '/Invite.html');
 
 });
+
+app.get('/sigh', (req, res) => {
+    res.sendFile(__dirname + '/sigh.html');
+});
+
+
+
 
 app.get('/health', (req, res) => res.status(200).send('OK'));
 
