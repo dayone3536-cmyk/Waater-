@@ -91,7 +91,12 @@ app.get('/sigh', (req, res) => {
     res.sendFile(__dirname + '/sigh.html');
 });
 
+// Add this simple route
 
+
+app.get('/ping', (req, res) => {
+    res.status(200).send('OK');
+});
 
 
 app.get('/health', (req, res) => res.status(200).send('OK'));
