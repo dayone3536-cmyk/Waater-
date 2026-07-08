@@ -1102,7 +1102,8 @@
 
         document.getElementById('crowdLean').textContent = total > 0
             ? `${Math.max(rightPct, leftPct)}% lean · ${total} votes`
-            : 'Be the first to vote';
+
+            : 'Share to your friends and let them decide';
     }
 
     async function castReplayVote(roomId, side, evt) {
