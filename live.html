@@ -235,6 +235,51 @@
 
     /* momentum */
 
+    .send-btn2 {
+
+        border: none;
+        cursor: pointer;
+        border-radius: 50%;
+        width: 56px;
+        height: 56px;
+        flex-shrink: 0;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #6d5dfc, #4f7cff);
+        transition: transform .15s ease, filter .15s ease;
+
+    }
+
+    .send-btn2:hover {
+
+        transform: translateY(-2px);
+
+    }
+
+    .send-btn2:active {
+        transform: scale(.92);
+    }
+
+    .send-btn2 svg,
+    .mic-btn svg {
+
+        width: 22px;
+        height: 22px;
+
+    }
+
+    .mic-btn {
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+    }
+
+
+
     .typing-indicator {
 
     align-self: flex-start;
@@ -842,8 +887,34 @@
 
 
     <button class="mic-btn" id="micBtn" type="button" title="Hold to talk">
-        🎤
+
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+
+            <line x1="12" y1="19" x2="12" y2="23"></line>
+
+            <line x1="8" y1="23" x2="16" y2="23"></line>
+
+        </svg>
+
     </button>
+
+    <button class="send-btn2" id="sendBtn" type="button" title="Send">
+
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+
+        </svg>
+
+    </button>
+
+
 
 </div>
 
@@ -971,6 +1042,9 @@
 
 
 // you_are_spectator
+
+    const micBtn = document.getElementById('micBtn');
+
 
     const isReplay = params.get('replay') === '1';
 
@@ -1220,6 +1294,8 @@
             messageInput.value = '';
         }
 
+        document.getElementById('sendBtn').addEventListener('click', sendMessage);
+
 
         messageInput.addEventListener('keydown', (event) => {
 
@@ -1236,7 +1312,25 @@
 
       // ---- VOICE INPUT (WhatsApp style) ----
 
-    const micBtn = document.getElementById('micBtn');
+      const micIconMic = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+        <line x1="12" y1="19" x2="12" y2="23"></line>
+        <line x1="8" y1="23" x2="16" y2="23"></line>
+
+    </svg>`;
+
+    const micIconStop = `<svg viewBox="0 0 24 24" fill="currentColor">
+
+        <rect x="6" y="6" width="12" height="12" rx="2"></rect>
+        
+    </svg>`;
+
+    micBtn.innerHTML = micIconMic; // set initial icon on load
+
+
+
+    
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
@@ -1267,23 +1361,29 @@
         });
 
         recognition.onstart = () => {
+
             isRecording = true;
             micBtn.classList.add('recording');
-            micBtn.textContent = '⏹️';
+
+            micBtn.innerHTML = micIconStop;
+            
         };
 
         recognition.onend = () => {
             isRecording = false;
             micBtn.classList.remove('recording');
-            micBtn.textContent = '🎤';
+
+            micBtn.innerHTML = micIconMic;
 
             // If it stopped on its own (not because the user tapped stop), restart it
+
             if (!userStoppedManually) {
                 try {
                     recognition.start();
                     isRecording = true;
                     micBtn.classList.add('recording');
-                    micBtn.textContent = '⏹️';
+                    micBtn.innerHTML = micIconStop;
+
                 } catch (e) {
                     console.error('Auto-restart failed', e);
                 }
