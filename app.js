@@ -186,8 +186,10 @@ app.post('/past-matches/:roomId/vote', express.json(), async (req, res) => {
 
 app.post('/engagement/dwell', express.json(), async (req, res) => {
 
-    const { roomId, seconds } = req.body;
+    const { roomId, seconds } = req.body || {} ;
+
     const userId = req.cookies.anonId;
+    
     if (!roomId || !seconds) return res.sendStatus(400);
 
     await supabase.from('user_engagement').insert({

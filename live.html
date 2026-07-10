@@ -1468,10 +1468,14 @@
 
         });
 
-        navigator.sendBeacon('/engagement/dwell', payload);
+        const blob = new Blob([payload], { type: 'application/json' });
+
+        navigator.sendBeacon('/engagement/dwell', blob);
 
         dwellAccumulatedMs = 0;
     }
+
+
 
     // Heartbeat every 20s so long sessions aren't lost
 
