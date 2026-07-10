@@ -167,30 +167,42 @@ body{
     padding:16px;
 }
 
-.send-btn{
 
+.icon-btn{
     border:none;
-
     cursor:pointer;
+    border-radius:50%;
+    width:50px;
+    height:50px;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition: transform .15s ease, background .15s ease;
+}
+.icon-btn:hover{ transform:translateY(-2px); }
+.icon-btn:active{ transform:translateY(0) scale(0.95); }
 
-    border-radius:16px;
-
-    padding:0 30px;
-
+.mic-btn{
+    background:#1f2635;
+    color:#9ca3af;
+}
+.mic-btn:hover{ background:#272f42; color:white; }
+.mic-btn.recording{
+    background:#ef4444;
     color:white;
-
-    font-weight:700;
-
-    background:linear-gradient(
-        135deg,
-        #6d5dfc,
-        #4f7cff
-    );
+    animation: pulse-rec 1.2s infinite;
+}
+@keyframes pulse-rec{
+    0%,100%{ box-shadow:0 0 0 0 rgba(239,68,68,.5); }
+    50%{ box-shadow:0 0 0 8px rgba(239,68,68,0); }
 }
 
-.send-btn:hover{
-    transform:translateY(-2px);
+.send-btn{
+    background:linear-gradient(135deg,#6d5dfc,#4f7cff);
+    color:white;
 }
+
 
 .message {
     background: #1f2937;
@@ -287,7 +299,7 @@ body{
 
     <div class="topic" id="Topic">
         Loading...
-        
+
         <!-- Paste the topic of the duel -->
     </div>
 
@@ -339,9 +351,32 @@ body{
         placeholder="Present your argument..."
     ></textarea>
 
-    <button class="send-btn" id="sendBtn" type="submit">
-        Send
+    
+    <button class="icon-btn mic-btn" id="micBtn" title="Voice input" type="button">
+
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+
+            <line x1="12" y1="19" x2="12" y2="23"/>
+
+            <line x1="8" y1="23" x2="16" y2="23"/>
+
+        </svg>
+
     </button>
+
+    <button class="icon-btn send-btn" id="sendBtn" type="button">
+
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+
+            <path d="M2 21l21-9L2 3v7l15 2-15 2z"/>
+        </svg>
+
+    </button>
+
 
 </div>
 
@@ -375,12 +410,14 @@ body{
     });
 
     // Handle Log Out click
-    document.getElementById('logout-btn').addEventListener('click', () => {
-        signOut(auth).then(() => {
-            window.location.href = "Sigh-in.html";
-        });
+
+    const logoutBtn = document.getElementById('logout-btn');
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+        signOut(auth).then(() => window.location.href = "Sigh-in.html");
     });
-    
+};
+
 </script>
 
 
@@ -483,7 +520,7 @@ body{
 
                 div.classList.add('right');
             }
-            
+
 
             div.textContent =
                 data.message;
@@ -502,14 +539,14 @@ body{
     socket.on('turn_started', (data) => {
         const { activePlayerId, secondsLeft } = data;
         const isMyTurn = (activePlayerId === socket.id);
-        
+
         const statusLabel = document.getElementById('turn-status-text');
         const visualClock = document.getElementById('countdown-clock');
         const inputTextArea = document.getElementById('argument-input-box');
         const submitBtn = document.getElementById('submit-argument-btn');
 
         // Wipe any old local UI clock tickers running from the last turn
-        
+
         clearInterval(turnUIInterval);
 
         // Toggle interactive access based on whose turn it is
@@ -526,7 +563,7 @@ body{
 
         // Run a local clock loop purely to make the numbers count down smoothly on screen
         let currentSeconds = secondsLeft;
-        
+
         if (visualClock) {
             visualClock.innerText = `${currentSeconds}s`;
             visualClock.style.color = "#f59e0b"; // Default Amber warning color
@@ -536,7 +573,7 @@ body{
             currentSeconds--;
             if (visualClock) {
                 visualClock.innerText = `${currentSeconds}s`;
-                
+
                 // Turn the clock red and flash if they have less than 10 seconds left
                 if (currentSeconds <= 10) {
                     visualClock.style.color = "#ef4444"; // Red
@@ -574,11 +611,11 @@ body{
     });
 
 
-    
+
     socket.on('you_are_spectator', () => {
         document.getElementById('message').disabled = true;
         document.getElementById('sendBtn').disabled = true;
-        document.getElementById('sendBtn').textContent = '👁 Watching';
+        document.getElementById('sendBtn').innerHTML =  '👁' ;
 
         document.querySelector('.bottom-bar').insertAdjacentHTML('afterbegin', `
             <div style="color:#9ca3af; font-size:.9rem; align-self:center;">
@@ -591,6 +628,7 @@ body{
     socket.on('match_ended', (data) => {
         alert(data.reason);
         window.location.href = '/';
+
     });
 
 
@@ -599,5 +637,3 @@ body{
 
 </body>
 </html>
-
-
