@@ -184,6 +184,89 @@ app.post('/past-matches/:roomId/vote', express.json(), async (req, res) => {
 });
 
 
+app.post('/match/:roomId/invite', express.json(), async (req, res) => {
+    const { roomId } = req.params;
+    const { side } = req.body;
+    const userId = req.cookies.anonId;
+
+    if (!['pro', 'against'].includes(side)) {
+        return res.status(400).json({ error: 'Invalid side' });
+    }
+
+    const code = crypto.randomBytes(6).toString('hex');
+
+    const { error } = await supabase.from('match_invites').insert({
+        code,
+        room_id: roomId,
+        inviter_user_id: userId,
+        inviter_side: side
+    });
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    res.json({ code });
+});
+
+app.post('/invite/:code/redeem', async (req, res) => {
+    const { code } = req.params;
+    const redeemerId = req.cookies.anonId;
+
+    const { data: invite, error: fetchErr } = await supabase
+        .from('match_invites')
+        .select('*')
+        .eq('code', code)
+        .maybeSingle();
+
+    if (fetchErr) return res.status(500).json({ error: fetchErr.message });
+    if (!invite) return res.status(404).json({ error: 'Invite not found' });
+    if (invite.redeemed_at) return res.json({ redeemed: false, reason: 'already_redeemed' });
+    if (invite.inviter_user_id === redeemerId) return res.json({ redeemed: false, reason: 'self_invite' });
+
+    const { error: updErr } = await supabase
+        .from('match_invites')
+        .update({ redeemed_at: new Date().toISOString(), redeemed_by: redeemerId })
+        .eq('code', code);
+
+    if (updErr) return res.status(500).json({ error: updErr.message });
+
+    const { data: existingBonus } = await supabase
+        .from('match_invite_bonus')
+        .select('bonus')
+        .eq('room_id', invite.room_id)
+        .eq('user_id', invite.inviter_user_id)
+        .maybeSingle();
+
+    const newBonus = (existingBonus?.bonus || 0) + 5;
+
+    const { error: bonusErr } = await supabase
+        .from('match_invite_bonus')
+        .upsert(
+            { room_id: invite.room_id, user_id: invite.inviter_user_id, side: invite.inviter_side, bonus: newBonus, updated_at: new Date().toISOString() },
+            { onConflict: 'room_id,user_id' }
+        );
+
+    if (bonusErr) return res.status(500).json({ error: bonusErr.message });
+
+    res.json({ redeemed: true, bonus: newBonus });
+});
+
+app.get('/past-matches/:roomId/invite-bonus', async (req, res) => {
+    const userId = req.cookies.anonId;
+
+    const { data, error } = await supabase
+        .from('match_invite_bonus')
+        .select('bonus')
+        .eq('room_id', req.params.roomId)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ bonus: data ? data.bonus : 0 });
+});
+
+
+
+
 app.post('/engagement/dwell', express.json(), async (req, res) => {
 
     const { roomId, seconds } = req.body || {} ;
@@ -965,37 +1048,50 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
 
         activeMatches.forEach(match => {
 
-            const isCreator = match.creatorSocketId === socket.id;
-            const isChallenger = match.challengerSocketId === socket.id;
+        const isCreator = match.creatorSocketId === socket.id;
+        const isChallenger = match.challengerSocketId === socket.id;
 
-            if (isCreator || isChallenger) {
-                const role = isCreator ? 'creator' : 'challenger';
+        if (isCreator || isChallenger) {
+            const role = isCreator ? 'creator' : 'challenger';
 
-                const timer = setTimeout(() => {
-                    const stillSameSocket =
-                        (role === 'creator' && match.creatorSocketId === socket.id) ||
-                        (role === 'challenger' && match.challengerSocketId === socket.id);
+            const timer = setTimeout(() => {
+                const stillSameSocket =
+                    (role === 'creator' && match.creatorSocketId === socket.id) ||
+                    (role === 'challenger' && match.challengerSocketId === socket.id);
 
-                    if (!stillSameSocket) return;
- 
-                    archiveMatch(match, 'disconnected');
+                if (!stillSameSocket) return;
 
-                    io.to(match.roomId).emit('match_ended', { reason: 'A debater disconnected.' });
-                    activeMatches = activeMatches.filter(m => m.roomId !== match.roomId);
-                    broadcastLiveMatches();
+                const winnerRole = role === 'creator' ? 'challenger' : 'creator';
+                const winnerSocketId = role === 'creator' ? match.challengerSocketId : match.creatorSocketId;
 
-                }, DISCONNECT_GRACE_MS);
+                archiveMatch(match, 'disconnected', winnerRole);
 
-                match.pendingDisconnect[role] = timer;
+                if (winnerSocketId) {
+                    io.to(winnerSocketId).emit('match_ended_won', {
+                        reason: 'Your opponent disconnected. You win! 🏆'
+                    });
+                }
 
-            } else {
-                match.spectators = match.spectators.filter(id => id !== socket.id);
-                delete match.votes[socket.id];
-                io.to(match.roomId).emit('spectator_count_changed', { count: match.spectators.length });
-            }
+                match.spectators.forEach(specId => {
+                    io.to(specId).emit('match_ended', { reason: 'A debater disconnected.' });
+                });
 
-        
-        });
+                activeMatches = activeMatches.filter(m => m.roomId !== match.roomId);
+                broadcastLiveMatches();
+
+            }, DISCONNECT_GRACE_MS);
+
+            match.pendingDisconnect[role] = timer;
+
+        } else {
+            match.spectators = match.spectators.filter(id => id !== socket.id);
+            delete match.votes[socket.id];
+            io.to(match.roomId).emit('spectator_count_changed', { count: match.spectators.length });
+        }
+
+    });
+
+
 
 
 

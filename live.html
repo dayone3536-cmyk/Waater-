@@ -782,6 +782,68 @@
     font-size:.85rem;
   }
 
+    .results-box{
+        max-width:440px;
+
+    }
+
+    .results-title{
+
+        font-size:1.05rem;
+        font-weight:700;
+        margin-bottom:16px;
+
+    }
+
+    .results-box img{
+
+        width:100%;
+        border-radius:12px;
+        margin-bottom:18px;
+        display:block;
+
+    }
+
+    .results-vote-box{
+
+        background:#1b2333;
+        border-radius:14px;
+        padding:16px;
+        margin:18px 0 16px;
+        text-align:left;
+
+    }
+
+    .results-vote-text{
+
+        font-weight:700;
+        margin-bottom:10px;
+        text-align:center;
+
+    }
+
+    .results-vote-count{
+
+        color:#46c2ff;
+    }
+
+    .results-invite-btn{
+
+        width:100%;
+
+    }
+
+    .results-invite-sub{
+
+        font-size:.75rem;
+        color:#9ca3af;
+
+        text-align:center;
+        margin-top:8px;
+
+    }
+
+
 
     @media (max-width: 600px){
 
@@ -1047,6 +1109,33 @@
 
     let authReadyResolve;
     const authReady = new Promise((resolve) => { authReadyResolve = resolve; });
+
+    const inviteCode = params.get('invite');
+
+    if (inviteCode) {
+
+        (async () => {
+
+            await window.requireLogin(); // will redirect to sign-in if not logged in, and come right back to this URL
+
+            try {
+
+                const res = await fetch(`/invite/${inviteCode}/redeem`, { method: 'POST' });
+                const data = await res.json();
+                if (data.redeemed) {
+                    console.log('Invite redeemed, inviter credited +5 votes');
+
+                }
+            } catch (e) {
+
+                console.error('Invite redemption failed:', e);
+
+            }
+            
+        })();
+    }
+
+
 
     window.isLoggedIn = false;
 
@@ -1715,6 +1804,217 @@ function getShareUrl() {
     return `${window.location.origin}${window.location.pathname}?${shareParams.toString()}`;
 }
 
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+async function showResultsScreen(roomId, resultReason) {
+
+    const mySide = role === 'creator' ? 'pro' : (role === 'challenger' ? 'against' : null);
+    const topicText = dynamic_title.textContent || 'Debate Arena';
+
+    let args = [];
+    try {
+        const argsRes = await fetch(`/past-matches/${roomId}/arguments`);
+        args = await argsRes.json();
+    } catch (e) {
+        console.error('Failed to load arguments:', e);
+    }
+
+    const chosen = pickRandomMessages(args, 3);
+
+    let tally = { pro: 0, against: 0 };
+    try {
+        const votesRes = await fetch(`/past-matches/${roomId}/votes`);
+        tally = await votesRes.json();
+    } catch (e) {
+        console.error('Failed to load votes:', e);
+    }
+
+    let bonus = 0;
+    if (mySide) {
+        try {
+            const bonusRes = await fetch(`/past-matches/${roomId}/invite-bonus`);
+            const bonusData = await bonusRes.json();
+            bonus = bonusData.bonus || 0;
+        } catch (e) {
+            console.error('Failed to load invite bonus:', e);
+        }
+    }
+
+    const myRealVotes = mySide ? (tally[mySide] || 0) : 0;
+    const opponentVotes = mySide ? (mySide === 'pro' ? tally.against : tally.pro) : 0;
+    const myTotalVotes = myRealVotes + bonus;
+    const isBehindOrTied = myRealVotes <= opponentVotes;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'resultsOverlay';
+    overlay.className = 'clip-overlay';
+
+    overlay.innerHTML = `
+        <div class="clip-box results-box">
+            <p class="results-title">${escapeHtml(resultReason || 'Debate Over')}</p>
+            <div id="resultsImgSlot"></div>
+
+            <div class="clip-share-grid">
+                <button class="clip-share-btn" id="resultsShareBtn">Share</button>
+                <button class="clip-share-btn" id="resultsInviteBtn2">Invite</button>
+            </div>
+
+            <div class="results-vote-box">
+                ${mySide ? `
+                    <p class="results-vote-text">You got <span class="results-vote-count">${myTotalVotes}</span> vote${myTotalVotes === 1 ? '' : 's'}</p>
+                    ${isBehindOrTied ? `
+                        <button class="forfeit-btn yes results-invite-btn" id="resultsInviteBtn">Invite a friend to get 5 free votes</button>
+                        <p class="results-invite-sub">They just need to sign in — you get the votes instantly.</p>
+                    ` : ''}
+                ` : ''}
+            </div>
+
+            <button class="clip-close" id="resultsCloseBtn">Back to lobby</button>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Build & show the 3-message clip image
+    if (chosen.length > 0) {
+        try {
+            const canvas = await captureMessagesAsImage(chosen, topicText);
+            const slot = document.getElementById('resultsImgSlot');
+            if (slot) {
+                const img = document.createElement('img');
+                img.src = canvas.toDataURL('image/png');
+                img.alt = 'Debate highlights';
+                slot.appendChild(img);
+            }
+        } catch (e) {
+            console.error('Failed to build results image:', e);
+        }
+    }
+
+    async function getInviteLink() {
+        if (!mySide) return null;
+        const res = await fetch(`/match/${roomId}/invite`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ side: mySide })
+        });
+        const data = await res.json();
+        const shareParams = new URLSearchParams(window.location.search);
+        shareParams.delete('role');
+        shareParams.set('match', roomId);
+        shareParams.set('invite', data.code);
+        return `${window.location.origin}${window.location.pathname}?${shareParams.toString()}`;
+    }
+
+    async function doInvite() {
+        if (!(await window.requireLogin())) return;
+        const link = await getInviteLink();
+        if (!link) return;
+
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: 'Join my debate on Waater!', text: `Come back this side of "${topicText}"`, url: link });
+            } catch (e) {}
+        } else {
+            try {
+                await navigator.clipboard.writeText(link);
+                shareToast.textContent = 'Invite link copied!';
+            } catch (e) {
+                shareToast.textContent = 'Could not copy link';
+            }
+            shareToast.classList.add('show');
+            setTimeout(() => shareToast.classList.remove('show'), 2000);
+        }
+    }
+
+    document.getElementById('resultsShareBtn').onclick = () => shareBtn.click();
+    document.getElementById('resultsInviteBtn2').onclick = doInvite;
+
+    const inviteBtn = document.getElementById('resultsInviteBtn');
+    if (inviteBtn) inviteBtn.onclick = doInvite;
+
+    document.getElementById('resultsCloseBtn').onclick = () => {
+        window.location.href = '/';
+    };
+
+}
+
+
+
+async function captureMessagesAsImage(messages, topicText) {
+    const card = document.createElement('div');
+
+    card.style.cssText = `
+        position:fixed; top:-9999px; left:-9999px;
+        width:480px;
+        background:#0f1117;
+        color:white;
+        font-family:Inter,system-ui,sans-serif;
+        padding:24px;
+        border-radius:16px;
+    `;
+
+    card.innerHTML = `
+        <div style="font-size:15px; font-weight:700; color:#46c2ff; margin-bottom:16px;">${escapeHtml(topicText)}</div>
+        <div id="clipMessages" style="display:flex; flex-direction:column; gap:12px;"></div>
+        <div style="display:flex; align-items:center; justify-content:flex-end; margin-top:20px; opacity:0.85;">
+            <span style="font-size:13px; font-weight:700; color:#9ca3af;">https://waater-yey2.onrender.com</span>
+        </div>
+    `;
+
+    const clipMessages = card.querySelector('#clipMessages');
+
+    messages.forEach(m => {
+
+        const isRight = m.sender_role === 'creator';
+        const bubble = document.createElement('div');
+
+        bubble.textContent = m.message;
+        bubble.style.cssText = `
+            max-width:80%;
+            padding:12px 16px;
+            border-radius:14px;
+            font-size:14px;
+            line-height:1.5;
+            align-self:${isRight ? 'flex-end' : 'flex-start'};
+            background:${isRight ? 'linear-gradient(135deg,#6d5dfc,#4f7cff)' : '#1b2333'};
+            color:white;
+        `;
+        clipMessages.appendChild(bubble);
+    });
+
+    document.body.appendChild(card);
+
+    try {
+        return await html2canvas(card, { backgroundColor: '#0f1117', scale: 2 });
+    } finally {
+        card.remove();
+    }
+
+}
+
+function pickRandomMessages(args, count) {
+
+    const pool = [...args];
+    const picked = [];
+    while (pool.length && picked.length < count) {
+        const i = Math.floor(Math.random() * pool.length);
+        picked.push(pool.splice(i, 1)[0]);
+
+    }
+
+    // keep chat order rather than random shuffle order
+
+    return picked.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+}
+
+
+
 function showClipModal(canvas, topicText) {
 
     const dataUrl = canvas.toDataURL('image/png');
@@ -1823,25 +2123,37 @@ function showClipModal(canvas, topicText) {
     let turnUIInterval;
 
     socket.on('match_ended_lost', (data) => {
-        clearInterval(turnUIInterval);
-        alert(data.reason);
-        window.location.href = '/'; // Kick them to lobby match_ended
-    });
 
+        clearInterval(turnUIInterval);
+        if (role === 'creator' || role === 'challenger') {
+            showResultsScreen(currentRoomId, data.reason);
+        } else {
+            alert(data.reason);
+            window.location.href = '/';
+        }
+
+    });
 
     socket.on('match_ended_won', (data) => {
         clearInterval(turnUIInterval);
-        alert(data.reason);
-        window.location.href = '/'; // Take them back victorious
+        if (role === 'creator' || role === 'challenger') {
+            showResultsScreen(currentRoomId, data.reason);
+        } else {
+            alert(data.reason);
+            window.location.href = '/';
+        }
     });
-
 
     socket.on('match_ended_draw', (data) => {
         clearInterval(turnUIInterval);
-        alert(data.reason);
-        window.location.href = '/';
-
+        if (role === 'creator' || role === 'challenger') {
+            showResultsScreen(currentRoomId, data.reason);
+        } else {
+            alert(data.reason);
+            window.location.href = '/';
+        }
     });
+
 
 
     
