@@ -124,13 +124,13 @@
 
     .right{
         align-self:flex-end;
-
         background:linear-gradient(
             135deg,
             #6d5dfc,
             #4f7cff
         );
-    }
+        
+      }
 
     /* INPUT */
 
@@ -712,6 +712,75 @@
         color:white;
         border:1px solid rgba(255,255,255,0.06);
     }
+    
+    
+    .icon-btn{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:44px;
+      height:44px;
+      border:none;
+      cursor:pointer;
+      border-radius:50%;
+      color:white;
+      background:linear-gradient(135deg,#6d5dfc,#4f7cff);
+      box-shadow:0 4px 14px rgba(79,124,255,.35);
+      transition:transform .2s, box-shadow .2s;
+      flex-shrink:0;
+      margin-left:8px;
+  }
+  
+  .icon-btn:hover{
+      transform:translateY(-2px);
+      box-shadow:0 6px 18px rgba(79,124,255,.5);
+  }
+  .icon-btn svg{ width:18px; height:18px; }
+  
+  .clip-overlay{
+      position:fixed; inset:0;
+      background:rgba(10,12,20,.75);
+      backdrop-filter:blur(6px);
+      -webkit-backdrop-filter:blur(6px);
+      display:flex; align-items:center; justify-content:center;
+      z-index:2000;
+  }
+  .clip-box{
+      background:#151924;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:20px;
+      padding:28px 24px;
+      max-width:420px;
+      width:90%;
+      text-align:center;
+      box-shadow:0 20px 60px rgba(0,0,0,.55);
+  }
+  .clip-box img{ width:100%; border-radius:12px; margin-bottom:16px; display:block; }
+  .clip-box p{ font-weight:700; margin-bottom:16px; }
+    .clip-share-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    
+    .clip-share-btn{
+      border:none; cursor:pointer;
+      padding:14px 0;
+      border-radius:12px;
+      font-weight:700;
+      color:white;
+      background:#242b3d;
+      border:1px solid rgba(255,255,255,.06);
+      transition:transform .15s ease, filter .15s ease;
+    }
+
+  .clip-share-btn:hover{ transform:translateY(-1px); filter:brightness(1.1); }
+
+  .clip-close{
+    
+    margin-top:16px;
+    background:none;
+    border:none;
+    color:#9ca3af;
+    cursor:pointer;
+    font-size:.85rem;
+  }
 
 
     @media (max-width: 600px){
@@ -769,7 +838,7 @@
 
         }
 
-        /* INPUT BAR */
+      
 
         .bottom-bar{
             padding:12px;
@@ -829,8 +898,21 @@
         </button>
 
     </div>
+    
+        <button class="icon-btn" id="clipBtn" type="button" title="Clip">
+          
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+            
+            <circle cx="9" cy="9" r="2"></circle>
+            
+            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+            
+        </svg>
+        
+    </button>
 
-
+    </div>
         
     </div>
 
@@ -944,6 +1026,9 @@
 
 
 <script src="/socket.io/socket.io.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
 
 <script type="module">
 
@@ -1493,7 +1578,12 @@
     shareBtn.addEventListener('click', async () => {
 
         const topicText = dynamic_title.textContent || 'Join my debate!';
-        const shareUrl = window.location.href;
+        const shareParams = new URLSearchParams(window.location.search);
+        
+        shareParams.delete('role');
+        shareParams.set('match', currentRoomId);
+        const shareUrl = `${window.location.origin}${window.location.pathname}?${shareParams.toString()}`;
+        
 
         if (navigator.share) {
 
@@ -1517,10 +1607,168 @@
             }
 
             shareToast.classList.add('show');
+            
             setTimeout(() => shareToast.classList.remove('show'), 2000);
         }
     });
+    
+        const clipBtn = document.getElementById('clipBtn');
+    
+        clipBtn.addEventListener('click', async () => {
 
+    if (!(await window.requireLogin())) return;
+
+    const allArgs = Array.from(chat.querySelectorAll('.argument'));
+    const chatRect = chat.getBoundingClientRect();
+
+    const visibleArgs = allArgs.filter(el => {
+        const r = el.getBoundingClientRect();
+        return r.bottom > chatRect.top && r.top < chatRect.bottom;
+    });
+
+    let clipArgs = visibleArgs;
+
+    if (clipArgs.length > 7) {
+        const centerY = chatRect.top + chatRect.height / 2;
+        clipArgs = clipArgs
+            .map(el => ({ el, dist: Math.abs(el.getBoundingClientRect().top + el.offsetHeight / 2 - centerY) }))
+            .sort((a, b) => a.dist - b.dist)
+            .slice(0, 7)
+            .map(x => x.el);
+
+        clipArgs = allArgs.filter(el => clipArgs.includes(el));
+    }
+
+    if (clipArgs.length === 0) {
+        alert('No messages to clip yet.');
+        return;
+    }
+
+    const card = document.createElement('div');
+    card.style.cssText = `
+        position:fixed; top:-9999px; left:-9999px;
+        width:480px;
+        background:#0f1117;
+        color:white;
+        font-family:Inter,system-ui,sans-serif;
+        padding:24px;
+        border-radius:16px;
+    `;
+
+    const topicText = dynamic_title.textContent || 'Debate Arena';
+
+    card.innerHTML = `
+        <div style="font-size:15px; font-weight:700; color:#46c2ff; margin-bottom:16px;">${topicText}</div>
+        <div id="clipMessages" style="display:flex; flex-direction:column; gap:12px;"></div>
+        <div style="display:flex; align-items:center; justify-content:flex-end; margin-top:20px; opacity:0.85;">
+            <span style="font-size:13px; font-weight:700; color:#9ca3af;">
+            https://waater-yey2.onrender.com 
+            
+            </span>
+        </div>
+    `;
+
+    const clipMessages = card.querySelector('#clipMessages');
+
+    clipArgs.forEach(el => {
+        const bubble = document.createElement('div');
+        const isRight = el.classList.contains('right');
+        bubble.textContent = el.textContent;
+        bubble.style.cssText = `
+            max-width:80%;
+            padding:12px 16px;
+            border-radius:14px;
+            font-size:14px;
+            line-height:1.5;
+            align-self:${isRight ? 'flex-end' : 'flex-start'};
+            background:${isRight ? 'linear-gradient(135deg,#6d5dfc,#4f7cff)' : '#1b2333'};
+            color:white;
+        `;
+        clipMessages.appendChild(bubble);
+    });
+
+    document.body.appendChild(card);
+
+    try {
+        const canvas = await html2canvas(card, { backgroundColor: '#0f1117', scale: 2 });
+        showClipModal(canvas, topicText);
+    } catch (err) {
+        console.error('Clip generation failed:', err);
+        alert('Could not generate clip.');
+    } finally {
+        card.remove();
+    }
+});
+
+function downloadCanvasImage(canvas) {
+    const uniqueId = crypto.randomUUID().slice(0, 5);
+    const link = document.createElement('a');
+    link.download = `debate-clip-${uniqueId}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+}
+
+function getShareUrl() {
+    const shareParams = new URLSearchParams(window.location.search);
+    shareParams.delete('role');
+    shareParams.set('match', currentRoomId);
+    return `${window.location.origin}${window.location.pathname}?${shareParams.toString()}`;
+}
+
+function showClipModal(canvas, topicText) {
+
+    const dataUrl = canvas.toDataURL('image/png');
+    const shareUrl = getShareUrl();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'clip-overlay';
+
+    overlay.innerHTML = `
+        <div class="clip-box">
+            <img src="${dataUrl}" alt="Debate clip">
+            <p>You clipped this exchange!</p>
+            <div class="clip-share-grid">
+                <button class="clip-share-btn" id="clipReddit">Post on Reddit</button>
+                <button class="clip-share-btn" id="clipX">Post on X</button>
+                <button class="clip-share-btn" id="clipInsta">Instagram Story</button>
+                <button class="clip-share-btn" id="clipDiscord">Share to Discord</button>
+            </div>
+            <button class="clip-close" id="clipModalClose">Close</button>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.remove();
+    });
+
+    document.getElementById('clipModalClose').onclick = () => overlay.remove();
+
+    function shareImage(platformHint) {
+        canvas.toBlob(async (blob) => {
+            const file = new File([blob], 'debate-clip.png', { type: 'image/png' });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+ await navigator.share({ files: [file], title: 'Debate Arena', text: `${topicText} ${shareUrl}` });
+                } catch (e) {}
+            } else {
+                downloadCanvasImage(canvas);
+                alert(`Image saved to your device — open ${platformHint} and attach it from your photos.`);
+            }
+        }, 'image/png');
+    }
+
+    document.getElementById('clipReddit').onclick = () => shareImage('Reddit')
+    
+    document.getElementById('clipX').onclick = () => shareImage('X');
+    document.getElementById('clipInsta').onclick = () => shareImage('Instagram');
+    document.getElementById('clipDiscord').onclick = () => shareImage('Discord');
+    
+  }
+    
+  
 
     let typingTimeout;
 
@@ -1561,6 +1809,8 @@
             }
 
             div.textContent = data.message;
+            
+            div.dataset.ts = Date.now();
 
             chat.appendChild(div);
 
@@ -1836,24 +2086,44 @@
 
     /* ---- Touch swipe: HORIZONTAL ---- statusLabel  */
     let touchStartX = 0;
+    let touchStartY = 0;
+    let gestureDirection = null; // 'horizontal' | 'vertical' | null
 
     document.addEventListener('touchstart', (e) => {
         if (!canSwipe) return;
         touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        gestureDirection = null;
+    }, { passive: true });
+
+    document.addEventListener('touchmove', (e) => {
+        if (!canSwipe || gestureDirection) return;
+
+        const dx = e.touches[0].clientX - touchStartX;
+        const dy = e.touches[0].clientY - touchStartY;
+
+        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+
+        gestureDirection = Math.abs(dx) > Math.abs(dy) * 1.5 ? 'horizontal' : 'vertical';
     }, { passive: true });
 
     document.addEventListener('touchend', (e) => {
         if (!canSwipe) return;
-        const diff = touchStartX - e.changedTouches[0].clientX;
+        const wasHorizontal = gestureDirection === 'horizontal';
+        gestureDirection = null;
+        if (!wasHorizontal) return;
 
-        if (Math.abs(diff) < 50) return; // ignore tiny swipes
+        const diff = touchStartX - e.changedTouches[0].clientX;
+        if (Math.abs(diff) < 50) return;
 
         if (diff > 0) {
-            goToNextDebate(); // swiped left -> next
+            goToNextDebate();
         } else {
-            goToPrevDebate(); // swiped right -> previous join_room
+            goToPrevDebate();
         }
     }, { passive: true });
+    
+    
 
     /* ---- Mouse wheel: horizontal scroll OR shift+wheel ----  */ 
 
@@ -1926,7 +2196,7 @@
         }
     });
 
-    // function flushDwellTime(final = false) {
+    // function flushDwellTime(final = false) { git commit -m "Fixed a massive typo in the server "
 
     //     if (isVisible) accumulatedMs += Date.now() - viewStart;
     //     viewStart = Date.now();
@@ -1949,14 +2219,8 @@
 
 
 
-
-
-
-
 </script>
 
 
 </body>
 </html>
-
-
