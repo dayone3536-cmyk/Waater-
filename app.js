@@ -208,6 +208,7 @@ app.post('/match/:roomId/invite', express.json(), async (req, res) => {
 });
 
 app.post('/invite/:code/redeem', async (req, res) => {
+
     const { code } = req.params;
     const redeemerId = req.cookies.anonId;
 
@@ -247,8 +248,52 @@ app.post('/invite/:code/redeem', async (req, res) => {
 
     if (bonusErr) return res.status(500).json({ error: bonusErr.message });
 
+    const { data: match } = await supabase
+        .from('past_matches')
+        .select('thesis')
+        .eq('room_id', invite.room_id)
+        .maybeSingle();
+
+    const topicText = match ? match.thesis : 'a debate';
+
+    await supabase.from('user_notifications').insert({
+        user_id: invite.inviter_user_id,
+        message: `Congratulations! Your friend signed in — you got 5 free votes in "${topicText}"!`,
+        room_id: invite.room_id
+    });
+
     res.json({ redeemed: true, bonus: newBonus });
 });
+
+app.get('/notifications/pending', async (req, res) => {
+    const userId = req.cookies.anonId;
+
+    const { data, error } = await supabase
+        .from('user_notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .is('read_at', null)
+        .order('created_at', { ascending: true });
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data || []);
+
+});
+
+app.post('/notifications/:id/ack', async (req, res) => {
+
+    const { id } = req.params;
+    const { error } = await supabase
+        .from('user_notifications')
+        .update({ read_at: new Date().toISOString() })
+        .eq('id', id);
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.sendStatus(204);
+
+});
+
+
 
 app.get('/past-matches/:roomId/invite-bonus', async (req, res) => {
     const userId = req.cookies.anonId;

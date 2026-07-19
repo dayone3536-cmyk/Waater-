@@ -375,7 +375,7 @@
         opacity:0;
         pointer-events:none;
         transition:opacity .25s, transform .25s;
-        z-index:999;
+        z-index:2500 ;
     }
 
     .share-toast.show{
@@ -759,9 +759,97 @@
   .clip-box p{ font-weight:700; margin-bottom:16px; }
     .clip-share-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 
-    .results-actions-grid{
-            grid-template-columns: 1fr 1fr 1fr;
-        }
+
+    .results-banner{
+        text-align:center;
+        margin-bottom:18px;
+    }
+
+    .results-emoji{
+        font-size:2.2rem;
+        display:block;
+        margin-bottom:6px;
+    }
+
+    .results-title{
+        font-size:1.1rem;
+        font-weight:700;
+        margin-bottom:0;
+    }
+
+    .results-action-row{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:10px;
+        margin-bottom:18px;
+    }
+
+    .results-votes-card{
+        background:linear-gradient(135deg, rgba(109,93,252,.18), rgba(70,194,255,.1));
+        border:1px solid rgba(70,194,255,.25);
+        border-radius:16px;
+        padding:18px;
+        text-align:center;
+        margin-bottom:14px;
+    }
+    .results-votes-number{
+        font-size:2rem;
+        font-weight:800;
+        color:#46c2ff;
+        line-height:1;
+    }
+    .results-votes-label{
+        font-size:.8rem;
+        color:#9ca3af;
+        margin-top:4px;
+    }
+    .results-invite-card{
+        display:flex;
+        align-items:center;
+        gap:14px;
+        background:#1b2333;
+        border:1px solid rgba(255,255,255,.06);
+        border-radius:16px;
+        padding:16px;
+        margin-bottom:16px;
+        text-align:left;
+    }
+    .results-invite-icon{
+        font-size:1.6rem;
+        flex-shrink:0;
+    }
+    .results-invite-text{
+        flex:1;
+        display:flex;
+        flex-direction:column;
+        gap:2px;
+    }
+    .results-invite-text strong{
+        font-size:.92rem;
+    }
+    .results-invite-text span{
+        font-size:.78rem;
+        color:#9ca3af;
+    }
+    .results-invite-cta{
+        border:none;
+        cursor:pointer;
+        padding:10px 18px;
+        border-radius:999px;
+        font-weight:700;
+        font-size:.85rem;
+        color:white;
+        background:linear-gradient(135deg,#6d5dfc,#4f7cff);
+        flex-shrink:0;
+        transition:transform .15s ease, filter .15s ease;
+    }
+    .results-invite-cta:hover{
+        transform:translateY(-1px);
+        filter:brightness(1.1);
+    }
+
+
+
 
     
     .clip-share-btn{        
@@ -787,66 +875,6 @@
     font-size:.85rem;
   }
 
-    .results-box{
-        max-width:440px;
-
-    }
-
-    .results-title{
-
-        font-size:1.05rem;
-        font-weight:700;
-        margin-bottom:16px;
-
-    }
-
-    .results-box img{
-
-        width:100%;
-        border-radius:12px;
-        margin-bottom:18px;
-        display:block;
-
-    }
-
-    .results-vote-box{
-
-        background:#1b2333;
-        border-radius:14px;
-        padding:16px;
-        margin:18px 0 16px;
-        text-align:left;
-
-    }
-
-    .results-vote-text{
-
-        font-weight:700;
-        margin-bottom:10px;
-        text-align:center;
-
-    }
-
-    .results-vote-count{
-
-        color:#46c2ff;
-    }
-
-    .results-invite-btn{
-
-        width:100%;
-
-    }
-
-    .results-invite-sub{
-
-        font-size:.75rem;
-        color:#9ca3af;
-
-        text-align:center;
-        margin-top:8px;
-
-    }
 
 
 
@@ -1115,7 +1143,65 @@
     let authReadyResolve;
     const authReady = new Promise((resolve) => { authReadyResolve = resolve; });
 
-    function waitForRequireLogin() {
+
+
+
+
+
+
+    window.isLoggedIn = false;
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    onAuthStateChanged(auth, (user) => {
+        window.isLoggedIn = !!user;
+        authReadyResolve();
+        // no redirect here — guests can watch freely
+    });
+
+    window.requireLogin = async function () {
+        await authReady;
+        if (!window.isLoggedIn) {
+            const currentUrl = window.location.href;
+            window.location.href = `/Sigh-in?redirect=${encodeURIComponent(currentUrl)}`;
+            return false;
+        }
+        return true;
+    };
+
+
+</script>
+
+
+<script src="/notification.js"> </script> 
+
+<script>
+
+    console.log("1 ststep")
+
+    const socket = io();
+
+    const params =
+        new URLSearchParams(
+            window.location.search
+        );
+
+    
+
+    const roomId = params.get('match');
+
+
+    let currentRoomId = roomId;
+
+    const role = params.get('role');
+
+
+    const dynamic_title = document.getElementById("Topic");
+
+    let isSpectator = false;
+
+        function waitForRequireLogin() {
 
         return new Promise(resolve => {
             const check = () => {
@@ -1149,62 +1235,8 @@
             }
 
         })();
+
     }
-
-
-
-
-
-    window.isLoggedIn = false;
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-
-    onAuthStateChanged(auth, (user) => {
-        window.isLoggedIn = !!user;
-        authReadyResolve();
-        // no redirect here — guests can watch freely
-    });
-
-    window.requireLogin = async function () {
-        await authReady;
-        if (!window.isLoggedIn) {
-            const currentUrl = window.location.href;
-            window.location.href = `/Sigh-in?redirect=${encodeURIComponent(currentUrl)}`;
-            return false;
-        }
-        return true;
-    };
-
-
-</script>
-
-
-
-
-<script>
-
-    console.log("1 ststep")
-
-    const socket = io();
-
-    const params =
-        new URLSearchParams(
-            window.location.search
-        );
-
-    
-
-    const roomId = params.get('match');
-
-
-    let currentRoomId = roomId;
-
-    const role = params.get('role');
-
-    const dynamic_title = document.getElementById("Topic");
-
-    let isSpectator = false;
 
         // opponent_typing typingBubble  sendBtn  messageInput  loadReplayMode  cast_vote
     
@@ -1411,8 +1443,10 @@
     history.pushState({ debateGuard: true }, '');
 
     window.addEventListener('popstate', () => {
+
         showForfeitModal();
         history.pushState({ debateGuard: true }, ''); // re-arm the trap
+
     });
 
     // Best-effort native prompt if they close the tab / refresh (browser controls wording)
@@ -1457,7 +1491,6 @@
             socket.emit('forfeit_match', { roomId: currentRoomId });
 
             overlay.remove();
-            window.location.href = '/';
 
         };
     }
@@ -1872,33 +1905,48 @@ async function showResultsScreen(roomId, resultReason) {
     overlay.className = 'clip-overlay';
 
     overlay.innerHTML = `
+
         <div class="clip-box results-box">
-            <p class="results-title">${escapeHtml(resultReason || 'Debate Over')}</p>
+
+            <div class="results-banner">
+                <span class="results-emoji">${
+                    /won|win/i.test(resultReason || '') ? '🏆' :
+                    /forfeit|lost|kicked/i.test(resultReason || '') ? '😔' : '🤝'
+                }</span>
+                <p class="results-title">${escapeHtml(resultReason || 'Debate Over')}</p>
+            </div>
+
             <div id="resultsImgSlot"></div>
 
-            <div class="clip-share-grid results-actions-grid ">
-
+            <div class="results-action-row">
                 <button class="clip-share-btn" id="resultsShareBtn">Share</button>
-
                 <button class="clip-share-btn" id="resultsClipBtn2">Clip</button>
-
-                <button class="clip-share-btn" id="resultsInviteBtn2">Invite</button>
-
+                
             </div>
 
-            <div class="results-vote-box">
-                ${mySide ? `
-                    <p class="results-vote-text">You got <span class="results-vote-count">${myTotalVotes}</span> vote${myTotalVotes === 1 ? '' : 's'}</p>
-                    ${isBehindOrTied ? `
-                        <button class="forfeit-btn yes results-invite-btn" id="resultsInviteBtn">Invite a friend to get 5 free votes</button>
-                        <p class="results-invite-sub">They just need to sign in — you get the votes instantly.</p>
-                    ` : ''}
+            ${mySide ? `
+                <div class="results-votes-card">
+                    <div class="results-votes-number">${myTotalVotes}</div>
+                    <div class="results-votes-label">vote${myTotalVotes === 1 ? '' : 's'} on your side</div>
+                </div>
+                ${isBehindOrTied ? `
+                    <div class="results-invite-card">
+                        <div class="results-invite-icon">🎁</div>
+                        <div class="results-invite-text">
+                            <strong>Invite a friend</strong>
+                            <span>Get 5 free votes when they sign in</span>
+                        </div>
+                        <button class="results-invite-cta" id="resultsInviteBtn">Invite</button>
+                    </div>
                 ` : ''}
-            </div>
+            ` : ''}
 
             <button class="clip-close" id="resultsCloseBtn">Back to lobby</button>
         </div>
+
     `;
+
+
 
     document.body.appendChild(overlay);
 
@@ -1943,49 +1991,72 @@ async function showResultsScreen(roomId, resultReason) {
 
     }
 
-    async function shareLink(link, shareText) {
+    async function shareLink(link, shareText, toastMessage) {
 
         if (navigator.share) {
 
             try {
-                await navigator.share({ title: 'Debate Arena', text: shareText, url: link });
+                await navigator.share({ title: 'Waater', text: shareText, url: link });
 
-            } catch (e) {}
+                return; // OS share sheet handled it
 
-        } else {
-
-            try {
-                await navigator.clipboard.writeText(link);
-                shareToast.textContent = 'Link copied!';
             } catch (e) {
-                shareToast.textContent = 'Could not copy link';
+
+                if (e && e.name === 'AbortError') return; // user cancelled on purpose, do nothing
+                // any other failure (blocked, unsupported target, etc) → fall through to clipboard
+
             }
-            shareToast.classList.add('show');
-            setTimeout(() => shareToast.classList.remove('show'), 2000);
         }
+
+        try {
+
+            await navigator.clipboard.writeText(link);
+            shareToast.textContent = toastMessage || 'Link copied!';
+
+        } catch (e) {
+
+            shareToast.textContent = 'Could not copy link';
+
+        }
+
+        shareToast.classList.add('show');
+
+        setTimeout(() => shareToast.classList.remove('show'), 3000);
+
     }
 
     async function shareResultsLink() {
         const link = buildReplayLink();
-        const topicText = dynamic_title.textContent || 'Waater debate';
-        await shareLink(link, `Check this out: "${topicText}"`);
+        await shareLink(link, `Check this out: "${topicText}"`, 'Link copied!');
+
     }
 
     async function doInvite() {
+
         if (!(await window.requireLogin())) return;
         if (!mySide) return;
 
         const res = await fetch(`/match/${roomId}/invite`, {
             method: 'POST',
+
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ side: mySide })
+
         });
+
         const data = await res.json();
 
         const link = buildReplayLink({ invite: data.code });
-        const topicText = dynamic_title.textContent || 'Waater debate';
-        await shareLink(link, `Come argue this side of "${topicText}"`);
+        await shareLink(
+
+            link,
+            `Come check out this debate: "${topicText}" — Sign in and I get 5 free votes!`,
+            'Link copied! Send this to your friend — if they sign in, you get 5 free votes.'
+        );
+
     }
+
+
 
 
 
@@ -1998,7 +2069,6 @@ async function showResultsScreen(roomId, resultReason) {
 
     };
 
-    document.getElementById('resultsInviteBtn2').onclick = doInvite;
 
     const inviteBtn = document.getElementById('resultsInviteBtn');
 
