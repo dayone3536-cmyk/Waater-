@@ -758,8 +758,13 @@
   .clip-box img{ width:100%; border-radius:12px; margin-bottom:16px; display:block; }
   .clip-box p{ font-weight:700; margin-bottom:16px; }
     .clip-share-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+    .results-actions-grid{
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
     
-    .clip-share-btn{
+    .clip-share-btn{        
       border:none; cursor:pointer;
       padding:14px 0;
       border-radius:12px;
@@ -1105,10 +1110,22 @@
         messagingSenderId: "840770803135",
         appId: "1:840770803135:web:1425f583ad04315b87fd0a",
         measurementId: "G-48T9GVZF3N"
-    };
+    }; 
 
     let authReadyResolve;
     const authReady = new Promise((resolve) => { authReadyResolve = resolve; });
+
+    function waitForRequireLogin() {
+
+        return new Promise(resolve => {
+            const check = () => {
+                if (typeof window.requireLogin === 'function') resolve();
+                else setTimeout(check, 30);
+            };
+            check();
+        });
+
+    }
 
     const inviteCode = params.get('invite');
 
@@ -1116,24 +1133,25 @@
 
         (async () => {
 
-            await window.requireLogin(); // will redirect to sign-in if not logged in, and come right back to this URL
-
+            await waitForRequireLogin();
+            await window.requireLogin();
             try {
 
                 const res = await fetch(`/invite/${inviteCode}/redeem`, { method: 'POST' });
                 const data = await res.json();
+
                 if (data.redeemed) {
                     console.log('Invite redeemed, inviter credited +5 votes');
-
                 }
+
             } catch (e) {
-
                 console.error('Invite redemption failed:', e);
-
             }
-            
+
         })();
     }
+
+
 
 
 
@@ -1858,9 +1876,14 @@ async function showResultsScreen(roomId, resultReason) {
             <p class="results-title">${escapeHtml(resultReason || 'Debate Over')}</p>
             <div id="resultsImgSlot"></div>
 
-            <div class="clip-share-grid">
+            <div class="clip-share-grid results-actions-grid ">
+
                 <button class="clip-share-btn" id="resultsShareBtn">Share</button>
+
+                <button class="clip-share-btn" id="resultsClipBtn2">Clip</button>
+
                 <button class="clip-share-btn" id="resultsInviteBtn2">Invite</button>
+
             </div>
 
             <div class="results-vote-box">
@@ -1880,49 +1903,60 @@ async function showResultsScreen(roomId, resultReason) {
     document.body.appendChild(overlay);
 
     // Build & show the 3-message clip image
+
+    let resultsCanvas = null;
+
     if (chosen.length > 0) {
+
         try {
-            const canvas = await captureMessagesAsImage(chosen, topicText);
+
+            resultsCanvas = await captureMessagesAsImage(chosen, topicText);
             const slot = document.getElementById('resultsImgSlot');
+
             if (slot) {
                 const img = document.createElement('img');
-                img.src = canvas.toDataURL('image/png');
+
+                img.src = resultsCanvas.toDataURL('image/png');
                 img.alt = 'Debate highlights';
+
                 slot.appendChild(img);
             }
+
         } catch (e) {
             console.error('Failed to build results image:', e);
+
         }
     }
 
-    async function getInviteLink() {
-        if (!mySide) return null;
-        const res = await fetch(`/match/${roomId}/invite`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ side: mySide })
-        });
-        const data = await res.json();
+
+    function buildReplayLink(extraParams = {}) {
+
         const shareParams = new URLSearchParams(window.location.search);
         shareParams.delete('role');
+        shareParams.delete('invite');
         shareParams.set('match', roomId);
-        shareParams.set('invite', data.code);
+        shareParams.set('replay', '1');
+        for (const [key, value] of Object.entries(extraParams)) {
+            shareParams.set(key, value);
+        }
         return `${window.location.origin}${window.location.pathname}?${shareParams.toString()}`;
+
     }
 
-    async function doInvite() {
-        if (!(await window.requireLogin())) return;
-        const link = await getInviteLink();
-        if (!link) return;
+    async function shareLink(link, shareText) {
 
         if (navigator.share) {
+
             try {
-                await navigator.share({ title: 'Join my debate on Waater!', text: `Come back this side of "${topicText}"`, url: link });
+                await navigator.share({ title: 'Debate Arena', text: shareText, url: link });
+
             } catch (e) {}
+
         } else {
+
             try {
                 await navigator.clipboard.writeText(link);
-                shareToast.textContent = 'Invite link copied!';
+                shareToast.textContent = 'Link copied!';
             } catch (e) {
                 shareToast.textContent = 'Could not copy link';
             }
@@ -1931,17 +1965,54 @@ async function showResultsScreen(roomId, resultReason) {
         }
     }
 
-    document.getElementById('resultsShareBtn').onclick = () => shareBtn.click();
+    async function shareResultsLink() {
+        const link = buildReplayLink();
+        const topicText = dynamic_title.textContent || 'Waater debate';
+        await shareLink(link, `Check this out: "${topicText}"`);
+    }
+
+    async function doInvite() {
+        if (!(await window.requireLogin())) return;
+        if (!mySide) return;
+
+        const res = await fetch(`/match/${roomId}/invite`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ side: mySide })
+        });
+        const data = await res.json();
+
+        const link = buildReplayLink({ invite: data.code });
+        const topicText = dynamic_title.textContent || 'Waater debate';
+        await shareLink(link, `Come argue this side of "${topicText}"`);
+    }
+
+
+
+
+    document.getElementById('resultsShareBtn').onclick = shareResultsLink;
+
+    document.getElementById('resultsClipBtn2').onclick = () => {
+
+        window.location.href = buildReplayLink();
+
+    };
+
     document.getElementById('resultsInviteBtn2').onclick = doInvite;
 
     const inviteBtn = document.getElementById('resultsInviteBtn');
+
     if (inviteBtn) inviteBtn.onclick = doInvite;
 
     document.getElementById('resultsCloseBtn').onclick = () => {
+
         window.location.href = '/';
+
     };
 
+
 }
+
 
 
 
@@ -2027,7 +2098,9 @@ function showClipModal(canvas, topicText) {
         <div class="clip-box">
             <img src="${dataUrl}" alt="Debate clip">
             <p>You clipped this exchange!</p>
+
             <div class="clip-share-grid">
+
                 <button class="clip-share-btn" id="clipReddit">Post on Reddit</button>
                 <button class="clip-share-btn" id="clipX">Post on X</button>
                 <button class="clip-share-btn" id="clipInsta">Instagram Story</button>
