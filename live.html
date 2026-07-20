@@ -1924,22 +1924,30 @@ async function showResultsScreen(roomId, resultReason) {
                 
             </div>
 
-            ${mySide ? `
+           ${mySide ? `
                 <div class="results-votes-card">
                     <div class="results-votes-number">${myTotalVotes}</div>
+
                     <div class="results-votes-label">vote${myTotalVotes === 1 ? '' : 's'} on your side</div>
+
                 </div>
+
                 ${isBehindOrTied ? `
+
                     <div class="results-invite-card">
                         <div class="results-invite-icon">🎁</div>
                         <div class="results-invite-text">
+
                             <strong>Invite a friend</strong>
                             <span>Get 5 free votes when they sign in</span>
+
                         </div>
                         <button class="results-invite-cta" id="resultsInviteBtn">Invite</button>
                     </div>
                 ` : ''}
             ` : ''}
+
+
 
             <button class="clip-close" id="resultsCloseBtn">Back to lobby</button>
         </div>

@@ -813,7 +813,7 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
                 });
             });
 
-    });
+    }); 
 
 
 
@@ -847,9 +847,10 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
         if (!roomId || !['pro', 'against'].includes(side)) return;
 
         const match = activeMatches.find(m => m.roomId === roomId);
-        if (!match) return;
 
-        match.votes[socket.id] = side; // keep for the fast broadcast
+        if (match) {
+            match.votes[socket.id] = side;
+        }
 
         const { error } = await supabase
             .from('match_votes')
@@ -858,17 +859,42 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
                 { onConflict: 'room_id,user_id' }
             );
 
-        if (error) console.error('Failed to save vote:', error);
+        if (error) {
+            console.error('Failed to save vote:', error);
+            return;
+        }
 
-        const tally = { pro: 0, against: 0 };
-        Object.values(match.votes).forEach(v => tally[v]++);
+        if (match) {
+            const tally = { pro: 0, against: 0 };
+            Object.values(match.votes).forEach(v => tally[v]++);
 
-        io.to(roomId).emit('vote_update', {
-            proVotes: tally.pro,
-            againstVotes: tally.against
-        });
+            io.to(roomId).emit('vote_update', {
+                proVotes: tally.pro,
+                againstVotes: tally.against
+            });
 
+        } else {
+            const { data: votes, error: fetchErr } = await supabase
+                .from('match_votes')
+                .select('side')
+                .eq('room_id', roomId);
+
+            if (fetchErr) {
+                console.error('Failed to fetch tally after vote:', fetchErr);
+                return;
+            }
+
+            const tally = { pro: 0, against: 0 };
+            (votes || []).forEach(v => tally[v.side]++);
+
+            socket.emit('vote_update', {
+                proVotes: tally.pro,
+                againstVotes: tally.against
+            });
+        }
+        
     });
+
 
 
     socket.on('forfeit_match', (data) => {
