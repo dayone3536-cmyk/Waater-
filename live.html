@@ -1898,7 +1898,30 @@ async function showResultsScreen(roomId, resultReason) {
     const myRealVotes = mySide ? (tally[mySide] || 0) : 0;
     const opponentVotes = mySide ? (mySide === 'pro' ? tally.against : tally.pro) : 0;
     const myTotalVotes = myRealVotes + bonus;
-    const isBehindOrTied = myRealVotes <= opponentVotes;
+
+
+
+    let voteStatusTitle = '';
+    let voteStatusSub = '';
+
+    if (mySide) {
+        if (myRealVotes > opponentVotes) {
+            voteStatusTitle = "You're ahead in votes";
+            voteStatusSub = "But your opponent is catching up "; //add the invite your frien if neccesary
+        } else if (myRealVotes < opponentVotes) {
+            voteStatusTitle = "Your opponent is ahead in votes";
+            voteStatusSub = "Invite a friend to get 5 free votes";
+
+        } else {
+            voteStatusTitle = "It's dead even";
+            voteStatusSub = "Invite a friend to get 5 free votes and pull ahead";
+        }
+
+    }
+
+
+
+
 
     const overlay = document.createElement('div');
     overlay.id = 'resultsOverlay';
@@ -1932,20 +1955,18 @@ async function showResultsScreen(roomId, resultReason) {
 
                 </div>
 
-                ${isBehindOrTied ? `
+                <div class="results-invite-card">
+                    <div class="results-invite-icon">🎁</div>
+                    <div class="results-invite-text">
 
-                    <div class="results-invite-card">
-                        <div class="results-invite-icon">🎁</div>
-                        <div class="results-invite-text">
-
-                            <strong>Invite a friend</strong>
-                            <span>Get 5 free votes when they sign in</span>
-
-                        </div>
-                        <button class="results-invite-cta" id="resultsInviteBtn">Invite</button>
+                        <strong>${escapeHtml(voteStatusTitle)}</strong>
+                        <span>${escapeHtml(voteStatusSub)}</span>
                     </div>
-                ` : ''}
+
+                    <button class="results-invite-cta" id="resultsInviteBtn">Invite</button>
+                </div>
             ` : ''}
+
 
 
 
