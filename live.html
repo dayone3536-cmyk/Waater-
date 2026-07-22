@@ -876,6 +876,43 @@
   }
 
 
+  .clip-download-row{
+
+        display:flex;
+        justify-content:center;
+        margin-bottom:16px;
+
+    }
+
+    .clip-download-icon-btn{
+
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        width:38px;
+        height:38px;
+        border:none;
+        cursor:pointer;
+        border-radius:50%;
+        color:white;
+        background:#242b3d;
+        border:1px solid rgba(255,255,255,.08);
+        transition:transform .15s ease, background .15s ease;
+    }
+
+    .clip-download-icon-btn:hover{
+        transform:translateY(-2px);
+        background:#2d3548;
+    }
+
+    .clip-download-icon-btn svg{
+        width:18px;
+        height:18px;
+    }
+
+
+
+
 
 
     @media (max-width: 600px){
@@ -1831,14 +1868,23 @@
 
     try {
         const canvas = await html2canvas(card, { backgroundColor: '#0f1117', scale: 2 });
+
         showClipModal(canvas, topicText);
+
     } catch (err) {
+
         console.error('Clip generation failed:', err);
         alert('Could not generate clip.');
+
     } finally {
         card.remove();
     }
+
 });
+
+
+
+
 
 function downloadCanvasImage(canvas) {
     const uniqueId = crypto.randomUUID().slice(0, 5);
@@ -2194,8 +2240,24 @@ function showClipModal(canvas, topicText) {
     overlay.className = 'clip-overlay';
 
     overlay.innerHTML = `
+
         <div class="clip-box">
             <img src="${dataUrl}" alt="Debate clip">
+
+            <div class="clip-download-row">
+
+                <button class="clip-download-icon-btn" id="clipDownload" title="Download">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+
+                    </svg>
+                </button>
+
+            </div>
+
             <p>You clipped this exchange!</p>
 
             <div class="clip-share-grid">
@@ -2204,10 +2266,15 @@ function showClipModal(canvas, topicText) {
                 <button class="clip-share-btn" id="clipX">Post on X</button>
                 <button class="clip-share-btn" id="clipInsta">Instagram Story</button>
                 <button class="clip-share-btn" id="clipDiscord">Share to Discord</button>
+                
             </div>
             <button class="clip-close" id="clipModalClose">Close</button>
         </div>
     `;
+
+
+
+
 
     document.body.appendChild(overlay);
 
@@ -2231,6 +2298,8 @@ function showClipModal(canvas, topicText) {
             }
         }, 'image/png');
     }
+
+    document.getElementById('clipDownload').onclick = () => downloadCanvasImage(canvas);
 
     document.getElementById('clipReddit').onclick = () => shareImage('Reddit')
     

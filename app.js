@@ -252,15 +252,23 @@ app.post('/invite/:code/redeem', async (req, res) => {
         .from('past_matches')
         .select('thesis')
         .eq('room_id', invite.room_id)
-        .maybeSingle();
+        .maybeSingle(); 
 
     const topicText = match ? match.thesis : 'a debate';
 
     await supabase.from('user_notifications').insert({
+
         user_id: invite.inviter_user_id,
-        message: `Congratulations! Your friend signed in — you got 5 free votes in "${topicText}"!`,
+        message: JSON.stringify({
+
+            title: '5 votes credited',
+            body: topicText
+
+        }),
+
         room_id: invite.room_id
     });
+
 
     res.json({ redeemed: true, bonus: newBonus });
 });
