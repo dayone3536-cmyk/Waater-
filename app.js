@@ -194,18 +194,27 @@ app.post('/match/:roomId/invite', express.json(), async (req, res) => {
     }
 
     const code = crypto.randomBytes(6).toString('hex');
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
     const { error } = await supabase.from('match_invites').insert({
+
         code,
         room_id: roomId,
         inviter_user_id: userId,
-        inviter_side: side
+        inviter_side: side,
+        expires_at: expiresAt
+
     });
 
     if (error) return res.status(500).json({ error: error.message });
 
-    res.json({ code });
+    res.json({ code, expiresAt });
+
+
+
 });
+
+
 
 app.post('/invite/:code/redeem', async (req, res) => {
 
@@ -221,32 +230,43 @@ app.post('/invite/:code/redeem', async (req, res) => {
     if (fetchErr) return res.status(500).json({ error: fetchErr.message });
     if (!invite) return res.status(404).json({ error: 'Invite not found' });
     if (invite.redeemed_at) return res.json({ redeemed: false, reason: 'already_redeemed' });
+
     if (invite.inviter_user_id === redeemerId) return res.json({ redeemed: false, reason: 'self_invite' });
 
+    if (invite.expires_at && new Date(invite.expires_at).getTime() < Date.now()) {
+        return res.json({ redeemed: false, reason: 'expired' });
+    }
+
     const { error: updErr } = await supabase
+
         .from('match_invites')
         .update({ redeemed_at: new Date().toISOString(), redeemed_by: redeemerId })
         .eq('code', code);
 
     if (updErr) return res.status(500).json({ error: updErr.message });
 
-    const { data: existingBonus } = await supabase
-        .from('match_invite_bonus')
-        .select('bonus')
-        .eq('room_id', invite.room_id)
-        .eq('user_id', invite.inviter_user_id)
-        .maybeSingle();
+    const bonusRows = Array.from({ length: 5 }, () => ({
+        room_id: invite.room_id,
+        user_id: `bonus_${invite.room_id}_${crypto.randomUUID()}`,
+        side: invite.inviter_side
+    }));
 
-    const newBonus = (existingBonus?.bonus || 0) + 5;
-
-    const { error: bonusErr } = await supabase
-        .from('match_invite_bonus')
-        .upsert(
-            { room_id: invite.room_id, user_id: invite.inviter_user_id, side: invite.inviter_side, bonus: newBonus, updated_at: new Date().toISOString() },
-            { onConflict: 'room_id,user_id' }
-        );
-
+    const { error: bonusErr } = await supabase.from('match_votes').insert(bonusRows);
     if (bonusErr) return res.status(500).json({ error: bonusErr.message });
+
+    const { data: freshVotes, error: tallyErr } = await supabase
+        .from('match_votes')
+        .select('side')
+        .eq('room_id', invite.room_id);
+
+    if (tallyErr) return res.status(500).json({ error: tallyErr.message });
+
+    const tally = { pro: 0, against: 0 };
+    (freshVotes || []).forEach(v => tally[v.side]++);
+
+    const newBonus = 5; // this redemption's contribution, used below just for the response
+
+
 
     const { data: match } = await supabase
         .from('past_matches')
@@ -270,8 +290,26 @@ app.post('/invite/:code/redeem', async (req, res) => {
     });
 
 
-    res.json({ redeemed: true, bonus: newBonus });
+    io.to(invite.room_id).emit('vote_update', {
+
+        proVotes: tally.pro,
+        againstVotes: tally.against
+
+    });
+
+    io.to(invite.room_id).emit('invite_redeemed', {
+
+        side: invite.inviter_side,
+        proVotes: tally.pro,
+        againstVotes: tally.against
+
+    });
+
+    res.json({ redeemed: true, proVotes: tally.pro, againstVotes: tally.against });
+
 });
+
+
 
 app.get('/notifications/pending', async (req, res) => {
     const userId = req.cookies.anonId;

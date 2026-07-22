@@ -1233,6 +1233,8 @@
 
     const role = params.get('role');
 
+    const mySide = role === 'creator' ? 'pro' : (role === 'challenger' ? 'against' : null);
+
 
     const dynamic_title = document.getElementById("Topic");
 
@@ -1264,8 +1266,15 @@
                 const data = await res.json();
 
                 if (data.redeemed) {
+
                     console.log('Invite redeemed, inviter credited +5 votes');
+
+                } else if (data.reason === 'expired') {
+
+                    alert('This invite link has expired.');
                 }
+
+
 
             } catch (e) {
                 console.error('Invite redemption failed:', e);
@@ -1909,7 +1918,8 @@ function escapeHtml(str) {
 
 async function showResultsScreen(roomId, resultReason) {
 
-    const mySide = role === 'creator' ? 'pro' : (role === 'challenger' ? 'against' : null);
+
+
     const topicText = dynamic_title.textContent || 'Debate Arena';
 
     let args = [];
@@ -1930,20 +1940,9 @@ async function showResultsScreen(roomId, resultReason) {
         console.error('Failed to load votes:', e);
     }
 
-    let bonus = 0;
-    if (mySide) {
-        try {
-            const bonusRes = await fetch(`/past-matches/${roomId}/invite-bonus`);
-            const bonusData = await bonusRes.json();
-            bonus = bonusData.bonus || 0;
-        } catch (e) {
-            console.error('Failed to load invite bonus:', e);
-        }
-    }
-
     const myRealVotes = mySide ? (tally[mySide] || 0) : 0;
     const opponentVotes = mySide ? (mySide === 'pro' ? tally.against : tally.pro) : 0;
-    const myTotalVotes = myRealVotes + bonus;
+    const myTotalVotes = myRealVotes;
 
 
 
@@ -2129,7 +2128,39 @@ async function showResultsScreen(roomId, resultReason) {
             'Link copied! Send this to your friend — if they sign in, you get 5 free votes.'
         );
 
+        startInviteCountdown(data.expiresAt);
     }
+
+    let inviteTimerInterval = null;
+
+    function startInviteCountdown(expiresAtIso) {
+        const expiresAt = new Date(expiresAtIso).getTime();
+        const inviteBtn = document.getElementById('resultsInviteBtn');
+        const textEl = document.querySelector('#resultsOverlay .results-invite-text span');
+        if (!inviteBtn) return;
+
+        inviteBtn.disabled = true;
+
+        clearInterval(inviteTimerInterval);
+        inviteTimerInterval = setInterval(() => {
+            const msLeft = expiresAt - Date.now();
+
+            if (msLeft <= 0) {
+                clearInterval(inviteTimerInterval);
+                inviteBtn.disabled = false;
+                inviteBtn.textContent = 'Invite';
+                if (textEl) textEl.textContent = 'Invite expired — send a new one';
+                return;
+            }
+
+            const mins = Math.floor(msLeft / 60000);
+            const secs = Math.floor((msLeft % 60000) / 1000);
+            inviteBtn.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+            if (textEl) textEl.textContent = `Your friend has ${mins}:${secs.toString().padStart(2, '0')} to sign in`;
+        }, 1000);
+    }
+
+
 
 
 
@@ -2146,6 +2177,38 @@ async function showResultsScreen(roomId, resultReason) {
 
 
     const inviteBtn = document.getElementById('resultsInviteBtn');
+
+    socket.on('invite_redeemed', (data) => {
+        
+
+        if (!mySide || data.side !== mySide) return;
+        if (!document.getElementById('resultsOverlay')) return;
+
+        clearInterval(inviteTimerInterval);
+
+        const myVotes = data.side === 'pro' ? data.proVotes : data.againstVotes;
+
+        const votesNumberEl = document.querySelector('#resultsOverlay .results-votes-number');
+        const votesLabelEl  = document.querySelector('#resultsOverlay .results-votes-label');
+        const inviteCard    = document.querySelector('#resultsOverlay .results-invite-card');
+
+        if (votesNumberEl) {
+            votesNumberEl.textContent = myVotes;
+            if (votesLabelEl) votesLabelEl.textContent = `vote${myVotes === 1 ? '' : 's'} on your side`;
+        }
+
+        if (inviteCard) {
+            inviteCard.innerHTML = `
+                <div class="results-invite-icon">🎉</div>
+                <div class="results-invite-text">
+                    <strong>Your friend signed up!</strong>
+                    <span>+5 votes credited</span>
+                </div>`;
+        }
+        
+    });
+
+
 
     if (inviteBtn) inviteBtn.onclick = doInvite;
 
