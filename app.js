@@ -438,23 +438,44 @@ app.post('/match/:roomId/react', express.json(), async (req, res) => {
             myReaction = reaction;
         }
 
-        const { count: likeCount } = await supabase
-            .from('match_reactions')
-            .select('*', { count: 'exact', head: true })
-            .eq('room_id', roomId)
-            .eq('reaction', 'like');
+        let likeDelta = 0, dislikeDelta = 0;
 
-        const { count: dislikeCount } = await supabase
-            .from('match_reactions')
-            .select('*', { count: 'exact', head: true })
-            .eq('room_id', roomId)
-            .eq('reaction', 'dislike');
+        if (existing && existing.reaction === reaction) {
+            // toggled off
+            if (reaction === 'like') likeDelta = -1; else dislikeDelta = -1;
+
+        } else if (existing && existing.reaction !== reaction) {
+
+            // switched sides
+
+            if (existing.reaction === 'like') likeDelta = -1; else dislikeDelta = -1;
+            if (reaction === 'like') likeDelta += 1; else dislikeDelta += 1;
+
+        } else {
+
+            // new reaction
+            if (reaction === 'like') likeDelta = 1; else dislikeDelta = 1;
+
+        }
+
+        const { data: counts, error: rpcErr } = await supabase.rpc('increment_reaction_counts', {
+
+            p_room_id: roomId,
+            p_like_delta: likeDelta,
+            p_dislike_delta: dislikeDelta
+
+        });
+
+        if (rpcErr) console.error('Failed to update counts:', rpcErr);
 
         res.json({
+
             myReaction,
-            like_count: likeCount || 0,
-            dislike_count: dislikeCount || 0
+            like_count: counts?.[0]?.like_count ?? 0,
+            dislike_count: counts?.[0]?.dislike_count ?? 0
+
         });
+
 
         const { data: match } = await supabase.from('past_matches').select('thesis').eq('room_id', roomId).maybeSingle();
     
