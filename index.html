@@ -289,12 +289,14 @@
 
         @keyframes particleFloatUp {
             0%   { transform: translate(-50%, 0) scale(0.5) rotate(0deg); opacity: 1; }
-            100% { transform: translate(calc(-50% + var(--drift)), -46px) scale(1.15) rotate(var(--spin)); opacity: 0; }
+            70%  { opacity: 1; }
+            100% { transform: translate(calc(-50% + var(--drift)), -80px) scale(1.15) rotate(var(--spin)); opacity: 0; }
         }
 
         @keyframes particleFallDown {
             0%   { transform: translate(-50%, 0) scale(0.6) rotate(0deg); opacity: 1; }
-            100% { transform: translate(calc(-50% + var(--drift)), 34px) scale(1.05) rotate(var(--spin)); opacity: 0; }
+            70%  { opacity: 1; }
+            100% { transform: translate(calc(-50% + var(--drift)), 60px) scale(1.05) rotate(var(--spin)); opacity: 0; }
         }
 
         .reaction-particle.up {
