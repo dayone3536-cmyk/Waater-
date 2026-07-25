@@ -238,6 +238,75 @@
             border-color: #ffffff44;
         }
 
+/* --- LIKE: punchy pop --- */
+
+        .action-btn {
+            position: relative;
+            overflow: visible;
+        }
+
+        @keyframes likePop {
+            0%   { transform: scale(1); }
+            35%  { transform: scale(1.35); }
+            55%  { transform: scale(0.9); }
+            75%  { transform: scale(1.12); }
+            100% { transform: scale(1); }
+        }
+
+        .action-btn.like-burst {
+            animation: likePop 0.5s cubic-bezier(.34, 1.56, .64, 1);
+        }
+
+        .action-btn.like-burst svg {
+            filter: drop-shadow(0 0 6px #ef4444aa);
+        }
+
+/* --- DISLIKE: funny wobble --- */
+        @keyframes dislikeShake {
+            0%, 100% { transform: rotate(0deg); }
+            15%  { transform: rotate(-12deg) translateX(-3px); }
+            30%  { transform: rotate(10deg) translateX(3px); }
+            45%  { transform: rotate(-8deg) translateX(-2px); }
+            60%  { transform: rotate(6deg) translateX(2px); }
+            75%  { transform: rotate(-3deg); }
+        }
+
+        .action-btn.dislike-burst {
+            animation: dislikeShake 0.5s ease;
+        }
+
+/* --- Particles shared --- */
+
+        .reaction-particle {
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            pointer-events: none;
+            font-size: 16px;
+            z-index: 20;
+            will-change: transform, opacity;
+        }
+
+        @keyframes particleFloatUp {
+            0%   { transform: translate(-50%, 0) scale(0.5) rotate(0deg); opacity: 1; }
+            100% { transform: translate(calc(-50% + var(--drift)), -46px) scale(1.15) rotate(var(--spin)); opacity: 0; }
+        }
+
+        @keyframes particleFallDown {
+            0%   { transform: translate(-50%, 0) scale(0.6) rotate(0deg); opacity: 1; }
+            100% { transform: translate(calc(-50% + var(--drift)), 34px) scale(1.05) rotate(var(--spin)); opacity: 0; }
+        }
+
+        .reaction-particle.up {
+            animation: particleFloatUp 1.4s ease-out forwards;
+        }
+
+        .reaction-particle.down {
+            animation: particleFallDown 1.3s ease-in forwards; 
+        }
+
+
+
         .duel-card-top {
             display: flex;
             justify-content: space-between;
@@ -456,6 +525,57 @@
         return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
 
+    function burstReaction(btn, type) {
+        // type: 'like' or 'dislike'
+
+        const emojiSets = {
+            like: ['❤️', '👍', '🔥', '✨'],
+            dislike: ['💀', '😭', '🤡', '👎']
+        };
+
+        const emojis = emojiSets[type];
+        const burstClass = type === 'like' ? 'like-burst' : 'dislike-burst';
+        const direction = type === 'like' ? 'up' : 'down';
+
+        // Retrigger the pop/shake animation even on rapid re-clicks
+
+        btn.classList.remove(burstClass);
+
+        void btn.offsetWidth; // force reflow so the animation restarts
+
+        btn.classList.add(burstClass);
+        btn.addEventListener('animationend', () => {
+
+            btn.classList.remove(burstClass);
+        }, { once: true });
+
+
+        // Spawn a handful of floating particles
+
+        const count = 5;
+
+        for (let i = 0; i < count; i++) {
+            const span = document.createElement('span');
+
+            span.className = `reaction-particle ${direction}`;
+            span.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+
+            const drift = (Math.random() * 50 - 25).toFixed(0) + 'px';
+            const spin = (Math.random() * 60 - 30).toFixed(0) + 'deg';
+
+            span.style.setProperty('--drift', drift);
+            span.style.setProperty('--spin', spin);
+
+            span.style.left = (45 + Math.random() * 10) + '%';
+            span.style.animationDelay = (i * 40) + 'ms';
+
+            btn.appendChild(span);
+            span.addEventListener('animationend', () => span.remove());
+        }
+    }
+
+
+
     function renderFeed() {
         feed.innerHTML = '';
 
@@ -587,10 +707,65 @@
     }
 
         async function handleReaction(roomId, reaction, card) {
+
             const likeBtn = card.querySelector('.like-btn');
             const dislikeBtn = card.querySelector('.dislike-btn');
             const likeCountEl = card.querySelector('.like-count');
             const dislikeCountEl = card.querySelector('.dislike-count');
+
+            // Snapshot current state in case we need to roll back
+
+            const prevLike = parseInt(likeCountEl.textContent, 10) || 0;
+            const prevDislike = parseInt(dislikeCountEl.textContent, 10) || 0;
+
+            const wasLiked = likeBtn.classList.contains('liked');
+            const wasDisliked = dislikeBtn.classList.contains('disliked');
+
+            // Work out the new state instantly, same logic the server uses
+
+            let optLike = prevLike, optDislike = prevDislike;
+
+            let nowLiked = wasLiked, nowDisliked = wasDisliked;
+
+            if (reaction === 'like') {
+
+                if (wasLiked) { optLike -= 1; nowLiked = false; }
+
+                else {
+
+                    optLike += 1; nowLiked = true;
+
+                    if (wasDisliked) { optDislike -= 1; nowDisliked = false; }
+
+                }
+
+            } else {
+
+                if (wasDisliked) { optDislike -= 1; nowDisliked = false; }
+
+                else {
+
+                    optDislike += 1; nowDisliked = true;
+
+                    if (wasLiked) { optLike -= 1; nowLiked = false; }
+
+                }
+
+            }
+
+
+            likeCountEl.textContent = optLike;
+            dislikeCountEl.textContent = optDislike;
+            likeBtn.classList.toggle('liked', nowLiked);
+            dislikeBtn.classList.toggle('disliked', nowDisliked);
+        
+            if (reaction === 'like' && nowLiked && !wasLiked) {
+                burstReaction(likeBtn, 'like');
+            }
+
+            if (reaction === 'dislike' && nowDisliked && !wasDisliked) {
+                burstReaction(dislikeBtn, 'dislike');
+            }
 
             try {
                 const res = await fetch(`/match/${roomId}/react`, {
@@ -600,18 +775,27 @@
                 });
 
                 if (!res.ok) throw new Error('Request failed');
-
                 const data = await res.json();
 
+                // Reconcile with the real server numbers (covers multi-tab/race cases)
                 likeCountEl.textContent = data.like_count;
                 dislikeCountEl.textContent = data.dislike_count;
-
                 likeBtn.classList.toggle('liked', data.myReaction === 'like');
                 dislikeBtn.classList.toggle('disliked', data.myReaction === 'dislike');
+
             } catch (err) {
                 console.error('Failed to react:', err);
+                // Roll back to what it actually was before the click
+                likeCountEl.textContent = prevLike;
+                dislikeCountEl.textContent = prevDislike;
+                likeBtn.classList.toggle('liked', wasLiked);
+                dislikeBtn.classList.toggle('disliked', wasDisliked);
             }
         }
+
+
+
+
 
         async function loadPastMatches() {
             try {
