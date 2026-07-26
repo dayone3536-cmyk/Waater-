@@ -62,11 +62,18 @@
         }
 
         .empty-feed-placeholder {
+
             text-align: center;
             padding: 50px 20px;
             color: #6b7280;
             margin: 0 28px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            
         }
+
+
 
         .empty-feed-placeholder h2 {
             font-size: 1rem;
@@ -599,10 +606,73 @@
 
         if (liveMatches.length === 0 && pastMatches.length === 0) {
             feed.innerHTML = `
+
                 <div class="empty-feed-placeholder">
-                    <h2>The Arena is Empty</h2>
-                    <p>No debates yet. Be the first to start one.</p>
-                </div>`;
+
+                    <svg width=" 320 " height=" 198 " viewBox="0 0 680 420" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 12px;">
+
+                        <defs>
+                            <style>
+
+
+                                .pump-arm { animation: pumpArm 1.1s ease-in-out infinite; transform-origin: 300px 165px; }
+                                .pump-handle { animation: pumpHandle 1.1s ease-in-out infinite; transform-origin: 300px 165px; }
+
+
+                                .pump-torso { animation: pumpTorso 1.1s ease-in-out infinite; }
+                                .pump-drop1 { animation: pumpFallDrop 1.1s linear infinite; }
+
+
+                                .pump-drop2 { animation: pumpFallDrop 1.1s linear infinite; animation-delay: 0.55s; }
+                                @keyframes pumpArm { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(-28deg); } }
+
+                                @keyframes pumpHandle { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(-28deg); } }
+                                @keyframes pumpTorso { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(4px); } }
+                                @keyframes pumpFallDrop {
+
+                                    0% { transform: translateY(0px); opacity: 0; }
+                                    10% { opacity: 1; }
+                                    80% { opacity: 1; }
+                                    100% { transform: translateY(60px); opacity: 0; }
+                                }
+                            </style>
+                        </defs>
+                        <g class="pump-torso">
+                            <circle cx="210" cy="180" r="18" fill="#8b94a7"/>
+
+                            <rect x="197" y="196" width="26" height="70" rx="10" fill="#3b82f6"/>
+                            <rect x="197" y="260" width="12" height="65" fill="#0f1320"/>
+
+                            <rect x="211" y="260" width="12" height="65" fill="#0f1320"/>
+                            <g class="pump-arm">
+
+                                <rect x="215" y="205" width="70" height="12" rx="6" fill="#8b94a7"/>
+                            </g>
+
+                        </g>
+                        <rect x="288" y="150" width="16" height="180" fill="#2a3142"/>
+
+                        <rect x="270" y="325" width="52" height="16" rx="4" fill="#0f1320"/>
+
+                        <circle cx="296" cy="160" r="9" fill="#0f1320"/>
+
+                        <g class="pump-handle">
+                            <rect x="296" y="155" width="90" height="12" rx="6" fill="#0f1320"/>
+                        </g>
+
+                        <rect x="304" y="220" width="24" height="60" rx="4" fill="#2a3142"/>
+                        <path d="M304 280 L296 300 L296 312 L320 312 L320 300 L328 280 Z" fill="#2a3142"/>
+
+                        <circle class="pump-drop1" cx="308" cy="312" r="4" fill="#3b82f6"/>
+
+                        <circle class="pump-drop2" cx="308" cy="312" r="4" fill="#3b82f6"/>
+                        <ellipse cx="308" cy="336" rx="26" ry="6" fill="#3b82f6" opacity="0.5"/>
+
+                    </svg>
+                    <p>Loading debates...</p>
+
+                </div>
+                `;
             return;
         }
 
