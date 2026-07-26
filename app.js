@@ -198,6 +198,80 @@ app.post('/match/:roomId/invite', express.json(), async (req, res) => {
 });
 
 
+app.get('/match/:roomId/engagement', async (req, res) => {
+    const { roomId } = req.params;
+    const userId = req.cookies.anonId;
+
+    const { data: reactions, error: reactErr } = await supabase
+        .from('match_reactions')
+        .select('user_id, reaction')
+        .eq('room_id', roomId);
+
+    if (reactErr) return res.status(500).json({ error: reactErr.message });
+
+    const like_count = (reactions || []).filter(r => r.reaction === 'like').length;
+
+    const dislike_count = (reactions || []).filter(r => r.reaction === 'dislike').length;
+
+    const mine = (reactions || []).find(r => r.user_id === userId);
+
+    const { count: comment_count, error: countErr } = await supabase
+        .from('match_comments')
+        .select('*', { count: 'exact', head: true })
+        .eq('room_id', roomId);
+
+    if (countErr) return res.status(500).json({ error: countErr.message });
+
+    res.json({
+        like_count,
+        dislike_count,
+        myReaction: mine ? mine.reaction : null,
+        comment_count: comment_count || 0
+    });
+
+});
+
+
+app.get('/match/:roomId/comments', async (req, res) => {
+    const { roomId } = req.params;
+
+    const { data, error } = await supabase
+        .from('match_comments')
+        .select('*')
+        .eq('room_id', roomId)
+        .order('created_at', { ascending: true });
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data || []);
+
+});
+
+app.post('/match/:roomId/comments', express.json(), async (req, res) => {
+
+    const { roomId } = req.params;
+    const userId = req.cookies.anonId;
+
+    const message = (req.body?.message || '').trim();
+
+    if (!message) return res.status(400).json({ error: 'Comment cannot be empty' });
+    
+    if (message.length > 500) return res.status(400).json({ error: 'Comment too long' });
+
+    const { data, error } = await supabase
+        .from('match_comments')
+        .insert({ room_id: roomId, user_id: userId, message })
+        .select()
+        .single();
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    io.to(roomId).emit('new_comment', data);
+
+    res.json(data);
+});
+
+
+
 
 app.post('/invite/:code/redeem', async (req, res) => {
 
@@ -509,11 +583,25 @@ app.post('/match/:roomId/share', async (req, res) => {
             event_type: 'share',
             value: 1
         });
+
         await bumpAffinity(userId, match.thesis, 5);
+        
     }
 
     res.sendStatus(204);
     
+});
+
+app.post('/match/:roomId/view', async (req, res) => {
+    const { roomId } = req.params;
+
+    const { data, error } = await supabase.rpc('increment_view_count', {
+        p_room_id: roomId
+    });
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    res.json({ view_count: data?.[0]?.new_view_count ?? 0 }); 
 });
 
 
