@@ -1166,6 +1166,7 @@
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
     import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-analytics.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDc6wwJq_iQtLoZT2RMA1-qyqN3U5W2ZL0",
@@ -1189,6 +1190,8 @@
     window.isLoggedIn = false;
 
     const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    
     const auth = getAuth(app);
 
     onAuthStateChanged(auth, (user) => {
