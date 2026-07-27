@@ -440,7 +440,7 @@
                 <div class="nav-item">
                     <span class="material-symbols-outlined">person</span>
                     <span class="label">Profile</span>
-                    
+
                 </div>
             </a>
 
@@ -500,8 +500,16 @@
 
         window.isLoggedIn = false;
 
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
+            
             window.isLoggedIn = !!user;
+
+            if (user) {
+                const idToken = await user.getIdToken();
+                socket.emit('authenticate', idToken);
+            }
+
+
 
             authReadyResolve();
 

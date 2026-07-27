@@ -475,6 +475,25 @@ app.post('/api/profile', express.json(), verifyFirebaseToken, async (req, res) =
   res.json({ profile: data });
 });
 
+socket.on('authenticate', async (idToken) => {
+
+    try {
+
+        const decoded = await auth.verifyIdToken(idToken);
+
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('id, username, avatar_url')
+            .eq('firebase_uid', decoded.uid)
+            .maybeSingle();
+
+        socket.data.profile = profile || null;
+
+    } catch (err) {
+        socket.data.profile = null;
+    }
+});
+
 
 
 app.get('/notifications/pending', async (req, res) => {
@@ -825,7 +844,9 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
             id: crypto.randomUUID(),
             thesis,
             startTime: Date.now(),
-            socketId: socket.id
+            socketId: socket.id,
+            profileId: socket.data.profile?.id || null   // ADD THIS LINE
+
         };
 
 
@@ -887,22 +908,21 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
             creatorSocket.join(roomId);
         }
 
-        activeMatches.push({
+       activeMatches.push({
+
             roomId,
             thesis: duel.thesis,
             creatorSocketId: duel.socketId,
             challengerSocketId: socket.id,
+            creatorProfileId: duel.profileId || null,        // ADD
+            challengerProfileId: socket.data.profile?.id || null, // ADD
             spectators: [],
             createdAt: Date.now(),
- 
-            pendingDisconnect: {
-                creator: null,
-                challenger: null
-            },
-
-            votes: {} 
-
+            pendingDisconnect: { creator: null, challenger: null },
+            votes: {}
         });
+
+
 
         supabase.from('past_matches').insert({
 
