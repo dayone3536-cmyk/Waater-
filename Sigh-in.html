@@ -8,64 +8,156 @@
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0b0f19; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
-    .card { background: #fff; border-radius: 24px; padding: 2.5rem 2rem; width: 100%; max-width: 380px; box-shadow: 0 8px 40px rgba(0,0,0,0.25); text-align: center; }
-    .logo { width: 44px; height: 44px; background: #185FA5; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; }
-    .logo i { color: white; font-size: 22px; }
-    .card-title { font-size: 20px; font-weight: 600; color: #111; margin-bottom: 4px; }
-    .card-sub { font-size: 14px; color: #666; margin-bottom: 1.75rem; line-height: 1.5; }
 
-    .google-btn {
-      width: 100%;
-      padding: 12px;
-      background: #fff;
-      color: #3c4043;
-      border: 1.5px solid #dadce0;
-      border-radius: 10px;
-      font-size: 15px;
-      font-weight: 500;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      transition: box-shadow .15s ease, background .15s ease;
-      font-family: inherit;
-    }
-    .google-btn:hover { box-shadow: 0 1px 6px rgba(0,0,0,0.15); background: #f8f9fa; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: radial-gradient(circle at 20% 0%, rgba(24,95,165,0.25), transparent 45%), radial-gradient(circle at 100% 100%, rgba(24,95,165,0.12), transparent 50%), #05070d; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+
+
+    .card { background: #11141c; border: 1px solid #1f2430; border-radius: 24px; padding: 2.5rem 2rem; width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); text-align: center; }
+
+
+    .logo { width: 44px; height: 44px; background: #185FA5; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; }
+
+    .logo i { color: white; font-size: 22px; }
+
+    .card-title { font-size: 20px; font-weight: 600; color: #f2f4f8; margin-bottom: 4px; }
+
+    .card-sub { font-size: 14px; color: #8b93a5; margin-bottom: 1.75rem; line-height: 1.5; }
+
+
+    .google-btn { width: 100%; padding: 12px; background: #1a1e28; color: #e6e9ef; border: 1.5px solid #2a2f3c; border-radius: 10px; font-size: 15px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: border-color .15s ease, background .15s ease; font-family: inherit; }
+
+
+    .google-btn:hover { border-color: #3a4152; background: #1f2430; }
+
     .google-btn:disabled { opacity: .6; cursor: not-allowed; }
 
     .msg-box { border-radius: 10px; padding: 10px 14px; display: flex; align-items: flex-start; gap: 10px; margin-bottom: 1rem; font-size: 13px; text-align: left; animation: fadeSlide 0.2s ease; }
     .msg-box i { font-size: 17px; flex-shrink: 0; margin-top: 1px; }
+
+
     .msg-box p { line-height: 1.5; }
     .msg-error { background: #fff0f0; border: 1px solid #fcc; }
+
+
     .msg-error i, .msg-error p { color: #b91c1c; }
     .msg-success { background: #f0fdf4; border: 1px solid #bbf7d0; }
+
+
     .msg-success i, .msg-success p { color: #15803d; }
+
+
     @keyframes fadeSlide { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: none; } }
 
     .spinner { display: inline-block; width: 15px; height: 15px; border: 2px solid rgba(0,0,0,0.2); border-top-color: #3c4043; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: -3px; margin-right: 6px; }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+      .hidden { display: none !important; }
+
+
+      .avatar-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 1.75rem; }
+
+
+      .avatar-row img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; background: #262b38; border: 2px solid #262b38; }
+
+      .username-input-wrap { position: relative; margin-bottom: .5rem; }
+
+      .username-input-wrap span.at { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #999; font-size: 15px; }
+
+
+      #username {
+
+        width: 100%; padding: 12px 12px 12px 28px; font-size: 15px;
+        border: 1.5px solid #ddd; border-radius: 10px; font-family: inherit;
+      }
+
+      #username.bad { border-color: #e11d48; }
+      #username.good { border-color: #16a34a; }
+
+      .hint { font-size: 12.5px; min-height: 16px; text-align: left; margin-bottom: 1rem; }
+
+      .hint.bad { color: #e11d48; }
+      .hint.good { color: #16a34a; }
+
+      .hint.neutral { color: #888; }
+
+      .primary-btn {
+
+        width: 100%; padding: 12px; background: #185FA5; color: #fff; border: none;
+        border-radius: 10px; font-size: 15px; font-weight: 500; cursor: pointer; font-family: inherit;
+
+      }
+
+      .primary-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+
   </style>
+
+
 </head>
 <body>
+
   <div class="card">
+
     <div class="logo"><i class="ti ti-droplet"></i></div>
-    <p class="card-title">Welcome to Waater</p>
-    <p class="card-sub">Sign in with your Google account to continue</p>
 
-    <div id="msg"></div>
+    <div id="step-signin">
 
-    <button class="google-btn" id="btn-google">
-      <svg width="18" height="18" viewBox="0 0 48 48">
-        <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.3 29.3 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.8 0 5.3 1 7.3 2.7l5.7-5.7C33.6 6.5 29 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.2-.1-2.4-.4-3.5z"/>
-        <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 18.9 13 24 13c2.8 0 5.3 1 7.3 2.7l5.7-5.7C33.6 6.5 29 4.5 24 4.5c-7.7 0-14.4 4.4-17.7 10.2z"/>
-        <path fill="#4CAF50" d="M24 43.5c5 0 9.6-1.9 13-5.1l-6-5.1c-1.9 1.3-4.4 2.2-7 2.2-5.3 0-9.7-2.7-11.3-6.9l-6.6 5.1C9.6 39.1 16.3 43.5 24 43.5z"/>
-        <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.3 5.6l6 5.1c3.5-3.2 5.9-8 5.9-14.7 0-1.2-.1-2.4-.4-3.5z"/>
-      </svg>
-      <span id="btn-label">Continue with Google</span>
-    </button>
-  </div>
+      <p class="card-title">Welcome to Waater</p>
+      <p class="card-sub">Sign in with your Google account to continue</p>
+
+
+      <div id="msg"></div>
+
+      <button class="google-btn" id="btn-google">
+
+        <svg width="18" height="18" viewBox="0 0 48 48">
+          <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.3 29.3 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.8 0 5.3 1 7.3 2.7l5.7-5.7C33.6 6.5 29 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.2-.1-2.4-.4-3.5z"/>
+          <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 18.9 13 24 13c2.8 0 5.3 1 7.3 2.7l5.7-5.7C33.6 6.5 29 4.5 24 4.5c-7.7 0-14.4 4.4-17.7 10.2z"/>
+          <path fill="#4CAF50" d="M24 43.5c5 0 9.6-1.9 13-5.1l-6-5.1c-1.9 1.3-4.4 2.2-7 2.2-5.3 0-9.7-2.7-11.3-6.9l-6.6 5.1C9.6 39.1 16.3 43.5 24 43.5z"/>
+          <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.3 5.6l6 5.1c3.5-3.2 5.9-8 5.9-14.7 0-1.2-.1-2.4-.4-3.5z"/>
+        </svg>
+
+        <span id="btn-label">Continue with Google</span>
+
+      </button>
+
+    </div>
+
+    <div id="step-username" class="hidden">
+
+      <p class="card-title">Pick a username</p>
+      <p class="card-sub">This is how others will see you</p>
+
+      <div class="avatar-row"> 
+
+        <img id="ua-avatar" src="" alt="">
+
+        <div>
+
+          <div class="name" id="ua-name"></div>
+
+          <div class="email" id="ua-email"></div>
+
+        </div>
+
+      </div>
+
+
+
+      <div class="username-input-wrap">
+
+        <span class="at">@</span>
+
+        <input id="username" placeholder="username" autocomplete="off" maxlength="20">
+
+      </div>
+      <p class="hint neutral" id="username-hint">3-20 letters, numbers, or underscores</p>
+
+
+      <button class="primary-btn" id="btn-continue" disabled>Continue</button>
+
+    </div>
+
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
@@ -74,6 +166,7 @@
     } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
 
     const firebaseConfig = {
+
       apiKey: "AIzaSyDc6wwJq_iQtLoZT2RMA1-qyqN3U5W2ZL0",
       authDomain: "waater-65596.firebaseapp.com",
       projectId: "waater-65596",
@@ -81,48 +174,192 @@
       messagingSenderId: "840770803135",
       appId: "1:840770803135:web:1425f583ad04315b87fd0a",
       measurementId: "G-48T9GVZF3N"
+
     };
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const googleProvider = new GoogleAuthProvider();
 
+    const stepSignin = document.getElementById('step-signin');
+    const stepUsername = document.getElementById('step-username');
+    const usernameInput = document.getElementById('username');
+    const usernameHint = document.getElementById('username-hint');
+    const btnContinue = document.getElementById('btn-continue');
+
+    let currentUser = null;
+    let currentIdToken = null;
+    let debounce;
+
+    function revealUsernameStep(user) {
+      document.getElementById('ua-avatar').src = user.photoURL || '';
+      document.getElementById('ua-name').textContent = user.displayName || 'Welcome';
+      document.getElementById('ua-email').textContent = user.email || '';
+      stepSignin.classList.add('hidden');
+      stepUsername.classList.remove('hidden');
+      usernameInput.focus();
+    }
+
+    usernameInput.addEventListener('input', () => {
+      clearTimeout(debounce);
+      const val = usernameInput.value.trim();
+      usernameInput.classList.remove('good', 'bad');
+      btnContinue.disabled = true;
+
+      if (!val) {
+        usernameHint.textContent = '3-20 letters, numbers, or underscores';
+        usernameHint.className = 'hint neutral';
+        return;
+      }
+      if (!/^[a-zA-Z0-9_]{3,20}$/.test(val)) {
+        usernameHint.textContent = '3-20 letters, numbers, or underscores';
+        usernameHint.className = 'hint bad';
+        usernameInput.classList.add('bad');
+        return;
+      }
+
+      usernameHint.textContent = 'Checking…';
+      usernameHint.className = 'hint neutral';
+
+      debounce = setTimeout(async () => {
+        try {
+          const res = await fetch(`/api/username-available?u=${encodeURIComponent(val)}`);
+          const { available } = await res.json();
+          if (available) {
+            usernameHint.textContent = 'Available';
+            usernameHint.className = 'hint good';
+            usernameInput.classList.add('good');
+            btnContinue.disabled = false;
+          } else {
+            usernameHint.textContent = 'Already taken';
+            usernameHint.className = 'hint bad';
+            usernameInput.classList.add('bad');
+          }
+        } catch {
+          usernameHint.textContent = 'Could not check availability';
+          usernameHint.className = 'hint bad';
+        }
+      }, 350);
+    });
+
+    usernameInput.addEventListener('keydown', (e) => {
+
+      if (e.key === 'Enter' && !btnContinue.disabled) btnContinue.click();
+
+    });
+
+    btnContinue.addEventListener('click', async () => {
+
+      btnContinue.disabled = true;
+      btnContinue.textContent = 'Saving…';
+
+      try {
+
+        const res = await fetch('/api/profile', {
+
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${currentIdToken}` },
+          body: JSON.stringify({ username: usernameInput.value.trim() })
+
+        });
+
+        if (res.ok) {
+
+          window.location.href = getRedirectTarget();
+
+        } else {
+
+          const { error } = await res.json();
+          usernameHint.textContent = error;
+          usernameHint.className = 'hint bad';
+          btnContinue.disabled = false;
+          btnContinue.textContent = 'Continue';
+
+        }
+      } catch {
+
+        usernameHint.textContent = 'Something went wrong. Try again.';
+        usernameHint.className = 'hint bad';
+        btnContinue.disabled = false;
+        btnContinue.textContent = 'Continue';
+
+      }
+
+    });
+
     function getRedirectTarget() {
+
       const params = new URLSearchParams(window.location.search);
       const redirect = params.get('redirect');
       return redirect ? decodeURIComponent(redirect) : 'index.html';
+
     }
 
     function showMsg(type, html) {
+
       const icons = { error: 'ti-alert-circle', success: 'ti-circle-check' };
       document.getElementById('msg').innerHTML =
         `<div class="msg-box msg-${type}"><i class="ti ${icons[type]}"></i><p>${html}</p></div>`;
+
     }
 
     function setLoading(loading) {
+
       const btn = document.getElementById('btn-google');
       const label = document.getElementById('btn-label');
       btn.disabled = loading;
+
+
       label.textContent = loading ? 'Signing in…' : 'Continue with Google';
       const existingSpinner = btn.querySelector('.spinner');
       if (loading && !existingSpinner) {
+
+
         const spinner = document.createElement('span');
         spinner.className = 'spinner';
         btn.insertBefore(spinner, label);
+
+
       } else if (!loading && existingSpinner) {
+
         existingSpinner.remove();
+        
       }
     }
 
     document.getElementById('btn-google').addEventListener('click', async () => {
       document.getElementById('msg').innerHTML = '';
       setLoading(true);
+
       try {
+
         const result = await signInWithPopup(auth, googleProvider);
-        const user = result.user;
-        console.log('Signed in with Google:', user.uid, user.email, user.displayName);
-        showMsg('success', 'Signed in! Redirecting…');
-        setTimeout(() => window.location.href = getRedirectTarget(), 700);
+        currentUser = result.user;
+        currentIdToken = await currentUser.getIdToken();
+
+        const res = await fetch('/api/profile', {
+
+          headers: { Authorization: `Bearer ${currentIdToken}` }
+
+        });
+
+        const { profile } = await res.json();
+
+        if (profile) {
+
+          showMsg('success', 'Signed in! Redirecting…');
+
+          setTimeout(() => window.location.href = getRedirectTarget(), 500);
+
+        } else {
+
+          setLoading(false);
+          revealUsernameStep(currentUser);
+
+        }
+
+
+
       } catch (err) {
         setLoading(false);
         console.error(err.code, err.message);

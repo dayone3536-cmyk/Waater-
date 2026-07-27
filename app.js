@@ -9,6 +9,42 @@ const io = new Server(server);
 
 require('dotenv').config();
 
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getAuth } = require('firebase-admin/auth');
+
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+
+initializeApp({
+  credential: cert(serviceAccount)
+});
+
+const auth = getAuth();
+
+
+
+async function verifyFirebaseToken(req, res, next) {
+
+  const authHeader = req.headers.authorization || '';
+
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!token) return res.status(401).json({ error: 'No token provided' });
+
+  try {
+
+    const decoded = await auth.verifyIdToken(token);
+
+    req.firebaseUser = decoded; // { uid, email, name, picture, ... }
+    next();
+
+  } catch (err) {
+
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+}
+
+
+
+
 const { createClient } = require('@supabase/supabase-js');
 
 const supabase = createClient(
@@ -75,6 +111,12 @@ app.get('/live', (req, res) => {
 app.get('/Sigh-in', (req, res) => {
     res.sendFile(__dirname + '/Sigh-in.html');
 });
+
+app.get('/profile', (req, res) => res.sendFile(__dirname + '/profile.html'));
+
+app.get('/leaderboard', (req, res) => res.sendFile(__dirname + '/leaderboard.html'));
+
+
 
 
 app.get('/ping', (req, res) => {
@@ -364,6 +406,73 @@ app.post('/invite/:code/redeem', async (req, res) => {
 
     res.json({ redeemed: true, proVotes: tally.pro, againstVotes: tally.against });
 
+});
+
+const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
+
+// Check if the signed-in Firebase user already has a profile
+app.get('/api/profile', verifyFirebaseToken, async (req, res) => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('firebase_uid', req.firebaseUser.uid)
+    .maybeSingle();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ profile: data || null });
+});
+
+// Live username availability check
+app.get('/api/username-available', async (req, res) => {
+  const username = (req.query.u || '').trim();
+  if (!USERNAME_RE.test(username)) {
+    return res.json({ available: false, reason: 'invalid_format' });
+  }
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id')
+    .ilike('username', username)
+    .maybeSingle();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ available: !data });
+});
+
+// Create the profile
+
+app.post('/api/profile', express.json(), verifyFirebaseToken, async (req, res) => {
+  const username = (req.body?.username || '').trim();
+
+  if (!USERNAME_RE.test(username)) {
+    return res.status(400).json({ error: 'Username must be 3-20 letters, numbers, or underscores.' });
+  }
+
+  const { data: existing } = await supabase
+    .from('profiles')
+    .select('firebase_uid')
+    .eq('firebase_uid', req.firebaseUser.uid)
+    .maybeSingle();
+
+  if (existing) return res.status(409).json({ error: 'Profile already exists' });
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .insert({
+      firebase_uid: req.firebaseUser.uid,
+      username,
+      email: req.firebaseUser.email || null,
+      avatar_url: req.firebaseUser.picture || null
+    })
+    .select()
+    .single();
+
+  if (error) {
+    if (error.code === '23505') return res.status(409).json({ error: 'Username already taken' });
+    return res.status(500).json({ error: error.message });
+  }
+
+  res.json({ profile: data });
 });
 
 
