@@ -15,3 +15,518 @@
         <span class="label">Profile</span>
     </div>
 </a> -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile · Arena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14171f;
+    --panel:#1b1f2c;
+    --panel-raised:#232840;
+    --parchment:#ece5d6;
+    --muted:#8c92aa;
+    --gold:#c9a24b;
+    --gold-dim:#8f7a44;
+    --crimson:#b4483b;
+    --border:rgba(201,162,75,0.16);
+    --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(1100px 500px at 15% -10%, rgba(201,162,75,0.08), transparent 60%),
+      var(--ink);
+    color:var(--parchment);
+    font-family:'Inter',sans-serif;
+    display:flex;
+    justify-content:center;
+    padding:56px 20px 80px;
+  }
+  .page{width:100%;max-width:640px;}
+
+  /* ---- header card ---- */
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:32px;
+    position:relative;
+    overflow:hidden;
+  }
+  .card::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:linear-gradient(135deg, rgba(201,162,75,0.06), transparent 45%);
+    pointer-events:none;
+  }
+  .identity-row{
+    display:flex;
+    align-items:center;
+    gap:22px;
+  }
+
+  /* ---- avatar ---- */
+  .avatar-wrap{
+    position:relative;
+    width:92px;
+    height:92px;
+    flex-shrink:0;
+  }
+  .avatar{
+    width:100%;
+    height:100%;
+    border-radius:50%;
+    object-fit:cover;
+    background:var(--panel-raised);
+    border:2px solid var(--border);
+    display:block;
+  }
+  .avatar-edit{
+    position:absolute;
+    bottom:-2px;
+    right:-2px;
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    background:var(--gold);
+    border:3px solid var(--panel);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    transition:transform .15s ease, background .15s ease;
+  }
+  .avatar-edit:hover{ transform:scale(1.08); background:#dcb35e; }
+  .avatar-edit svg{ width:15px; height:15px; }
+  .avatar-wrap.uploading .avatar{ opacity:0.45; }
+  .avatar-wrap .spinner{
+    display:none;
+    position:absolute; inset:0;
+    align-items:center; justify-content:center;
+  }
+  .avatar-wrap.uploading .spinner{ display:flex; }
+  .spinner div{
+    width:22px;height:22px;border-radius:50%;
+    border:2.5px solid rgba(236,229,214,0.25);
+    border-top-color:var(--gold);
+    animation:spin .7s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .name-block{ min-width:0; }
+  .username{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:28px;
+    line-height:1.15;
+    letter-spacing:-0.01em;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .joined{ color:var(--muted); font-size:13px; margin-top:4px; }
+
+  /* ---- rank medallion ---- */
+  .rank-section{
+    margin-top:28px;
+    display:flex;
+    align-items:center;
+    gap:20px;
+    padding-top:26px;
+    border-top:1px solid var(--border);
+  }
+  .medallion{
+    width:74px;
+    height:74px;
+    border-radius:50%;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    background:var(--ring, conic-gradient(var(--gold) 0deg, var(--gold-dim) 0deg));
+  }
+  .medallion::after{
+    content:"";
+    position:absolute;
+    inset:6px;
+    border-radius:50%;
+    background:var(--panel);
+  }
+  .medallion .tier-initial{
+    position:relative;
+    z-index:1;
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:22px;
+    color:var(--gold);
+  }
+  .rank-info .tier-name{
+    font-family:'Fraunces',serif;
+    font-size:19px;
+    font-weight:600;
+    color:var(--gold);
+  }
+  .rank-info .points{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    color:var(--muted);
+    margin-top:3px;
+  }
+  .rank-info .progress-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+    margin-top:6px;
+  }
+
+  /* ---- bio ---- */
+  .bio-card{
+    margin-top:22px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:26px 28px;
+  }
+  .bio-label{
+    font-family:'IBM Plex Mono',monospace;
+    text-transform:uppercase;
+    letter-spacing:0.12em;
+    font-size:11px;
+    color:var(--muted);
+    margin-bottom:12px;
+  }
+  .bio-display{
+    font-size:15px;
+    line-height:1.6;
+    color:var(--parchment);
+    cursor:text;
+    min-height:24px;
+    white-space:pre-wrap;
+    word-break:break-word;
+    border-radius:10px;
+    padding:8px 10px;
+    margin:-8px -10px;
+    transition:background .15s ease;
+  }
+  .bio-display:hover{ background:var(--panel-raised); }
+  .bio-display.placeholder{ color:var(--muted); font-style:italic; }
+  .bio-editor{ display:none; }
+  .bio-editor.active{ display:block; }
+  .bio-display.editing{ display:none; }
+  .bio-editor textarea{
+    width:100%;
+    resize:vertical;
+    min-height:96px;
+    background:var(--panel-raised);
+    border:1px solid var(--border);
+    border-radius:10px;
+    color:var(--parchment);
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    line-height:1.55;
+    padding:12px 14px;
+    outline:none;
+  }
+  .bio-editor textarea:focus{ border-color:var(--gold); }
+  .bio-footer{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:10px;
+  }
+  .char-count{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); }
+  .char-count.over{ color:var(--crimson); }
+  .bio-actions{ display:flex; gap:8px; }
+  button.bio-btn{
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    padding:7px 16px;
+    border-radius:8px;
+    border:1px solid var(--border);
+    background:transparent;
+    color:var(--muted);
+    cursor:pointer;
+  }
+  button.bio-btn.save{
+    background:var(--gold);
+    color:#1a1305;
+    border:none;
+  }
+  button.bio-btn.save:disabled{ opacity:0.5; cursor:default; }
+  button.bio-btn.cancel:hover{ color:var(--parchment); }
+
+  .status-msg{
+    margin-top:14px;
+    font-size:13px;
+    font-family:'IBM Plex Mono',monospace;
+    color:var(--crimson);
+    display:none;
+  }
+  .status-msg.show{ display:block; }
+
+  input[type=file]{ display:none; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="card">
+    <div class="identity-row">
+      <div class="avatar-wrap" id="avatarWrap">
+        <img class="avatar" id="avatarImg" src="" alt="Profile avatar">
+        <div class="spinner"><div></div></div>
+        <label class="avatar-edit" for="avatarInput" title="Change avatar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#1a1305" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+            <circle cx="12" cy="13" r="4"></circle>
+          </svg>
+        </label>
+        <input type="file" id="avatarInput" accept="image/*">
+      </div>
+      <div class="name-block">
+        <div class="username" id="usernameEl">—</div>
+        <div class="joined" id="joinedEl"></div>
+      </div>
+    </div>
+
+    <div class="rank-section">
+      <div class="medallion" id="medallion">
+        <span class="tier-initial" id="tierInitial">A</span>
+      </div>
+      <div class="rank-info">
+        <div class="tier-name" id="tierName">Amateur</div>
+        <div class="points" id="pointsEl">0 drop points</div>
+        <div class="progress-label" id="progressLabel"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bio-card">
+    <div class="bio-label">Bio</div>
+    <div class="bio-display placeholder" id="bioDisplay">Click to add a bio…</div>
+    <div class="bio-editor" id="bioEditor">
+      <textarea id="bioTextarea" maxlength="300" placeholder="Tell the arena about yourself…"></textarea>
+      <div class="bio-footer">
+        <span class="char-count" id="charCount">0 / 300</span>
+        <div class="bio-actions">
+          <button class="bio-btn cancel" id="cancelBio">Cancel</button>
+          <button class="bio-btn save" id="saveBio">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-msg" id="statusMsg"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+/* ---------------------------------------------------------
+   Fill this in with your Firebase web app config
+--------------------------------------------------------- */
+
+
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID"
+};
+
+
+firebase.initializeApp(firebaseConfig);
+
+/* ---- rank tiers: keep this in sync with the backend's getRank() ---- */
+
+
+const TIERS = [
+  { name: 'Amateur',     min: 0,   initial: 'A' },
+  { name: 'Pro',         min: 25,  initial: 'P' },
+  { name: 'Master',      min: 100, initial: 'M' },
+  { name: 'Legendary',   min: 300, initial: 'L' },
+  { name: 'Grandmaster', min: 800, initial: 'G' }
+];
+
+function getTier(points) {
+  let current = TIERS[0];
+  for (const t of TIERS) if (points >= t.min) current = t;
+  return current;
+}
+
+function renderRank(points) {
+  const tier = getTier(points);
+  const idx = TIERS.indexOf(tier);
+  const next = TIERS[idx + 1];
+
+  document.getElementById('tierName').textContent = tier.name;
+  document.getElementById('tierInitial').textContent = tier.initial;
+  document.getElementById('pointsEl').textContent = `${points} drop point${points === 1 ? '' : 's'}`;
+
+  const medallion = document.getElementById('medallion');
+  if (next) {
+    const span = next.min - tier.min;
+    const pct = Math.min(100, Math.round(((points - tier.min) / span) * 100));
+    medallion.style.setProperty('--ring', `conic-gradient(var(--gold) ${pct * 3.6}deg, var(--gold-dim) 0deg)`);
+    document.getElementById('progressLabel').textContent = `${next.min - points} to ${next.name}`;
+  } else {
+    medallion.style.setProperty('--ring', `conic-gradient(var(--gold) 360deg, var(--gold-dim) 0deg)`);
+    document.getElementById('progressLabel').textContent = 'Top tier';
+  }
+}
+
+function showStatus(msg) {
+  const el = document.getElementById('statusMsg');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+let currentProfile = null;
+
+async function authedFetch(url, options = {}) {
+  const user = firebase.auth().currentUser;
+  if (!user) throw new Error('Not signed in');
+  const token = await user.getIdToken();
+  const headers = Object.assign({}, options.headers, { Authorization: `Bearer ${token}` });
+  return fetch(url, Object.assign({}, options, { headers }));
+}
+
+async function loadProfile() {
+  try {
+    const res = await authedFetch('/api/profile');
+    const json = await res.json();
+    if (!json.profile) {
+      showStatus('No profile found — finish sign-up first.');
+      return;
+    }
+    currentProfile = json.profile;
+    renderProfile(currentProfile);
+  } catch (err) {
+    showStatus('Could not load profile.');
+  }
+}
+
+function renderProfile(profile) {
+  document.getElementById('usernameEl').textContent = profile.username || 'unknown';
+  document.getElementById('avatarImg').src = profile.avatar_url || 'https://api.dicebear.com/7.x/shapes/svg?seed=' + encodeURIComponent(profile.username || 'debater');
+  if (profile.created_at) {
+    const d = new Date(profile.created_at);
+    document.getElementById('joinedEl').textContent = 'Joined ' + d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  }
+  renderRank(profile.drop_points || 0);
+
+  const bio = profile.bio || '';
+  const bioDisplay = document.getElementById('bioDisplay');
+  if (bio) {
+    bioDisplay.textContent = bio;
+    bioDisplay.classList.remove('placeholder');
+  } else {
+    bioDisplay.textContent = 'Click to add a bio…';
+    bioDisplay.classList.add('placeholder');
+  }
+}
+
+/* ---- avatar upload ---- */
+document.getElementById('avatarInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { showStatus('Please choose an image file.'); return; }
+  if (file.size > 5 * 1024 * 1024) { showStatus('Image must be under 5MB.'); return; }
+
+  const wrap = document.getElementById('avatarWrap');
+  wrap.classList.add('uploading');
+
+  try {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    const res = await authedFetch('/api/profile/avatar', { method: 'POST', body: formData });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Upload failed');
+    currentProfile = json.profile;
+    renderProfile(currentProfile);
+  } catch (err) {
+    showStatus(err.message);
+  } finally {
+    wrap.classList.remove('uploading');
+    e.target.value = '';
+  }
+});
+
+/* ---- bio edit ---- */
+const bioDisplay = document.getElementById('bioDisplay');
+const bioEditor = document.getElementById('bioEditor');
+const bioTextarea = document.getElementById('bioTextarea');
+const charCount = document.getElementById('charCount');
+
+bioDisplay.addEventListener('click', () => {
+  bioTextarea.value = (currentProfile && currentProfile.bio) || '';
+  updateCharCount();
+  bioDisplay.classList.add('editing');
+  bioEditor.classList.add('active');
+  bioTextarea.focus();
+});
+
+function updateCharCount() {
+  const len = bioTextarea.value.length;
+  charCount.textContent = `${len} / 300`;
+  charCount.classList.toggle('over', len > 300);
+}
+bioTextarea.addEventListener('input', updateCharCount);
+
+document.getElementById('cancelBio').addEventListener('click', () => {
+  bioEditor.classList.remove('active');
+  bioDisplay.classList.remove('editing');
+});
+
+document.getElementById('saveBio').addEventListener('click', async () => {
+  const bio = bioTextarea.value.trim();
+  if (bio.length > 300) { showStatus('Bio must be 300 characters or fewer.'); return; }
+
+  const btn = document.getElementById('saveBio');
+  btn.disabled = true;
+  try {
+    const res = await authedFetch('/api/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bio })
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Could not save bio');
+    currentProfile = json.profile;
+    renderProfile(currentProfile);
+    bioEditor.classList.remove('active');
+    bioDisplay.classList.remove('editing');
+  } catch (err) {
+    showStatus(err.message);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+/* ---- boot ---- */
+firebase.auth().onAuthStateChanged((user) => {
+  if (user) {
+    loadProfile();
+  } else {
+    showStatus('Sign in to view your profile.');
+    // window.location.href = '/Sigh-in';
+  }
+});
+
+
+</script>
+</body>
+</html>
+

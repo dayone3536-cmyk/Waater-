@@ -206,7 +206,10 @@ app.post('/past-matches/:roomId/vote', express.json(), async (req, res) => {
     (data || []).forEach(v => tally[v.side]++);
 
     res.json({ ...tally, myVote: side });
+    
 });
+
+
 
 
 app.post('/match/:roomId/invite', express.json(), async (req, res) => {
@@ -475,24 +478,7 @@ app.post('/api/profile', express.json(), verifyFirebaseToken, async (req, res) =
   res.json({ profile: data });
 });
 
-socket.on('authenticate', async (idToken) => {
 
-    try {
-
-        const decoded = await auth.verifyIdToken(idToken);
-
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('id, username, avatar_url')
-            .eq('firebase_uid', decoded.uid)
-            .maybeSingle();
-
-        socket.data.profile = profile || null;
-
-    } catch (err) {
-        socket.data.profile = null;
-    }
-});
 
 
 
@@ -642,6 +628,29 @@ app.post('/match/:roomId/react', express.json(), async (req, res) => {
             if (reaction === 'like') likeDelta = 1; else dislikeDelta = 1;
 
         }
+
+        if (likeDelta !== 0 || dislikeDelta !== 0) {
+
+            const { data: matchRow } = await supabase
+                .from('past_matches')
+
+                .select('creator_profile_id, challenger_profile_id')
+                .eq('room_id', roomId)
+
+                .maybeSingle();
+
+            if (matchRow) {
+                const pointDelta = likeDelta - dislikeDelta; // like = +1, dislike = -1, switch = net
+
+                await Promise.all([
+                    supabase.rpc('increment_drop_points', { p_profile_id: matchRow.creator_profile_id, p_amount: pointDelta }),
+                    supabase.rpc('increment_drop_points', { p_profile_id: matchRow.challenger_profile_id, p_amount: pointDelta })
+
+                ]);
+            }
+        }
+
+
 
         const { data: counts, error: rpcErr } = await supabase.rpc('increment_reaction_counts', {
 
@@ -844,10 +853,31 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
             id: crypto.randomUUID(),
             thesis,
             startTime: Date.now(),
+
+
             socketId: socket.id,
             profileId: socket.data.profile?.id || null   // ADD THIS LINE
 
         };
+
+        socket.on('authenticate', async (idToken) => {
+
+            try {
+
+                const decoded = await auth.verifyIdToken(idToken);
+
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('id, username, avatar_url')
+                    .eq('firebase_uid', decoded.uid)
+                    .maybeSingle();
+
+                socket.data.profile = profile || null;
+
+            } catch (err) {
+                socket.data.profile = null;
+            }
+        });
 
 
 // send_argument
@@ -913,12 +943,18 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
             roomId,
             thesis: duel.thesis,
             creatorSocketId: duel.socketId,
+
+
             challengerSocketId: socket.id,
             creatorProfileId: duel.profileId || null,        // ADD
+
             challengerProfileId: socket.data.profile?.id || null, // ADD
+
             spectators: [],
             createdAt: Date.now(),
+
             pendingDisconnect: { creator: null, challenger: null },
+            
             votes: {}
         });
 
@@ -1115,6 +1151,9 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
 
         const match = activeMatches.find(m => m.roomId === roomId);
 
+        // capture the OLD vote BEFORE overwriting it
+        const previousSide = match ? (match.votes[socket.id] || null) : null;
+
         if (match) {
             match.votes[socket.id] = side;
         }
@@ -1129,6 +1168,26 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
         if (error) {
             console.error('Failed to save vote:', error);
             return;
+        }
+
+        // Award drop points to whoever the vote now favors
+        if (match && previousSide !== side) {
+            const { data: matchRow } = await supabase
+                .from('past_matches')
+                .select('creator_profile_id, challenger_profile_id')
+                .eq('room_id', roomId)
+                .maybeSingle();
+
+            if (matchRow) {
+                const winnerProfileId = side === 'pro' ? matchRow.creator_profile_id : matchRow.challenger_profile_id;
+                await supabase.rpc('increment_drop_points', { p_profile_id: winnerProfileId, p_amount: 1 });
+
+                if (previousSide) {
+                    // they switched sides — undo the point given to the old side
+                    const prevWinnerId = previousSide === 'pro' ? matchRow.creator_profile_id : matchRow.challenger_profile_id;
+                    await supabase.rpc('increment_drop_points', { p_profile_id: prevWinnerId, p_amount: -1 });
+                }
+            }
         }
 
         if (match) {
@@ -1159,8 +1218,10 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
                 againstVotes: tally.against
             });
         }
-        
+
     });
+
+
 
 
 
