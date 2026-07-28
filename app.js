@@ -20,6 +20,13 @@ initializeApp({
 
 const auth = getAuth();
 
+ 
+const multer = require('multer');
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+});
+
 
 
 async function verifyFirebaseToken(req, res, next) {
@@ -811,6 +818,116 @@ function extractTopics(thesis) {
             .slice(0, 5); // keep it to a few meaningful words per debate
 
     }
+
+
+const RANK_TIERS = [
+  { name: 'Amateur',     min: 0 },
+  { name: 'Pro',         min: 25 },
+  { name: 'Master',      min: 100 },
+  { name: 'Legendary',   min: 300 },
+  { name: 'Grandmaster', min: 800 }
+];
+ 
+function getRank(points) {
+  let current = RANK_TIERS[0];
+  for (const t of RANK_TIERS) if (points >= t.min) current = t;
+  return current.name;
+}
+ 
+/* ---- update bio ---- */
+
+app.patch('/api/profile', express.json(), verifyFirebaseToken, async (req, res) => {
+    
+  const bio = (req.body?.bio ?? '').toString();
+ 
+  if (bio.length > 300) {
+    return res.status(400).json({ error: 'Bio must be 300 characters or fewer' });
+  }
+ 
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ bio })
+    .eq('firebase_uid', req.firebaseUser.uid)
+    .select()
+    .single();
+ 
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ profile: data });
+
+});
+ 
+/* ---- upload / change avatar ---- */
+
+
+app.post('/api/profile/avatar', verifyFirebaseToken, upload.single('avatar'), async (req, res) => {
+
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+  if (!req.file.mimetype.startsWith('image/')) {
+
+    return res.status(400).json({ error: 'File must be an image' });
+
+  }
+ 
+  const ext = (req.file.originalname.split('.').pop() || 'jpg').toLowerCase();
+
+  const filePath = `${req.firebaseUser.uid}-${Date.now()}.${ext}`;
+ 
+  const { error: uploadErr } = await supabase.storage
+
+    .from('avatars')
+    .upload(filePath, req.file.buffer, {
+      contentType: req.file.mimetype,
+      upsert: true
+
+    });
+ 
+  if (uploadErr) return res.status(500).json({ error: uploadErr.message });
+ 
+  const { data: publicUrlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+  const avatarUrl = publicUrlData.publicUrl;
+ 
+  const { data, error } = await supabase
+
+    .from('profiles')
+    .update({ avatar_url: avatarUrl })
+    .eq('firebase_uid', req.firebaseUser.uid)
+    .select()
+    .single();
+ 
+  if (error) return res.status(500).json({ error: error.message });
+
+  res.json({ profile: data });
+
+});
+
+ 
+/* ---- leaderboard ---- */
+
+app.get('/api/leaderboard', async (req, res) => {
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('username, avatar_url, drop_points')
+    .order('drop_points', { ascending: false })
+    .limit(100);
+ 
+  if (error) return res.status(500).json({ error: error.message });
+ 
+  const ranked = (data || []).map((p, i) => ({
+
+    ...p,
+    position: i + 1,
+    rank: getRank(p.drop_points || 0)
+
+  }));
+ 
+  res.json(ranked);
+
+});
+
+
+
 
 
 // activeMatches loadReplayMode args async

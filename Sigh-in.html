@@ -136,8 +136,6 @@
 
           <div class="name" id="ua-name"></div>
 
-          <div class="email" id="ua-email"></div>
-
         </div>
 
       </div>
@@ -192,13 +190,15 @@
     let debounce;
 
     function revealUsernameStep(user) {
-      document.getElementById('ua-avatar').src = user.photoURL || '';
+
       document.getElementById('ua-name').textContent = user.displayName || 'Welcome';
-      document.getElementById('ua-email').textContent = user.email || '';
       stepSignin.classList.add('hidden');
+      
       stepUsername.classList.remove('hidden');
       usernameInput.focus();
+
     }
+
 
     usernameInput.addEventListener('input', () => {
       clearTimeout(debounce);

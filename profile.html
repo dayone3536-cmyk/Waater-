@@ -1,467 +1,824 @@
-<!-- ADD this  -->
-
-<!-- <a href="/leaderboard" style="text-decoration: none;">
-
-
-    <div class="nav-item">
-        <span class="material-symbols-outlined">leaderboard</span>
-        <span class="label">Leaderboard</span>
-    </div>
-</a>
-
-<a href="/profile" style="text-decoration: none;">
-    <div class="nav-item">
-        <span class="material-symbols-outlined">person</span>
-        <span class="label">Profile</span>
-    </div>
-</a> -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Profile · Arena</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --ink:#14171f;
-    --panel:#1b1f2c;
-    --panel-raised:#232840;
-    --parchment:#ece5d6;
-    --muted:#8c92aa;
-    --gold:#c9a24b;
-    --gold-dim:#8f7a44;
-    --crimson:#b4483b;
-    --border:rgba(201,162,75,0.16);
-    --radius:18px;
-  }
-  *{box-sizing:border-box;}
-  body{
-    margin:0;
-    min-height:100vh;
-    background:
-      radial-gradient(1100px 500px at 15% -10%, rgba(201,162,75,0.08), transparent 60%),
-      var(--ink);
-    color:var(--parchment);
-    font-family:'Inter',sans-serif;
-    display:flex;
-    justify-content:center;
-    padding:56px 20px 80px;
-  }
-  .page{width:100%;max-width:640px;}
+    <link rel="stylesheet" href="/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile · Colloseum</title>
 
-  /* ---- header card ---- */
-  .card{
-    background:var(--panel);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    padding:32px;
-    position:relative;
-    overflow:hidden;
-  }
-  .card::before{
-    content:"";
-    position:absolute;
-    inset:0;
-    background:linear-gradient(135deg, rgba(201,162,75,0.06), transparent 45%);
-    pointer-events:none;
-  }
-  .identity-row{
-    display:flex;
-    align-items:center;
-    gap:22px;
-  }
-
-  /* ---- avatar ---- */
-  .avatar-wrap{
-    position:relative;
-    width:92px;
-    height:92px;
-    flex-shrink:0;
-  }
-  .avatar{
-    width:100%;
-    height:100%;
-    border-radius:50%;
-    object-fit:cover;
-    background:var(--panel-raised);
-    border:2px solid var(--border);
-    display:block;
-  }
-  .avatar-edit{
-    position:absolute;
-    bottom:-2px;
-    right:-2px;
-    width:32px;
-    height:32px;
-    border-radius:50%;
-    background:var(--gold);
-    border:3px solid var(--panel);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    cursor:pointer;
-    transition:transform .15s ease, background .15s ease;
-  }
-  .avatar-edit:hover{ transform:scale(1.08); background:#dcb35e; }
-  .avatar-edit svg{ width:15px; height:15px; }
-  .avatar-wrap.uploading .avatar{ opacity:0.45; }
-  .avatar-wrap .spinner{
-    display:none;
-    position:absolute; inset:0;
-    align-items:center; justify-content:center;
-  }
-  .avatar-wrap.uploading .spinner{ display:flex; }
-  .spinner div{
-    width:22px;height:22px;border-radius:50%;
-    border:2.5px solid rgba(236,229,214,0.25);
-    border-top-color:var(--gold);
-    animation:spin .7s linear infinite;
-  }
-  @keyframes spin{ to{ transform:rotate(360deg); } }
-
-  .name-block{ min-width:0; }
-  .username{
-    font-family:'Fraunces',serif;
-    font-weight:700;
-    font-size:28px;
-    line-height:1.15;
-    letter-spacing:-0.01em;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
-  .joined{ color:var(--muted); font-size:13px; margin-top:4px; }
-
-  /* ---- rank medallion ---- */
-  .rank-section{
-    margin-top:28px;
-    display:flex;
-    align-items:center;
-    gap:20px;
-    padding-top:26px;
-    border-top:1px solid var(--border);
-  }
-  .medallion{
-    width:74px;
-    height:74px;
-    border-radius:50%;
-    flex-shrink:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    position:relative;
-    background:var(--ring, conic-gradient(var(--gold) 0deg, var(--gold-dim) 0deg));
-  }
-  .medallion::after{
-    content:"";
-    position:absolute;
-    inset:6px;
-    border-radius:50%;
-    background:var(--panel);
-  }
-  .medallion .tier-initial{
-    position:relative;
-    z-index:1;
-    font-family:'Fraunces',serif;
-    font-weight:700;
-    font-size:22px;
-    color:var(--gold);
-  }
-  .rank-info .tier-name{
-    font-family:'Fraunces',serif;
-    font-size:19px;
-    font-weight:600;
-    color:var(--gold);
-  }
-  .rank-info .points{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:13px;
-    color:var(--muted);
-    margin-top:3px;
-  }
-  .rank-info .progress-label{
-    font-family:'IBM Plex Mono',monospace;
-    font-size:11px;
-    color:var(--muted);
-    margin-top:6px;
-  }
-
-  /* ---- bio ---- */
-  .bio-card{
-    margin-top:22px;
-    background:var(--panel);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    padding:26px 28px;
-  }
-  .bio-label{
-    font-family:'IBM Plex Mono',monospace;
-    text-transform:uppercase;
-    letter-spacing:0.12em;
-    font-size:11px;
-    color:var(--muted);
-    margin-bottom:12px;
-  }
-  .bio-display{
-    font-size:15px;
-    line-height:1.6;
-    color:var(--parchment);
-    cursor:text;
-    min-height:24px;
-    white-space:pre-wrap;
-    word-break:break-word;
-    border-radius:10px;
-    padding:8px 10px;
-    margin:-8px -10px;
-    transition:background .15s ease;
-  }
-  .bio-display:hover{ background:var(--panel-raised); }
-  .bio-display.placeholder{ color:var(--muted); font-style:italic; }
-  .bio-editor{ display:none; }
-  .bio-editor.active{ display:block; }
-  .bio-display.editing{ display:none; }
-  .bio-editor textarea{
-    width:100%;
-    resize:vertical;
-    min-height:96px;
-    background:var(--panel-raised);
-    border:1px solid var(--border);
-    border-radius:10px;
-    color:var(--parchment);
-    font-family:'Inter',sans-serif;
-    font-size:15px;
-    line-height:1.55;
-    padding:12px 14px;
-    outline:none;
-  }
-  .bio-editor textarea:focus{ border-color:var(--gold); }
-  .bio-footer{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-top:10px;
-  }
-  .char-count{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); }
-  .char-count.over{ color:var(--crimson); }
-  .bio-actions{ display:flex; gap:8px; }
-  button.bio-btn{
-    font-family:'Inter',sans-serif;
-    font-size:13px;
-    font-weight:600;
-    padding:7px 16px;
-    border-radius:8px;
-    border:1px solid var(--border);
-    background:transparent;
-    color:var(--muted);
-    cursor:pointer;
-  }
-  button.bio-btn.save{
-    background:var(--gold);
-    color:#1a1305;
-    border:none;
-  }
-  button.bio-btn.save:disabled{ opacity:0.5; cursor:default; }
-  button.bio-btn.cancel:hover{ color:var(--parchment); }
-
-  .status-msg{
-    margin-top:14px;
-    font-size:13px;
-    font-family:'IBM Plex Mono',monospace;
-    color:var(--crimson);
-    display:none;
-  }
-  .status-msg.show{ display:block; }
-
-  input[type=file]{ display:none; }
-</style>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" />
 </head>
 <body>
 
-<div class="page">
+<style>
 
-  <div class="card">
-    <div class="identity-row">
-      <div class="avatar-wrap" id="avatarWrap">
-        <img class="avatar" id="avatarImg" src="" alt="Profile avatar">
-        <div class="spinner"><div></div></div>
-        <label class="avatar-edit" for="avatarInput" title="Change avatar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#1a1305" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-            <circle cx="12" cy="13" r="4"></circle>
-          </svg>
-        </label>
-        <input type="file" id="avatarInput" accept="image/*">
-      </div>
-      <div class="name-block">
-        <div class="username" id="usernameEl">—</div>
-        <div class="joined" id="joinedEl"></div>
-      </div>
+    .main-content-canvas {
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .profile-page {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 20px 16px 90px;
+    }
+
+    /* ---- single continuous profile block, IG-style ---- */
+    .profile-block {
+        background: linear-gradient(145deg, #161b27, #1a2030);
+        border: 1px solid #2a3142;
+        border-radius: 22px;
+        padding: 26px;
+    }
+
+    /* ---- top row: avatar + username/joined ---- */
+    .profile-header {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+    }
+
+    .avatar-wrap {
+        position: relative;
+        width: 100px;
+        height: 100px;
+        flex-shrink: 0;
+    }
+
+    .avatar {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+        background: #0f1320;
+        border: 2px solid #2a3142;
+        display: block;
+    }
+
+    .avatar-edit {
+        position: absolute;
+        bottom: -2px;
+        right: -2px;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: #3b82f6;
+        border: 3px solid #161b27;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background .15s ease, transform .15s ease;
+    }
+
+    .avatar-edit:hover {
+        background: #0e67f7;
+        transform: scale(1.06);
+    }
+
+    .avatar-edit .material-symbols-outlined {
+        font-size: 18px;
+        color: #fff;
+    }
+
+    .avatar-wrap.uploading .avatar {
+        opacity: 0.4;
+    }
+
+    .avatar-wrap .spinner {
+        display: none;
+        position: absolute;
+        inset: 0;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .avatar-wrap.uploading .spinner {
+        display: flex;
+    }
+
+    .spinner div {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 3px solid #2a3142;
+        border-top-color: #3b82f6;
+        animation: spin .7s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .header-meta {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .username {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #f1f5f9;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .joined {
+        font-size: .85rem;
+        color: #8b94a7;
+        margin-top: 4px;
+    }
+
+    /* ---- bio ---- */
+    .bio-section {
+        margin-top: 22px;
+    }
+
+    .bio-display {
+        font-size: 1rem;
+        line-height: 1.6;
+        color: #d1d5db;
+        cursor: text;
+        min-height: 24px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        border-radius: 10px;
+        padding: 8px 10px;
+        margin: -8px -10px;
+        transition: background .15s ease;
+    }
+
+    .bio-display:hover {
+        background: #1a2030;
+    }
+
+    .bio-display.placeholder {
+        color: #6b7280;
+        font-style: italic;
+    }
+
+    .bio-editor {
+        display: none;
+    }
+
+    .bio-editor.active {
+        display: block;
+    }
+
+    .bio-display.editing {
+        display: none;
+    }
+
+    .bio-editor textarea {
+        width: 100%;
+        resize: vertical;
+        min-height: 100px;
+        background: #0f1320;
+        border: 1px solid #2a3142;
+        border-radius: 10px;
+        color: #f1f5f9;
+        font-family: inherit;
+        font-size: 1rem;
+        line-height: 1.6;
+        padding: 12px 14px;
+        outline: none;
+    }
+
+    .bio-editor textarea:focus {
+        border-color: #3b82f6;
+    }
+
+    .bio-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 10px;
+    }
+
+    .char-count {
+        font-size: .8rem;
+        color: #6b7280;
+    }
+
+    .char-count.over {
+        color: #ef4444;
+    }
+
+    .bio-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    button.bio-btn {
+        font-size: .85rem;
+        font-weight: 600;
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: 1px solid #2a3142;
+        background: #0f1320;
+        color: #9ca3af;
+        cursor: pointer;
+        transition: background .15s ease, color .15s ease, border-color .15s ease;
+    }
+
+    button.bio-btn:hover {
+        border-color: #3b4356;
+        color: #e5e7eb;
+    }
+
+    button.bio-btn.save {
+        background: #3b82f6;
+        color: #fff;
+        border: none;
+    }
+
+    button.bio-btn.save:hover {
+        background: #0e67f7;
+    }
+
+    button.bio-btn.save:disabled {
+        opacity: .5;
+        cursor: default;
+    }
+
+    /* ---- rank + drop points, below bio ---- */
+    .rank-strip {
+        margin-top: 24px;
+        padding-top: 22px;
+        border-top: 1px solid #262d3d;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .medallion {
+        width: 66px;
+        height: 66px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--ring, conic-gradient(#3b82f6 0deg, #2a3142 0deg));
+    }
+
+    .medallion::after {
+        content: "";
+        position: absolute;
+        inset: 5px;
+        border-radius: 50%;
+        background: #161b27;
+    }
+
+    .medallion .material-symbols-outlined {
+        position: relative;
+        z-index: 1;
+        font-size: 26px;
+        color: var(--tier-color, #3b82f6);
+    }
+
+    .rank-info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px 12px;
+    }
+
+    .rank-info .tier-name {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--tier-color, #3b82f6);
+    }
+
+    .rank-info .progress-label {
+        font-size: .78rem;
+        color: #6b7280;
+    }
+
+    .rank-info .points {
+        font-size: .9rem;
+        color: #8b94a7;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    /* ---- status / error banner ---- */
+    .status-msg {
+        margin-top: 14px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        font-size: .85rem;
+        color: #fca5a5;
+        background: #2a1418;
+        border: 1px solid #ef444444;
+        display: none;
+    }
+
+    .status-msg.show {
+        display: block;
+    }
+
+    input[type=file] {
+        display: none;
+    }
+
+    /* ---- scale up further on wider screens ---- */
+    @media (min-width: 480px) {
+        .profile-page { padding: 32px 20px 90px; }
+        .profile-block { padding: 36px; }
+        .avatar-wrap { width: 130px; height: 130px; }
+        .avatar-edit { width: 38px; height: 38px; }
+        .avatar-edit .material-symbols-outlined { font-size: 20px; }
+        .username { font-size: 1.9rem; }
+        .medallion { width: 76px; height: 76px; }
+        .rank-info .tier-name { font-size: 1.3rem; }
+    }
+
+    .bio-label {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #f1f5f9;
+        margin-bottom: 10px;
+    }
+
+    .setup-copy {
+        font-size: .95rem;
+        color: #8b94a7;
+        line-height: 1.5;
+        margin-bottom: 20px;
+    }
+
+    .setup-input {
+        width: 100%;
+        padding: 12px 14px;
+        background: #0f1320;
+        border: 1.5px solid #2a3142;
+        border-radius: 10px;
+        color: #f1f5f9;
+        font-family: inherit;
+        font-size: 1rem;
+        outline: none;
+        margin-bottom: 6px;
+    }
+
+    .setup-input.bad { border-color: #ef4444; }
+    .setup-input.good { border-color: #22c55e; }
+
+    .setup-availability {
+        font-size: .8rem;
+        min-height: 18px;
+        margin: 0 0 18px;
+        color: #8b94a7;
+    }
+
+    .setup-availability.bad { color: #ef4444; }
+    .setup-availability.good { color: #22c55e; }
+
+
+
+</style>
+
+<!-- 1. The Fixed Top Header -->
+<header class="top-navbar">
+    <div class="nav-left-group">
+        <span class="brand-logo"> Waater </span>
     </div>
 
-    <div class="rank-section">
-      <div class="medallion" id="medallion">
-        <span class="tier-initial" id="tierInitial">A</span>
-      </div>
-      <div class="rank-info">
-        <div class="tier-name" id="tierName">Amateur</div>
-        <div class="points" id="pointsEl">0 drop points</div>
-        <div class="progress-label" id="progressLabel"></div>
-      </div>
+    <div class="search-container">
+        <input type="text" class="global-search" placeholder="Search the arena...">
     </div>
-  </div>
+</header>
 
-  <div class="bio-card">
-    <div class="bio-label">Bio</div>
-    <div class="bio-display placeholder" id="bioDisplay">Click to add a bio…</div>
-    <div class="bio-editor" id="bioEditor">
-      <textarea id="bioTextarea" maxlength="300" placeholder="Tell the arena about yourself…"></textarea>
-      <div class="bio-footer">
-        <span class="char-count" id="charCount">0 / 300</span>
-        <div class="bio-actions">
-          <button class="bio-btn cancel" id="cancelBio">Cancel</button>
-          <button class="bio-btn save" id="saveBio">Save</button>
+<!-- 2. The Multi-Column Environment -->
+<div class="app-body">
+
+    <!-- Left Sidebar Options -->
+    <nav class="sidebar">
+
+        <a href="/" style="text-decoration: none;">
+            <div class="nav-item">
+                <span class="material-symbols-outlined">home</span>
+                <span class="label">Home</span>
+            </div>
+        </a>
+
+        <a href="/dueal" style="text-decoration: none;">
+            <div class="nav-item">
+                <span class="material-symbols-outlined">swords</span>
+                <span class="label">Duels</span>
+            </div>
+        </a>
+
+        <a href="/Create" style="text-decoration: none;">
+            <div class="nav-item">
+                <span class="material-symbols-outlined">Add_Circle</span>
+                <span class="label">Create</span>
+            </div>
+        </a>
+
+        <a href="/leaderboard" style="text-decoration: none;">
+            <div class="nav-item">
+                <span class="material-symbols-outlined">leaderboard</span>
+                <span class="label">Leaderboard</span>
+            </div>
+        </a>
+
+        <a href="/profile" style="text-decoration: none;">
+            <div class="nav-item active">
+                <span class="material-symbols-outlined">person</span>
+                <span class="label">Profile</span>
+            </div>
+        </a>
+
+    </nav>
+
+    <!-- 3. The Core Content -->
+    <main class="main-content-canvas">
+        <div class="profile-page">
+
+            <div class="profile-block setup-block" id="setupCard" style="display:none;">
+                <div class="bio-label">Set up your profile</div>
+                <p class="setup-copy">You're signed in, but this account doesn't have a username yet. Pick one to finish creating your profile.</p>
+                <input type="text" id="setupUsernameInput" class="setup-input" placeholder="Choose a username" maxlength="20" autocomplete="off">
+                <div class="setup-availability" id="setupAvailability"></div>
+                <button class="bio-btn save setup-submit" id="setupSubmit" disabled>Create profile</button>
+            </div>
+
+            <div class="profile-block" id="profileBlock" style="display:none;">
+
+                <div class="profile-header">
+                    <div class="avatar-wrap" id="avatarWrap">
+                        <img class="avatar" id="avatarImg" src="https://api.dicebear.com/7.x/shapes/svg?seed=guest" alt="Profile avatar">
+                        <div class="spinner"><div></div></div>
+                        <label class="avatar-edit" for="avatarInput" title="Change avatar">
+                            <span class="material-symbols-outlined">photo_camera</span>
+                        </label>
+                        <input type="file" id="avatarInput" accept="image/*">
+                    </div>
+                    <div class="header-meta">
+                        <div class="username" id="usernameEl">Loading…</div>
+
+
+                    </div>
+                </div>
+
+                <div class="bio-section">
+                    <div class="bio-display placeholder" id="bioDisplay">Click to add a bio…</div>
+                    <div class="bio-editor" id="bioEditor">
+                        <textarea id="bioTextarea" maxlength="300" placeholder="Tell the arena about yourself…"></textarea>
+                        <div class="bio-footer">
+                            <span class="char-count" id="charCount">0 / 300</span>
+                            <div class="bio-actions">
+                                <button class="bio-btn cancel" id="cancelBio">Cancel</button>
+                                <button class="bio-btn save" id="saveBio">Save</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rank-strip">
+                    <div class="medallion" id="medallion">
+                        <span class="material-symbols-outlined" id="tierIcon">military_tech</span>
+                    </div>
+                    <div class="rank-info">
+                        <div>
+                            <div class="tier-name" id="tierName">Amateur</div>
+                            <div class="progress-label" id="progressLabel"></div>
+                        </div>
+                        <div class="points" id="pointsEl">0 drop points</div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="status-msg" id="statusMsg"></div>
+
         </div>
-      </div>
-    </div>
-  </div>
+    </main>
 
-  <div class="status-msg" id="statusMsg"></div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-analytics.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDc6wwJq_iQtLoZT2RMA1-qyqN3U5W2ZL0",
+        authDomain: "waater-65596.firebaseapp.com",
+        projectId: "waater-65596",
+        storageBucket: "waater-65596.firebasestorage.app",
+        messagingSenderId: "840770803135",
+        appId: "1:840770803135:web:1425f583ad04315b87fd0a",
+        measurementId: "G-48T9GVZF3N"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const analytics = getAnalytics(app);
+
+    let authReadyResolve;
+    const authReady = new Promise((resolve) => { authReadyResolve = resolve; });
+
+    window.isLoggedIn = false;
+
+    onAuthStateChanged(auth, async (user) => {
+        window.isLoggedIn = !!user;
+
+        if (user) {
+            const idToken = await user.getIdToken();
+            socket.emit('authenticate', idToken);
+        }
+
+        authReadyResolve();
+    });
+
+    window.requireLogin = async function () {
+        await authReady;
+        if (!window.isLoggedIn) {
+            window.location.href = "/Sigh-in";
+            return false;
+        }
+        return true;
+    };
+
+    window.getIdToken = async function () {
+        await authReady;
+        if (!auth.currentUser) return null;
+        return auth.currentUser.getIdToken();
+    };
+</script>
+
 <script>
-/* ---------------------------------------------------------
-   Fill this in with your Firebase web app config
---------------------------------------------------------- */
+    const searchInput = document.querySelector('.global-search');
+    searchInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            const query = searchInput.value.trim();
+            console.log('searching for:', query);
+        }
+    });
+</script>
 
+<script src="/socket.io/socket.io.js"></script>
+<script src="/notification.js"></script>
 
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID"
-};
+<script>
+const socket = io();
 
-
-firebase.initializeApp(firebaseConfig);
-
-/* ---- rank tiers: keep this in sync with the backend's getRank() ---- */
-
-
+/* Rank tiers — keep these thresholds in sync with getRank() in server.js.
+   If "trophy" / "crown" don't render as icons in your Material Symbols
+   set, swap them for 'emoji_events' and 'stars'. */
 const TIERS = [
-  { name: 'Amateur',     min: 0,   initial: 'A' },
-  { name: 'Pro',         min: 25,  initial: 'P' },
-  { name: 'Master',      min: 100, initial: 'M' },
-  { name: 'Legendary',   min: 300, initial: 'L' },
-  { name: 'Grandmaster', min: 800, initial: 'G' }
+    { name: 'Amateur',     min: 0,   icon: 'military_tech',    color: '#9ca3af' },
+    { name: 'Pro',         min: 25,  icon: 'workspace_premium', color: '#3b82f6' },
+    { name: 'Master',      min: 100, icon: 'award_star',       color: '#a78bfa' },
+    { name: 'Legendary',   min: 300, icon: 'emoji_events',      color: '#f59e0b' },
+    { name: 'Grandmaster', min: 800, icon: 'stars',             color: '#facc15' }
 ];
 
 function getTier(points) {
-  let current = TIERS[0];
-  for (const t of TIERS) if (points >= t.min) current = t;
-  return current;
+    let current = TIERS[0];
+    for (const t of TIERS) if (points >= t.min) current = t;
+    return current;
 }
 
 function renderRank(points) {
-  const tier = getTier(points);
-  const idx = TIERS.indexOf(tier);
-  const next = TIERS[idx + 1];
+    const tier = getTier(points);
+    const idx = TIERS.indexOf(tier);
+    const next = TIERS[idx + 1];
 
-  document.getElementById('tierName').textContent = tier.name;
-  document.getElementById('tierInitial').textContent = tier.initial;
-  document.getElementById('pointsEl').textContent = `${points} drop point${points === 1 ? '' : 's'}`;
+    document.getElementById('tierName').textContent = tier.name;
+    document.getElementById('tierName').style.color = tier.color;
+    document.getElementById('tierIcon').textContent = tier.icon;
+    document.getElementById('pointsEl').textContent = `${points} drop point${points === 1 ? '' : 's'}`;
 
-  const medallion = document.getElementById('medallion');
-  if (next) {
-    const span = next.min - tier.min;
-    const pct = Math.min(100, Math.round(((points - tier.min) / span) * 100));
-    medallion.style.setProperty('--ring', `conic-gradient(var(--gold) ${pct * 3.6}deg, var(--gold-dim) 0deg)`);
-    document.getElementById('progressLabel').textContent = `${next.min - points} to ${next.name}`;
-  } else {
-    medallion.style.setProperty('--ring', `conic-gradient(var(--gold) 360deg, var(--gold-dim) 0deg)`);
-    document.getElementById('progressLabel').textContent = 'Top tier';
-  }
+    const medallion = document.getElementById('medallion');
+    medallion.style.setProperty('--tier-color', tier.color);
+
+    if (next) {
+        const span = next.min - tier.min;
+        const pct = Math.min(100, Math.round(((points - tier.min) / span) * 100));
+        medallion.style.setProperty('--ring', `conic-gradient(${tier.color} ${pct * 3.6}deg, #2a3142 0deg)`);
+        document.getElementById('progressLabel').textContent = `${next.min - points} to ${next.name}`;
+    } else {
+        medallion.style.setProperty('--ring', `conic-gradient(${tier.color} 360deg, #2a3142 0deg)`);
+        document.getElementById('progressLabel').textContent = 'Top tier';
+    }
 }
 
-function showStatus(msg) {
-  const el = document.getElementById('statusMsg');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 4000);
+/* persistent=true keeps the banner up (used for load failures you need
+   to actually read/screenshot). Transient messages (upload/save errors)
+   still auto-hide after 6s. */
+function showStatus(msg, persistent = false) {
+    const el = document.getElementById('statusMsg');
+    el.textContent = msg;
+    el.classList.add('show');
+    if (!persistent) {
+        setTimeout(() => el.classList.remove('show'), 6000);
+    }
+}
+
+function hideStatus() {
+    document.getElementById('statusMsg').classList.remove('show');
+}
+
+/* Reads the response body as text first, so a non-JSON response
+   (an HTML 404/500 page, a proxy error page, etc.) surfaces as a
+   readable message instead of crashing on res.json(). */
+async function safeJson(res) {
+    const raw = await res.text();
+    try {
+        return JSON.parse(raw);
+    } catch {
+        const snippet = raw.trim().slice(0, 150) || `HTTP ${res.status}`;
+        return { error: `Server didn't return JSON (${res.status}): ${snippet}` };
+    }
 }
 
 let currentProfile = null;
 
 async function authedFetch(url, options = {}) {
-  const user = firebase.auth().currentUser;
-  if (!user) throw new Error('Not signed in');
-  const token = await user.getIdToken();
-  const headers = Object.assign({}, options.headers, { Authorization: `Bearer ${token}` });
-  return fetch(url, Object.assign({}, options, { headers }));
+    const token = await window.getIdToken();
+    if (!token) throw new Error('Not signed in');
+    const headers = Object.assign({}, options.headers, { Authorization: `Bearer ${token}` });
+    return fetch(url, Object.assign({}, options, { headers }));
 }
 
 async function loadProfile() {
-  try {
-    const res = await authedFetch('/api/profile');
-    const json = await res.json();
-    if (!json.profile) {
-      showStatus('No profile found — finish sign-up first.');
-      return;
+
+    try {
+        const res = await authedFetch('/api/profile');
+        const json = await safeJson(res);
+
+        console.log('GET /api/profile ->', res.status, json);
+
+        if (!res.ok) throw new Error(json.error || `Could not load profile (HTTP ${res.status})`);
+
+        hideStatus();
+
+        if (!json.profile) {
+            document.getElementById('setupCard').style.display = 'block';
+            document.getElementById('profileBlock').style.display = 'none';
+            return;
+        }
+
+        currentProfile = json.profile;
+        document.getElementById('setupCard').style.display = 'none';
+        document.getElementById('profileBlock').style.display = 'block';
+        renderProfile(currentProfile);
+    } catch (err) {
+        document.getElementById('profileBlock').style.display = 'block';
+        document.getElementById('usernameEl').textContent = 'Couldn\u2019t load';
+        showStatus(err.message || 'Could not load profile.', true);
+        console.error('Profile load error:', err);
     }
-    currentProfile = json.profile;
-    renderProfile(currentProfile);
-  } catch (err) {
-    showStatus('Could not load profile.');
-  }
+
 }
 
-function renderProfile(profile) {
-  document.getElementById('usernameEl').textContent = profile.username || 'unknown';
-  document.getElementById('avatarImg').src = profile.avatar_url || 'https://api.dicebear.com/7.x/shapes/svg?seed=' + encodeURIComponent(profile.username || 'debater');
-  if (profile.created_at) {
-    const d = new Date(profile.created_at);
-    document.getElementById('joinedEl').textContent = 'Joined ' + d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-  }
-  renderRank(profile.drop_points || 0);
+/* ---- profile setup (username creation) ---- */
+const setupInput = document.getElementById('setupUsernameInput');
+const setupAvailability = document.getElementById('setupAvailability');
+const setupSubmit = document.getElementById('setupSubmit');
+let setupDebounce;
 
-  const bio = profile.bio || '';
-  const bioDisplay = document.getElementById('bioDisplay');
-  if (bio) {
-    bioDisplay.textContent = bio;
-    bioDisplay.classList.remove('placeholder');
-  } else {
-    bioDisplay.textContent = 'Click to add a bio…';
-    bioDisplay.classList.add('placeholder');
-  }
+setupInput.addEventListener('input', () => {
+    clearTimeout(setupDebounce);
+    const val = setupInput.value.trim();
+    setupInput.classList.remove('good', 'bad');
+    setupAvailability.classList.remove('good', 'bad');
+    setupSubmit.disabled = true;
+
+    if (!val) {
+        setupAvailability.textContent = '';
+        return;
+    }
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(val)) {
+        setupAvailability.textContent = '3-20 letters, numbers, or underscores';
+        setupAvailability.classList.add('bad');
+        setupInput.classList.add('bad');
+        return;
+    }
+
+    setupAvailability.textContent = 'Checking…';
+
+    setupDebounce = setTimeout(async () => {
+        try {
+            const res = await fetch(`/api/username-available?u=${encodeURIComponent(val)}`);
+            const { available } = await res.json();
+            if (available) {
+                setupAvailability.textContent = 'Available';
+                setupAvailability.classList.add('good');
+                setupInput.classList.add('good');
+                setupSubmit.disabled = false;
+            } else {
+                setupAvailability.textContent = 'Already taken';
+                setupAvailability.classList.add('bad');
+                setupInput.classList.add('bad');
+            }
+        } catch {
+            setupAvailability.textContent = 'Could not check availability';
+            setupAvailability.classList.add('bad');
+        }
+    }, 350);
+});
+
+setupInput.addEventListener('keydown', (e) => {
+
+    if (e.key === 'Enter' && !setupSubmit.disabled) setupSubmit.click();
+    
+});
+
+setupSubmit.addEventListener('click', async () => {
+
+    const username = setupInput.value.trim();
+    setupSubmit.disabled = true;
+    setupSubmit.textContent = 'Creating…';
+
+    try {
+
+        const res = await authedFetch('/api/profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username })
+
+        });
+
+        const json = await safeJson(res);
+
+        if (!res.ok) throw new Error(json.error || `Could not create profile (HTTP ${res.status})`);
+
+        currentProfile = json.profile;
+        document.getElementById('setupCard').style.display = 'none';
+
+        document.getElementById('profileBlock').style.display = 'block';
+        renderProfile(currentProfile);
+
+    } catch (err) {
+
+        setupAvailability.textContent = err.message;
+        setupAvailability.classList.add('bad');
+    } finally {
+        setupSubmit.disabled = false;
+        setupSubmit.textContent = 'Create profile';
+    }
+
+});
+
+
+
+
+function renderProfile(profile) {
+    document.getElementById('usernameEl').textContent = profile.username || 'unknown';
+    document.getElementById('avatarImg').src = profile.avatar_url ||
+        'https://api.dicebear.com/7.x/shapes/svg?seed=' + encodeURIComponent(profile.username || 'debater');
+
+
+
+    renderRank(profile.drop_points || 0);
+
+    const bio = profile.bio || '';
+    const bioDisplay = document.getElementById('bioDisplay');
+    if (bio) {
+        bioDisplay.textContent = bio;
+        bioDisplay.classList.remove('placeholder');
+    } else {
+        bioDisplay.textContent = 'Click to add a bio…';
+        bioDisplay.classList.add('placeholder');
+    }
 }
 
 /* ---- avatar upload ---- */
 document.getElementById('avatarInput').addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  if (!file.type.startsWith('image/')) { showStatus('Please choose an image file.'); return; }
-  if (file.size > 5 * 1024 * 1024) { showStatus('Image must be under 5MB.'); return; }
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { showStatus('Please choose an image file.'); return; }
+    if (file.size > 5 * 1024 * 1024) { showStatus('Image must be under 5MB.'); return; }
 
-  const wrap = document.getElementById('avatarWrap');
-  wrap.classList.add('uploading');
+    const wrap = document.getElementById('avatarWrap');
+    wrap.classList.add('uploading');
 
-  try {
-    const formData = new FormData();
-    formData.append('avatar', file);
-    const res = await authedFetch('/api/profile/avatar', { method: 'POST', body: formData });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Upload failed');
-    currentProfile = json.profile;
-    renderProfile(currentProfile);
-  } catch (err) {
-    showStatus(err.message);
-  } finally {
-    wrap.classList.remove('uploading');
-    e.target.value = '';
-  }
+    try {
+        const formData = new FormData();
+        formData.append('avatar', file);
+        const res = await authedFetch('/api/profile/avatar', { method: 'POST', body: formData });
+        const json = await safeJson(res);
+
+        console.log('POST /api/profile/avatar ->', res.status, json);
+
+        if (!res.ok) throw new Error(json.error || `Upload failed (HTTP ${res.status})`);
+        currentProfile = json.profile;
+        renderProfile(currentProfile);
+    } catch (err) {
+        console.error('Avatar upload error:', err);
+        showStatus(err.message, true);
+    } finally {
+        wrap.classList.remove('uploading');
+        e.target.value = '';
+    }
 });
 
 /* ---- bio edit ---- */
@@ -471,62 +828,75 @@ const bioTextarea = document.getElementById('bioTextarea');
 const charCount = document.getElementById('charCount');
 
 bioDisplay.addEventListener('click', () => {
-  bioTextarea.value = (currentProfile && currentProfile.bio) || '';
-  updateCharCount();
-  bioDisplay.classList.add('editing');
-  bioEditor.classList.add('active');
-  bioTextarea.focus();
+    bioTextarea.value = (currentProfile && currentProfile.bio) || '';
+    updateCharCount();
+    bioDisplay.classList.add('editing');
+    bioEditor.classList.add('active');
+    bioTextarea.focus();
 });
 
 function updateCharCount() {
-  const len = bioTextarea.value.length;
-  charCount.textContent = `${len} / 300`;
-  charCount.classList.toggle('over', len > 300);
+    const len = bioTextarea.value.length;
+    charCount.textContent = `${len} / 300`;
+    charCount.classList.toggle('over', len > 300);
 }
 bioTextarea.addEventListener('input', updateCharCount);
 
 document.getElementById('cancelBio').addEventListener('click', () => {
-  bioEditor.classList.remove('active');
-  bioDisplay.classList.remove('editing');
+    bioEditor.classList.remove('active');
+    bioDisplay.classList.remove('editing');
 });
 
 document.getElementById('saveBio').addEventListener('click', async () => {
-  const bio = bioTextarea.value.trim();
-  if (bio.length > 300) { showStatus('Bio must be 300 characters or fewer.'); return; }
+    const bio = bioTextarea.value.trim();
+    if (bio.length > 300) { showStatus('Bio must be 300 characters or fewer.'); return; }
 
-  const btn = document.getElementById('saveBio');
-  btn.disabled = true;
-  try {
-    const res = await authedFetch('/api/profile', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bio })
-    });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Could not save bio');
-    currentProfile = json.profile;
-    renderProfile(currentProfile);
-    bioEditor.classList.remove('active');
-    bioDisplay.classList.remove('editing');
-  } catch (err) {
-    showStatus(err.message);
-  } finally {
-    btn.disabled = false;
-  }
+    const btn = document.getElementById('saveBio');
+    btn.disabled = true;
+    try {
+        const res = await authedFetch('/api/profile', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bio })
+        });
+        const json = await safeJson(res);
+
+        console.log('PATCH /api/profile ->', res.status, json);
+
+        if (!res.ok) throw new Error(json.error || `Could not save bio (HTTP ${res.status})`);
+        currentProfile = json.profile;
+        renderProfile(currentProfile);
+        bioEditor.classList.remove('active');
+        bioDisplay.classList.remove('editing');
+    } catch (err) {
+        showStatus(err.message, true);
+    } finally {
+        btn.disabled = false;
+    }
 });
 
-/* ---- boot ---- */
-firebase.auth().onAuthStateChanged((user) => {
-  if (user) {
+/* ---- boot: this page requires login ----
+   window.requireLogin is defined inside a type="module" script, which
+   is deferred and runs AFTER this plain script. So we can't just call
+   it immediately — we poll until the module script has set it up. */
+function whenFirebaseReady(callback) {
+    if (window.requireLogin) {
+        callback();
+        return;
+    }
+    const check = setInterval(() => {
+        if (window.requireLogin) {
+            clearInterval(check);
+            callback();
+        }
+    }, 20);
+}
+
+whenFirebaseReady(async () => {
+    if (!(await window.requireLogin())) return;
     loadProfile();
-  } else {
-    showStatus('Sign in to view your profile.');
-    // window.location.href = '/Sigh-in';
-  }
 });
-
-
 </script>
+
 </body>
 </html>
-
