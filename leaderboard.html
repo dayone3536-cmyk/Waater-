@@ -13,3 +13,762 @@
         <span class="label">Profile</span>
     </div>
 </a> -->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaderboard · Colloseum</title>
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+
+<style>
+
+    .main-content-canvas {
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .leaderboard-page {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 20px 16px 90px;
+    }
+
+    .profile-block {
+        background: linear-gradient(145deg, #161b27, #1a2030);
+        border: 1px solid #2a3142;
+        border-radius: 22px;
+        padding: 26px;
+    }
+
+    /* ---- top bar with page title + flex-my-rank button ---- */
+    .page-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+    }
+
+    .page-title {
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: #f1f5f9;
+    }
+
+    .flex-top-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(145deg, #161b27, #1a2030);
+        border: 1px solid #2a3142;
+        color: #e5e7eb;
+        border-radius: 999px;
+        padding: 10px 16px;
+        font-size: .85rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: border-color .15s ease, color .15s ease;
+    }
+
+    .flex-top-btn:hover {
+        border-color: #3b82f6;
+        color: #3b82f6;
+    }
+
+    .flex-top-btn .material-symbols-outlined {
+        font-size: 20px;
+    }
+
+    .flex-top-btn.working {
+        opacity: .5;
+        pointer-events: none;
+    }
+
+    /* ---- Ranks dropdown box ---- */
+    .ranks-box {
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+
+    .ranks-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .ranks-toggle-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .ranks-toggle-left .material-symbols-outlined {
+        font-size: 22px;
+        color: #3b82f6;
+    }
+
+    .ranks-toggle-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #f1f5f9;
+    }
+
+    .ranks-toggle-selected {
+        font-size: .85rem;
+        color: #8b94a7;
+        font-weight: 600;
+    }
+
+    .ranks-chevron {
+        font-size: 24px;
+        color: #8b94a7;
+        transition: transform .2s ease;
+    }
+
+    .ranks-box.open .ranks-chevron {
+        transform: rotate(180deg);
+    }
+
+    .ranks-list {
+        display: none;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 18px;
+        padding-top: 18px;
+        border-top: 1px solid #262d3d;
+    }
+
+    .ranks-box.open .ranks-list {
+        display: flex;
+    }
+
+    .rank-option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid #2a3142;
+        background: #0f1320;
+        cursor: pointer;
+        transition: background .15s ease, border-color .15s ease;
+    }
+
+    .rank-option:hover {
+        border-color: #3b4356;
+    }
+
+    .rank-option.active {
+        border-color: var(--tier-color, #3b82f6);
+        background: color-mix(in srgb, var(--tier-color, #3b82f6) 12%, #0f1320);
+    }
+
+    .rank-option .material-symbols-outlined {
+        font-size: 22px;
+        color: var(--tier-color, #3b82f6);
+    }
+
+    .rank-option-name {
+        font-weight: 700;
+        color: #f1f5f9;
+        font-size: .95rem;
+    }
+
+    .rank-option-range {
+        font-size: .78rem;
+        color: #6b7280;
+        margin-left: auto;
+    }
+
+    /* ---- results ---- */
+    .results-block {
+        margin-top: 20px;
+    }
+
+    .results-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .results-header .material-symbols-outlined {
+        font-size: 22px;
+        color: var(--tier-color, #3b82f6);
+    }
+
+    .results-header-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--tier-color, #3b82f6);
+    }
+
+    .leader-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid #2a3142;
+        background: #0f1320;
+        margin-bottom: 10px;
+    }
+
+    .leader-position {
+        font-size: .95rem;
+        font-weight: 700;
+        color: #8b94a7;
+        min-width: 46px;
+        flex-shrink: 0;
+    }
+
+    .leader-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: #161b27;
+        border: 1px solid #2a3142;
+        flex-shrink: 0;
+    }
+
+    .leader-username {
+        flex: 1;
+        min-width: 0;
+        font-size: .95rem;
+        font-weight: 600;
+        color: #f1f5f9;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .leader-points {
+        font-size: .85rem;
+        font-weight: 700;
+        color: #8b94a7;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    /* ---- empty / prompt states ---- */
+    .empty-rank-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #8b94a7;
+    }
+
+    .empty-rank-state .material-symbols-outlined {
+        font-size: 40px;
+        color: #3b4356;
+        margin-bottom: 10px;
+    }
+
+    .empty-rank-state .empty-title {
+        font-size: .95rem;
+        color: #d1d5db;
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+
+    .empty-rank-state .empty-sub {
+        font-size: .82rem;
+        line-height: 1.5;
+    }
+
+    .prompt-state {
+        text-align: center;
+        padding: 30px 20px;
+        color: #6b7280;
+        font-size: .9rem;
+    }
+
+    /* ---- offscreen flex card used for the screenshot ---- */
+    #flexCardWrap {
+        position: fixed;
+        top: -9999px;
+        left: -9999px;
+        z-index: -1;
+    }
+
+    .flex-card {
+        position: relative;
+        width: 420px;
+        background: linear-gradient(145deg, #161b27, #1a2030);
+        border: 1px solid #2a3142;
+        border-radius: 26px;
+        padding: 28px;
+        padding-bottom: 46px;
+        font-family: inherit;
+    }
+
+    .flex-card-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 18px;
+    }
+
+    .flex-card-header .material-symbols-outlined {
+        font-size: 20px;
+        color: #3b82f6;
+    }
+
+    .flex-card-brand {
+        font-size: .95rem;
+        font-weight: 700;
+        color: #f1f5f9;
+        letter-spacing: .5px;
+    }
+
+    .flex-card-tier {
+        margin-left: auto;
+        font-size: .78rem;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: #0f1320;
+        border: 1px solid #2a3142;
+    }
+
+    .flex-card-watermark {
+        position: absolute;
+        bottom: 14px;
+        right: 22px;
+        font-size: .68rem;
+        font-weight: 600;
+        letter-spacing: .2px;
+        color: #4b5468;
+    }
+
+    .flex-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        margin-bottom: 8px;
+        border: 1px solid transparent;
+    }
+
+    .flex-row.highlight {
+        background: color-mix(in srgb, var(--tier-color, #3b82f6) 16%, #0f1320);
+        border-color: var(--tier-color, #3b82f6);
+    }
+
+    .flex-row:not(.highlight) {
+        background: #0f1320;
+    }
+
+    .flex-row .leader-position,
+    .flex-row .leader-username,
+    .flex-row .leader-points {
+        margin: 0;
+    }
+
+    @media (min-width: 480px) {
+        .leaderboard-page { padding: 32px 20px 90px; }
+        .profile-block { padding: 36px; }
+    }
+
+</style>
+
+<!-- 1. The Fixed Top Header -->
+<header class="top-navbar">
+    <div class="nav-left-group">
+        <span class="brand-logo"> Waater </span>
+    </div>
+
+    <div class="search-container">
+        <input type="text" class="global-search" placeholder="Search the arena...">
+    </div>
+</header>
+
+<!-- 2. The Multi-Column Environment -->
+<div class="app-body">
+
+    <!-- Left Sidebar Options -->
+    <nav class="sidebar">
+
+        <a href="/" style="text-decoration: none;">
+            <div class="nav-item">
+                <span class="material-symbols-outlined">home</span>
+                <span class="label">Home</span>
+            </div>
+        </a>
+
+        <a href="/dueal" style="text-decoration: none;">
+            <div class="nav-item">
+                <span class="material-symbols-outlined">swords</span>
+                <span class="label">Duels</span>
+            </div>
+        </a>
+
+        <a href="/Create" style="text-decoration: none;">
+            <div class="nav-item">
+                <span class="material-symbols-outlined">Add_Circle</span>
+                <span class="label">Create</span>
+            </div>
+        </a>
+
+        <a href="/leaderboard" style="text-decoration: none;">
+            <div class="nav-item active">
+                <span class="material-symbols-outlined">leaderboard</span>
+                <span class="label">Leaderboard</span>
+            </div>
+        </a>
+
+        <a href="/profile" style="text-decoration: none;">
+            <div class="nav-item">
+                <span class="material-symbols-outlined">person</span>
+                <span class="label">Profile</span>
+            </div>
+        </a>
+
+    </nav>
+
+    <!-- 3. The Core Content -->
+    <main class="main-content-canvas">
+        <div class="leaderboard-page">
+
+            <div class="page-topbar">
+                <div class="page-title">Leaderboard</div>
+                <button class="flex-top-btn" id="flexMyRankBtn" title="Flex your rank">
+                    <span class="material-symbols-outlined">photo_camera</span>
+                </button>
+            </div>
+
+            <div class="profile-block ranks-box" id="ranksBox">
+                <div class="ranks-toggle" id="ranksToggle">
+                    <div class="ranks-toggle-left">
+                        <span class="material-symbols-outlined">military_tech</span>
+                        <span class="ranks-toggle-title">Ranks</span>
+                        <span class="ranks-toggle-selected" id="ranksToggleSelected"></span>
+                    </div>
+                    <span class="material-symbols-outlined ranks-chevron">expand_more</span>
+                </div>
+
+                <div class="ranks-list" id="ranksList"></div>
+            </div>
+
+            <div id="resultsContainer"></div>
+
+        </div>
+    </main>
+
+</div>
+
+<!-- offscreen node used only to render the shareable flex card -->
+ 
+<div id="flexCardWrap"></div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-analytics.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDc6wwJq_iQtLoZT2RMA1-qyqN3U5W2ZL0",
+        authDomain: "waater-65596.firebaseapp.com",
+        projectId: "waater-65596",
+        storageBucket: "waater-65596.firebasestorage.app",
+        messagingSenderId: "840770803135",
+        appId: "1:840770803135:web:1425f583ad04315b87fd0a",
+        measurementId: "G-48T9GVZF3N"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const analytics = getAnalytics(app);
+
+    window.isLoggedIn = false;
+
+    onAuthStateChanged(auth, async (user) => {
+        window.isLoggedIn = !!user;
+
+        if (user) {
+            try {
+                const idToken = await user.getIdToken();
+                const res = await fetch('/api/profile', {
+                    headers: { Authorization: `Bearer ${idToken}` }
+                });
+                const data = await res.json();
+                window.currentUsername = data?.profile?.username || null;
+            } catch (err) {
+                console.error('Failed to load current user profile:', err);
+                window.currentUsername = null;
+            }
+        } else {
+            window.currentUsername = null;
+        }
+    });
+</script>
+
+<script>
+    const searchInput = document.querySelector('.global-search');
+    searchInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            const query = searchInput.value.trim();
+            console.log('searching for:', query);
+        }
+    });
+</script>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/notification.js"></script>
+
+<script>
+
+/* Keep these thresholds in sync with RANK_TIERS in server.js */
+const TIERS = [
+    { name: 'Amateur',     min: 0,   max: 24,  icon: 'military_tech',     color: '#9ca3af' },
+    { name: 'Pro',         min: 25,  max: 99,  icon: 'workspace_premium', color: '#3b82f6' },
+    { name: 'Master',      min: 100, max: 299, icon: 'award_star',       color: '#a78bfa' },
+    { name: 'Legendary',   min: 300, max: 799, icon: 'emoji_events',      color: '#f59e0b' },
+    { name: 'Grandmaster', min: 800, max: Infinity, icon: 'stars',        color: '#facc15' }
+];
+
+const WATERMARK_TEXT = 'https://waater-yey2.onrender.com/';
+
+let leaderboardData = [];
+let selectedTier = 'Amateur'; // start from the Amateur tier by default
+
+const ranksBox = document.getElementById('ranksBox');
+const ranksToggle = document.getElementById('ranksToggle');
+const ranksList = document.getElementById('ranksList');
+const ranksToggleSelected = document.getElementById('ranksToggleSelected');
+const resultsContainer = document.getElementById('resultsContainer');
+const flexCardWrap = document.getElementById('flexCardWrap');
+const flexMyRankBtn = document.getElementById('flexMyRankBtn');
+
+function escapeHtml(str) {
+    return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function getTierForPoints(points) {
+    let current = TIERS[0];
+    for (const t of TIERS) if (points >= t.min) current = t;
+    return current;
+}
+
+/* Build the dropdown list, lowest rank to highest */
+function renderRankOptions() {
+    ranksList.innerHTML = TIERS.map(tier => {
+        const rangeLabel = tier.max === Infinity ? `${tier.min}+` : `${tier.min}-${tier.max}`;
+        const activeClass = selectedTier === tier.name ? 'active' : '';
+        return `
+            <div class="rank-option ${activeClass}" data-tier="${tier.name}" style="--tier-color:${tier.color}">
+                <span class="material-symbols-outlined">${tier.icon}</span>
+                <span class="rank-option-name">${tier.name}</span>
+                <span class="rank-option-range">${rangeLabel} pts</span>
+            </div>
+        `;
+    }).join('');
+
+    ranksList.querySelectorAll('.rank-option').forEach(el => {
+        el.addEventListener('click', () => {
+            selectedTier = el.dataset.tier;
+            ranksBox.classList.remove('open');
+            renderRankOptions();
+            updateToggleLabel();
+            renderResults();
+        });
+    });
+}
+
+function updateToggleLabel() {
+    ranksToggleSelected.textContent = selectedTier ? `· ${selectedTier}` : '';
+}
+
+ranksToggle.addEventListener('click', () => {
+    ranksBox.classList.toggle('open');
+});
+
+function avatarSrc(p) {
+    return p.avatar_url || 'https://api.dicebear.com/7.x/shapes/svg?seed=' + encodeURIComponent(p.username || 'debater');
+}
+
+function renderResults() {
+    if (!selectedTier) {
+        resultsContainer.innerHTML = `
+            <div class="profile-block">
+                <div class="prompt-state">Select a rank above to view the leaderboard.</div>
+            </div>
+        `;
+        return;
+    }
+
+    const tier = TIERS.find(t => t.name === selectedTier);
+
+    const members = leaderboardData.filter(p => {
+        const pts = p.drop_points || 0;
+        return pts >= tier.min && pts <= tier.max;
+    });
+
+    if (members.length === 0) {
+        resultsContainer.innerHTML = `
+            <div class="profile-block results-block" style="--tier-color:${tier.color}">
+                <div class="results-header">
+                    <span class="material-symbols-outlined">${tier.icon}</span>
+                    <span class="results-header-title">${tier.name}</span>
+                </div>
+                <div class="empty-rank-state">
+                    <span class="material-symbols-outlined">person_search</span>
+                    <div class="empty-title">No one has reached ${tier.name} yet</div>
+                    <div class="empty-sub">
+                        Gain ${tier.min} drop points to be this rank.<br>
+                        (You get drop points when someone likes your debate or votes for you.)
+                    </div>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    const rows = members.map(p => `
+        <div class="leader-row">
+            <span class="leader-position">#${p.position}</span>
+            <img class="leader-avatar" src="${avatarSrc(p)}" alt="${escapeHtml(p.username)}">
+            <span class="leader-username">${escapeHtml(p.username)}</span>
+            <span class="leader-points">${p.drop_points || 0} pts</span>
+        </div>
+    `).join('');
+
+    resultsContainer.innerHTML = `
+        <div class="profile-block results-block" style="--tier-color:${tier.color}">
+            <div class="results-header">
+                <span class="material-symbols-outlined">${tier.icon}</span>
+                <span class="results-header-title">${tier.name}</span>
+            </div>
+            ${rows}
+        </div>
+    `;
+}
+
+async function loadLeaderboard() {
+    try {
+        const res = await fetch('/api/leaderboard');
+        leaderboardData = await res.json();
+        renderResults();
+    } catch (err) {
+        console.error('Failed to load leaderboard:', err);
+        resultsContainer.innerHTML = `
+            <div class="profile-block">
+                <div class="prompt-state">Could not load the leaderboard.</div>
+            </div>
+        `;
+    }
+}
+
+/* ---- flex screenshot: grabs the player + neighbors above/below on the FULL leaderboard ---- */
+async function handleFlex(position, btn) {
+    if (btn) btn.classList.add('working');
+
+    try {
+        // leaderboardData is already sorted by position ascending
+        const idx = leaderboardData.findIndex(p => p.position === position);
+        if (idx === -1) throw new Error('Player not found');
+
+        const start = Math.max(0, idx - 2);
+        const end = Math.min(leaderboardData.length, idx + 3);
+        const neighborhood = leaderboardData.slice(start, end);
+
+        const centerPlayer = leaderboardData[idx];
+        const tier = getTierForPoints(centerPlayer.drop_points || 0);
+
+        const rowsHtml = neighborhood.map(p => `
+            <div class="flex-row ${p.position === position ? 'highlight' : ''}" style="--tier-color:${tier.color}">
+                <span class="leader-position">#${p.position}</span>
+                <img class="leader-avatar" src="${avatarSrc(p)}" crossorigin="anonymous">
+                <span class="leader-username">${escapeHtml(p.username)}</span>
+                <span class="leader-points">${p.drop_points || 0} pts</span>
+            </div>
+        `).join('');
+
+        const card = document.createElement('div');
+        card.className = 'flex-card';
+        card.innerHTML = `
+            <div class="flex-card-header">
+                <span class="material-symbols-outlined">water_drop</span>
+                <span class="flex-card-brand">WAATER</span>
+                <span class="flex-card-tier" style="color:${tier.color}">${tier.name}</span>
+            </div>
+            ${rowsHtml}
+            <div class="flex-card-watermark">${WATERMARK_TEXT}</div>
+        `;
+
+        flexCardWrap.innerHTML = '';
+        flexCardWrap.appendChild(card);
+
+        // give avatar images a moment to load before capture
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        const canvas = await html2canvas(card, { backgroundColor: '#161b27', scale: 2, useCORS: true });
+
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        const filename = `waater-rank-${crypto.randomUUID()}.png`;
+        const file = new File([blob], filename, { type: 'image/png' });
+
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+                files: [file],
+                title: `${centerPlayer.username}'s Waater rank`,
+                text: `#${centerPlayer.position} on Waater — ${centerPlayer.drop_points || 0} drop points`
+            });
+        } else {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        }
+
+    } catch (err) {
+        console.error('Flex capture failed:', err);
+    } finally {
+        flexCardWrap.innerHTML = '';
+        if (btn) btn.classList.remove('working');
+    }
+}
+
+flexMyRankBtn.addEventListener('click', () => {
+    if (!window.isLoggedIn || !window.currentUsername) {
+        alert('Sign in to flex your rank.');
+        return;
+    }
+
+    const me = leaderboardData.find(
+        p => (p.username || '').toLowerCase() === window.currentUsername.toLowerCase()
+    );
+
+    if (!me) {
+        alert("You don't have any drop points yet — get some likes or votes first!");
+        return;
+    }
+
+    handleFlex(me.position, flexMyRankBtn);
+});
+
+
+renderRankOptions();
+updateToggleLabel();
+renderResults();
+loadLeaderboard();
+
+
+</script>
+
+</body>
+</html>
+
