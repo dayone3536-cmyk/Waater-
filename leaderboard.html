@@ -301,50 +301,59 @@
 
     .flex-card {
         position: relative;
-        width: 420px;
+        width: 300px;
         background: linear-gradient(145deg, #161b27, #1a2030);
         border: 1px solid #2a3142;
-        border-radius: 26px;
-        padding: 28px;
-        padding-bottom: 46px;
+        border-radius: 22px;   
+
+        padding: 18px;
+        padding-bottom: 32px;
         font-family: inherit;
     }
 
     .flex-card-header {
         display: flex;
         align-items: center;
-        gap: 8px;
-        margin-bottom: 18px;
+
+        gap: 6px;
+        margin-bottom: 12px;
     }
 
     .flex-card-header .material-symbols-outlined {
-        font-size: 20px;
+        font-size: 16px;
         color: #3b82f6;
     }
 
     .flex-card-brand {
-        font-size: .95rem;
+        font-size: .8rem;
         font-weight: 700;
+
         color: #f1f5f9;
         letter-spacing: .5px;
     }
 
     .flex-card-tier {
         margin-left: auto;
-        font-size: .78rem;
+        font-size: .68rem;
         font-weight: 700;
-        padding: 4px 10px;
+
+        padding: 3px 8px;
         border-radius: 999px;
         background: #0f1320;
+
         border: 1px solid #2a3142;
     }
+
 
     .flex-card-watermark {
         position: absolute;
         bottom: 14px;
-        right: 22px;
-        font-size: .68rem;
+        right: 16px;
+
+
+        font-size: .58rem;
         font-weight: 600;
+
         letter-spacing: .2px;
         color: #4b5468;
     }
@@ -352,17 +361,24 @@
     .flex-row {
         display: flex;
         align-items: center;
-        gap: 12px;
-        padding: 12px 14px;
-        border-radius: 14px;
-        margin-bottom: 8px;
+        gap: 8px;
+
+
+        padding: 8px 10px;
+        border-radius: 10px;
+
+        margin-bottom: 6px;
+
         border: 1px solid transparent;
     }
 
     .flex-row.highlight {
-        background: color-mix(in srgb, var(--tier-color, #3b82f6) 16%, #0f1320);
         border-color: var(--tier-color, #3b82f6);
     }
+
+
+
+
 
     .flex-row:not(.highlight) {
         background: #0f1320;
@@ -374,10 +390,181 @@
         margin: 0;
     }
 
+    .flex-row .leader-avatar {
+
+        width: 32px;
+        height: 32px;
+
+    }
+
+    .flex-row .leader-position,
+    .flex-row .leader-username,
+    .flex-row .leader-points {
+
+        font-size: .8rem;
+
+    }
+
+
+    .clip-overlay{
+
+        position:fixed; inset:0;
+        background:rgba(10,12,20,.75);
+
+        backdrop-filter:blur(6px);
+        -webkit-backdrop-filter:blur(6px);
+
+        display:flex; align-items:center; justify-content:center;
+        z-index:2000;
+
+    }
+
+
+    .clip-box{
+
+        background:#151924;
+        border:1px solid rgba(255,255,255,.08);
+        border-radius:20px;
+        padding:28px 24px;
+        max-width:420px;
+        width:90%;
+
+        text-align:center;
+
+    }
+
+
+    .clip-download-icon-btn{
+
+        display:flex;
+        align-items:center;
+        justify-content:center;
+
+        width:38px;
+        height:38px;
+        border:none;
+        cursor:pointer;
+
+        border-radius:50%;
+        color:white;
+        background:#242b3d;
+        border:1px solid rgba(255,255,255,.08);
+
+        transition:transform .15s ease, background .15s ease;
+    }
+
+
+    .clip-download-icon-btn:hover{
+
+        transform:translateY(-2px);
+        background:#2d3548;
+
+    }
+    .clip-download-icon-btn svg{
+
+        width:18px;
+        height:18px;
+
+    }
+    .clip-close{
+        margin-top:16px;
+        background:none;
+        border:none;
+        color:#9ca3af;
+        cursor:pointer;
+        font-size:.85rem;
+    }
+
+    .clip-download-row{
+
+        display:flex;
+        justify-content:center;
+        margin-bottom:16px;
+
+    }
+
+
+
     @media (min-width: 480px) {
         .leaderboard-page { padding: 32px 20px 90px; }
         .profile-block { padding: 36px; }
     }
+
+    @media (max-width: 600px) {
+
+    .flex-card {
+        width: 220px;
+        padding: 12px;
+        padding-bottom: 22px;
+        border-radius: 14px;
+    }
+
+    .flex-card-header {
+        gap: 4px;
+        margin-bottom: 8px;
+    }
+
+    .flex-card-header .material-symbols-outlined {
+        font-size: 12px;
+    }
+
+    .flex-card-brand {
+        font-size: .64rem;
+    }
+
+    .flex-card-tier {
+        font-size: .55rem;
+        padding: 2px 6px;
+    }
+
+    .flex-card-watermark {
+        font-size: .45rem;
+        bottom: 6px;
+        right: 10px;
+    }
+
+    .flex-row {
+        gap: 5px;
+        padding: 5px 7px;
+        margin-bottom: 4px;
+    }
+
+    .flex-row .leader-avatar {
+        width: 22px;
+        height: 22px;
+    }
+
+    .flex-row .leader-position,
+    .flex-row .leader-username,
+    .flex-row .leader-points {
+        font-size: .6rem;
+    }
+
+    .clip-box {
+        width: 92vw;
+        max-width: 260px;
+        padding: 16px;
+    }
+
+    .clip-x-close {
+        width: 26px;
+        height: 26px;
+        top: 8px;
+        right: 8px;
+    }
+
+    .clip-x-close svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .clip-download-icon-btn {
+        width: 34px;
+        height: 34px;
+    }
+}
+
+
 
 </style>
 
@@ -441,8 +628,11 @@
 
             <div class="page-topbar">
                 <div class="page-title">Leaderboard</div>
+
                 <button class="flex-top-btn" id="flexMyRankBtn" title="Flex your rank">
+                    
                     <span class="material-symbols-outlined">photo_camera</span>
+
                 </button>
             </div>
 
@@ -489,6 +679,13 @@
     const auth = getAuth(app);
     const analytics = getAnalytics(app);
 
+    // --- replace the plain onAuthStateChanged login flag with an authReady promise ---
+
+    let authReadyResolve;
+    const authReady = new Promise((resolve) => { authReadyResolve = resolve; });
+    window.authReady = authReady;
+
+
     window.isLoggedIn = false;
 
     onAuthStateChanged(auth, async (user) => {
@@ -509,7 +706,10 @@
         } else {
             window.currentUsername = null;
         }
+
+        authReadyResolve();
     });
+
 </script>
 
 <script>
@@ -668,7 +868,58 @@ async function loadLeaderboard() {
     }
 }
 
+
+function downloadCanvasImage(canvas, filenamePrefix) {
+    const uniqueId = crypto.randomUUID().slice(0, 5);
+    const link = document.createElement('a');
+    link.download = `${filenamePrefix}-${uniqueId}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+}
+
+function showFlexModal(canvas) {
+    const dataUrl = canvas.toDataURL('image/png');
+
+    const overlay = document.createElement('div');
+    overlay.className = 'clip-overlay';
+
+    overlay.innerHTML = `
+        <div class="clip-box">
+            <img src="${dataUrl}" alt="Your rank card">
+
+            <div class="clip-download-row">
+                <button class="clip-download-icon-btn" id="flexDownload" title="Download">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <p>Your rank card is ready!</p>
+
+            <button class="clip-close" id="flexModalClose">Close</button>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.remove();
+    });
+
+    document.getElementById('flexModalClose').onclick = () => overlay.remove();
+    document.getElementById('flexDownload').onclick = () => downloadCanvasImage(canvas, 'waater-rank');
+}
+
+
 /* ---- flex screenshot: grabs the player + neighbors above/below on the FULL leaderboard ---- */
+
+
+
+
+
 async function handleFlex(position, btn) {
     if (btn) btn.classList.add('working');
 
@@ -713,26 +964,7 @@ async function handleFlex(position, btn) {
 
         const canvas = await html2canvas(card, { backgroundColor: '#161b27', scale: 2, useCORS: true });
 
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-        const filename = `waater-rank-${crypto.randomUUID()}.png`;
-        const file = new File([blob], filename, { type: 'image/png' });
-
-        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({
-                files: [file],
-                title: `${centerPlayer.username}'s Waater rank`,
-                text: `#${centerPlayer.position} on Waater — ${centerPlayer.drop_points || 0} drop points`
-            });
-        } else {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            URL.revokeObjectURL(url);
-        }
+        showFlexModal(canvas);
 
     } catch (err) {
         console.error('Flex capture failed:', err);
@@ -742,7 +974,10 @@ async function handleFlex(position, btn) {
     }
 }
 
-flexMyRankBtn.addEventListener('click', () => {
+flexMyRankBtn.addEventListener('click', async () =>  {
+
+    await window.authReady;
+
     if (!window.isLoggedIn || !window.currentUsername) {
         alert('Sign in to flex your rank.');
         return;
@@ -760,12 +995,10 @@ flexMyRankBtn.addEventListener('click', () => {
     handleFlex(me.position, flexMyRankBtn);
 });
 
-
 renderRankOptions();
 updateToggleLabel();
 renderResults();
 loadLeaderboard();
-
 
 </script>
 
