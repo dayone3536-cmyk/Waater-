@@ -1072,7 +1072,12 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
 
             pendingDisconnect: { creator: null, challenger: null },
             
-            votes: {}
+            votes: {},
+
+            milestones: { pro: false, against: false },
+            nudgeInterval: null
+
+
         });
 
 

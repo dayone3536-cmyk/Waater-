@@ -383,6 +383,55 @@
         transform:translateX(-50%) translateY(0);
     }
 
+    .milestone-toast{
+
+        position:fixed;
+        bottom:90px;
+        left:50%;
+        transform:translateX(-50%) translateY(20px);
+        display:flex;
+        align-items:center;
+        gap:12px;
+        background:#1f2635;
+        color:white;
+        padding:12px 16px 12px 20px;
+        border-radius:999px;
+        font-size:.85rem;
+        font-weight:600;
+        box-shadow:0 4px 20px rgba(0,0,0,.4);
+        opacity:0;
+        pointer-events:none;
+        transition:opacity .25s, transform .25s;
+        z-index:2500;
+        max-width:90vw;
+
+    }
+
+    .milestone-toast.show{
+
+        opacity:1;
+        transform:translateX(-50%) translateY(0);
+        pointer-events:auto;
+
+    }
+
+
+    .milestone-share-btn{
+
+        border:none;
+        cursor:pointer;
+        padding:8px 16px;
+
+        border-radius:999px;
+        font-weight:700;
+
+        font-size:.8rem;
+        color:white;
+        background:linear-gradient(135deg,#6d5dfc,#4f7cff);
+        flex-shrink:0;
+
+    }
+
     .vote-bar{
         display:flex;
         align-items:center;
@@ -452,60 +501,6 @@
     }
 
 
-
-
-
-    /* .vote-emoji-btn{
-        background:rgba(255,255,255,0.04);
-        border:1px solid rgba(255,255,255,0.08);
-        backdrop-filter:blur(10px);
-        border-radius:20px;
-        cursor:pointer;
-        padding:10px 22px;
-        display:flex;
-        flex-direction:column;
-        align-items:center;
-        gap:4px;
-        transition:transform .15s ease, background .2s ease, border-color .2s ease;
-    }
-
-    .vote-emoji-btn .emoji{
-        font-size:1.8rem;
-        line-height:1;
-    }
-
-    .vote-emoji-btn .count{
-        font-size:.7rem;
-        color:#9ca3af;
-        font-weight:600;
-    }
-
-    .vote-emoji-btn:hover{
-        transform:translateY(-3px);
-        background:rgba(255,255,255,0.08);
-    }
-
-    .vote-emoji-btn:active{
-        transform:scale(.92);
-    }
-
-    .vote-emoji-btn.selected{
-        border-color:#46c2ff;
-        background:rgba(70,194,255,0.1);
-    }
-
-    .vote-emoji-btn.selected .count{
-        color:#46c2ff;
-    }
-
-    .vote-emoji-btn:disabled{
-        cursor:default;
-    }
-
-    .vote-emoji-btn:disabled:hover{
-        transform:none;
-        background:rgba(255,255,255,0.04);
-    } */
 
     .momentum-bar{
 
@@ -712,8 +707,20 @@
         color:white;
         border:1px solid rgba(255,255,255,0.06);
     }
-    
-    
+
+    .forfeit-actions.stacked{
+
+        flex-direction:column;
+
+    }
+
+    .forfeit-actions.stacked .forfeit-btn{
+
+        width:100%;
+
+    }
+
+
     .icon-btn{
       display:flex;
       align-items:center;
@@ -2740,6 +2747,106 @@ function showClipModal(canvas, topicText) {
     let currentVote = null; // 'pro' or 'against', null = not voted yet
     let lastPct = 50;
 
+        // ---- LOSING-IN-VOTES NUDGE ----
+
+    let currentProVotes = 0;
+    let currentAgainstVotes = 0;
+    let losingModalShown = false;
+    let lastDismissedMargin = 0;
+    const LOSING_VOTE_THRESHOLD = 3; // don't judge until at least this many total votes are in
+
+    async function shareCurrentDebateLink(){
+        const topicText = dynamic_title.textContent || 'Join my debate!';
+        const shareParams = new URLSearchParams(window.location.search);
+        shareParams.delete('role');
+        shareParams.set('match', currentRoomId);
+        const shareUrl = `${window.location.origin}${window.location.pathname}?${shareParams.toString()}`;
+
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'Debate Arena',
+                    text: `Come back me up on this: "${topicText}"`,
+                    url: shareUrl
+                });
+            } catch (err) {}
+        } else {
+            try {
+                await navigator.clipboard.writeText(shareUrl);
+                shareToast.textContent = 'Link copied!';
+            } catch (err) {
+                shareToast.textContent = 'Could not copy link';
+            }
+            shareToast.classList.add('show');
+            setTimeout(() => shareToast.classList.remove('show'), 2000);
+        }
+    }
+
+    function maybeShowLosingModal(proVotes, againstVotes){
+
+        currentProVotes = proVotes;
+        currentAgainstVotes = againstVotes;
+
+        if (!mySide || isSpectator || isReplay) return;
+        if (document.getElementById('losingOverlay')) return; // already showing
+
+        const total = proVotes + againstVotes;
+        if (total < LOSING_VOTE_THRESHOLD) return;
+
+        const myVotes = mySide === 'pro' ? proVotes : againstVotes;
+        const oppVotes = mySide === 'pro' ? againstVotes : proVotes;
+
+        if (myVotes >= oppVotes) {
+            // back in front or tied — reset so a future dip shows the nudge again
+            losingModalShown = false;
+            lastDismissedMargin = 0;
+            return;
+        }
+
+        const margin = oppVotes - myVotes;
+
+        // First time losing, or fallen further behind since they last dismissed it
+        if (losingModalShown && margin < lastDismissedMargin + 3) return;
+
+        showLosingModal(margin);
+        losingModalShown = true;
+    }
+
+    function showLosingModal(){
+
+        const overlay = document.createElement('div');
+        overlay.id = 'losingOverlay';
+        overlay.className = 'forfeit-overlay';
+
+        overlay.innerHTML = `
+            <div class="forfeit-box">
+                <div class="forfeit-icon">📉</div>
+                <p>You're losing in votes</p>
+                <div class="forfeit-sub">Get backed up by a friend</div>
+                <div class="forfeit-actions stacked">
+                    <button id="losingBackupBtn" class="forfeit-btn no">Get backed up</button>
+                    <button id="losingRiskBtn" class="forfeit-btn yes">I'll risk it</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        document.getElementById('losingBackupBtn').onclick = async () => {
+            await shareCurrentDebateLink();
+            overlay.remove();
+        };
+
+        document.getElementById('losingRiskBtn').onclick = () => {
+            const myVotes = mySide === 'pro' ? currentProVotes : currentAgainstVotes;
+            const oppVotes = mySide === 'pro' ? currentAgainstVotes : currentProVotes;
+            lastDismissedMargin = Math.max(0, oppVotes - myVotes);
+            overlay.remove();
+        };
+    }
+
+
+
     async function castVote(side, evt){
 
         if (!(await window.requireLogin())) return;
@@ -2816,6 +2923,8 @@ function showClipModal(canvas, topicText) {
             }
             lastPct = rightPct;
         }
+
+        maybeShowLosingModal(data.proVotes, data.againstVotes);
     });
 
     /* ---------------- REELS-STYLE HORIZONTAL SWIPE (LIVE + REPLAY) ---------------- */
