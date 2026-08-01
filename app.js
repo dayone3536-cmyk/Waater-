@@ -190,8 +190,21 @@ app.post('/past-matches/:roomId/vote', express.json(), async (req, res) => {
     const userId = req.cookies.anonId; // same anonymous identity you already use for reactions
 
     if (!['pro', 'against'].includes(side)) {
+
         return res.status(400).json({ error: 'Invalid side' });
+
     }
+
+        const { data: existingVote } = await supabase
+        .from('match_votes')
+        .select('side')
+        .eq('room_id', roomId)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    const previousSide = existingVote ? existingVote.side : null;
+
+
 
     const { error } = await supabase
         .from('match_votes')
@@ -201,6 +214,41 @@ app.post('/past-matches/:roomId/vote', express.json(), async (req, res) => {
         );
 
     if (error) return res.status(500).json({ error: error.message });
+
+
+    if (previousSide !== side) {
+
+        const { data: matchRow } = await supabase
+            .from('past_matches')
+            .select('creator_profile_id, challenger_profile_id')
+            .eq('room_id', roomId)
+            .maybeSingle();
+
+        if (matchRow) {
+            const winnerProfileId = side === 'pro' ? matchRow.creator_profile_id : matchRow.challenger_profile_id;
+            const { error: incErr } = await supabase.rpc('increment_drop_points', {
+                p_profile_id: winnerProfileId,
+                p_amount: 1
+            });
+
+
+            if (incErr) console.error('increment_drop_points failed:', incErr);
+
+            if (previousSide) {
+                // they switched sides — undo the point given to the old side
+                const prevWinnerId = previousSide === 'pro' ? matchRow.creator_profile_id : matchRow.challenger_profile_id;
+                const { error: decErr } = await supabase.rpc('increment_drop_points', {
+                    p_profile_id: prevWinnerId,
+                    p_amount: -1
+                });
+                if (decErr) console.error('increment_drop_points (decrement) failed:', decErr);
+            }
+        }
+    }
+
+
+
+
 
     const { data, error: fetchErr } = await supabase
         .from('match_votes')
@@ -944,6 +992,28 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
         globalMatchmakingQueue //sends the user the current duels then the html takes that to show them te beautifull btutton
     );
 
+    socket.on('authenticate', async (idToken) => {
+
+        try {
+
+            const decoded = await auth.verifyIdToken(idToken);
+
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('id, username, avatar_url')
+                .eq('firebase_uid', decoded.uid)
+                .maybeSingle();
+
+            socket.data.profile = profile || null;
+
+        } catch (err) {
+
+            socket.data.profile = null;
+
+        }
+
+    });
+
     socket.on('join_queue', (data) => {
 
         if (
@@ -977,24 +1047,7 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
 
         };
 
-        socket.on('authenticate', async (idToken) => {
 
-            try {
-
-                const decoded = await auth.verifyIdToken(idToken);
-
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('id, username, avatar_url')
-                    .eq('firebase_uid', decoded.uid)
-                    .maybeSingle();
-
-                socket.data.profile = profile || null;
-
-            } catch (err) {
-                socket.data.profile = null;
-            }
-        });
 
 
 // send_argument
@@ -1055,17 +1108,21 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
             creatorSocket.join(roomId);
         }
 
+        const creatorProfileId = creatorSocket?.data.profile?.id || duel.profileId || null;
+
+        const challengerProfileId = socket.data.profile?.id || null;
+
+        
        activeMatches.push({
 
             roomId,
             thesis: duel.thesis,
+
             creatorSocketId: duel.socketId,
-
-
             challengerSocketId: socket.id,
-            creatorProfileId: duel.profileId || null,        // ADD
 
-            challengerProfileId: socket.data.profile?.id || null, // ADD
+            creatorProfileId,
+            challengerProfileId,
 
             spectators: [],
             createdAt: Date.now(),
@@ -1086,8 +1143,14 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
 
             room_id: roomId,
             thesis: duel.thesis,
+
             creator_socket_id: duel.socketId,
             challenger_socket_id: socket.id,
+
+            creator_profile_id: creatorProfileId,       // ✅ add this — this is what was missing
+            challenger_profile_id: challengerProfileId, // ✅ add this
+
+
             started_at: new Date().toISOString()
 
         }).then(({ error }) => {
