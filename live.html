@@ -1565,7 +1565,7 @@
 
     async function loadReplayMode(roomId) {
 
-        document.querySelector('.bottom-bar').remove()  ;
+        document.querySelector('.bottom-bar').style.display = 'none';
 
         const matchesRes = await fetch('/past-matches');
         const matches = await matchesRes.json();

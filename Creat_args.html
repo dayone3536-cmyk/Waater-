@@ -219,10 +219,17 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async  (user) => {
             if (!user) {
                 window.location.href = "Sigh-in";
             }
+
+            const idToken = await user.getIdToken();
+
+            socket.emit('authenticate', idToken);
+            resolve();
+
+
         });
 
         document.getElementById('logout-btn').addEventListener('click', () => {
@@ -263,14 +270,17 @@
                 }
             }, 1000);
         }
+ 
+        btnIgnite.addEventListener('click', async () => {
 
-        btnIgnite.addEventListener('click', () => {
             const thesis = argumentInput.value.trim();
 
             if (!thesis) {
                 alert('Please enter a topic before the battle ');
                 return;
             }
+
+            await window.authReady;
 
             workspace.style.display = 'none';
             matchmakingStatus.style.display = 'flex';

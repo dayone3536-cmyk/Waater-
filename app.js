@@ -1003,6 +1003,7 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
                 .select('id, username, avatar_url')
                 .eq('firebase_uid', decoded.uid)
                 .maybeSingle();
+                
 
             socket.data.profile = profile || null;
 
