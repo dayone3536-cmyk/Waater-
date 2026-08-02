@@ -92,7 +92,8 @@
     <script src="/socket.io/socket.io.js"></script>
 
 
-    <script type="module">
+    <script type="module"> 
+
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-analytics.js";
@@ -110,17 +111,25 @@
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
+
         const auth = getAuth(app);
 
         // Auth Gatekeeper Check
-        onAuthStateChanged(auth, (user) => {
+
+        onAuthStateChanged(auth, async   (user) => {
+            
             if (!user) {
+
                 // Not signed in? Boot them out immediately.
-                // NOTE: Make sure your filename is exactly spelled 'Sigh-in.html' with a capital S!
+
                 window.location.href = '/Sigh-in'; 
-            } else {
-                console.log("Welcome back:", user.email);
+                return;
+
             }
+
+            const idToken = await user.getIdToken();
+            socket.emit('authenticate', idToken);
+
         });
 
     </script>
