@@ -136,94 +136,85 @@
 
     .bottom-bar{
 
-        padding:20px;
-
+        padding:12px 16px;
         background:#151924;
-
         border-top:1px solid rgba(255,255,255,0.08);
-
         display:flex;
-        gap:15px;
+        align-items:flex-end;
+
     }
 
-    .bottom-bar textarea{
-
+    .input-pill{
         flex:1;
-
-        resize:none;
-
-        height:60px;
-
-        border:none;
-
-        outline:none;
-
-        border-radius:16px;
-
+        display:flex;
+        align-items:flex-end;
+        gap:4px;
         background:#1f2635;
-
-        color:white;
-
-        padding:16px;
+        border-radius:28px;
+        padding:6px 6px 6px 18px;
     }
 
-    .send-btn{
-
+    .input-pill textarea{
+        flex:1;
+        resize:none;
         border:none;
-
-        cursor:pointer;
-
-        border-radius:16px;
-
-        padding:0 30px;
-
+        outline:none;
+        background:transparent;
         color:white;
-
-        font-weight:700;
-
-        background:linear-gradient(
-            135deg,
-            #6d5dfc,
-            #4f7cff
-        );
+        font-family:Inter,system-ui,sans-serif;
+        font-size:15px;
+        line-height:1.4;
+        padding:11px 4px;
+        max-height:120px;
+        min-height:22px;
     }
 
-    .send-btn:hover{
-        transform:translateY(-2px);
-    }
-
-    .message {
-        background: #1f2937;
-        color: white;
-        padding: 12px 16px;
-        margin: 10px 0;
-        border-radius: 12px;
-        max-width: 70%;
-        word-wrap: break-word;
-    }
-
-
-    .mic-btn {
+    .pill-icon-btn{
 
         border:none;
         cursor:pointer;
+
         border-radius:50%;
-        width:56px;
-        height:56px;
-        flex-shrink:0;
-        color:white;
-        font-size:1.3rem;
-        background:#2a3142;
-        transition: background .2s;
+        width:42px;
+        height:48px;
 
+        flex-shrink:0;
+        display:flex;
+        align-items:center;
+
+        justify-content:center;
+        color:white;
+        transition:transform .15s ease, filter .15s ease, background .15s ease;
+    }
+
+    .pill-icon-btn svg{
+        width:22px;
+        height:22px;
+    }
+
+    .mic-btn{
+        background:#2a3142;
     }
 
     .mic-btn.recording{
-
         background:#ff4d4d;
         animation: pulse 1.2s infinite;
-
     }
+
+    .send-btn2{
+        background:linear-gradient(135deg,#6d5dfc,#4f7cff);
+    }
+
+    .send-btn2:hover{
+        transform:translateY(-2px);
+    }
+
+    .send-btn2:active{
+        transform:scale(.92);
+    }
+
+
+
 
     @keyframes pulse{
 
@@ -233,52 +224,7 @@
 
     } 
 
-    /* momentum */
-
-    .send-btn2 {
-
-        border: none;
-        cursor: pointer;
-        border-radius: 50%;
-        width: 56px;
-        height: 56px;
-        flex-shrink: 0;
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(135deg, #6d5dfc, #4f7cff);
-        transition: transform .15s ease, filter .15s ease;
-
-    }
-
-    .send-btn2:hover {
-
-        transform: translateY(-2px);
-
-    }
-
-    .send-btn2:active {
-        transform: scale(.92);
-    }
-
-    .send-btn2 svg,
-    .mic-btn svg {
-
-        width: 22px;
-        height: 22px;
-
-    }
-
-    .mic-btn {
-
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-    }
-
-
+    /* momentum bar */
 
     .typing-indicator {
 
@@ -1188,34 +1134,33 @@
 
         }
 
-      
-
         .bottom-bar{
-            padding:12px;
-            gap:10px;
+
+            padding:10px 12px;
 
         }
 
-        .bottom-bar textarea{
-            height:54px;
+        .input-pill{
+
+            padding:4px 4px 4px 16px;
+
+        }
+
+        .input-pill textarea{
+
             font-size:15px;
-            padding:14px;
+            padding:10px 4px;
 
         }
 
-        .send-btn {
-            height:54px;
-            padding:0 18px;
-            flex-shrink:0;
+        .pill-icon-btn{
+
+            width:40px;
+            height:40px;
+
         }
 
     }
-
-
-
-
-
-
 
 </style>
 
@@ -1312,41 +1257,43 @@
 
 <div class="bottom-bar">
 
-    <textarea
-    id="message"
-        placeholder="Present your argument..."
-    ></textarea>
+    <div class="input-pill">
+
+        <textarea
+        id="message"
+            placeholder="Present your argument..."
+        ></textarea>
 
 
-    <button class="mic-btn" id="micBtn" type="button" title="Hold to talk">
+        <button class="mic-btn pill-icon-btn " id="micBtn" type="button" title="Hold to talk">
 
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 
-            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
 
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
 
-            <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
 
-            <line x1="8" y1="23" x2="16" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
 
-        </svg>
+            </svg>
 
-    </button>
+        </button>
 
-    <button class="send-btn2" id="sendBtn" type="button" title="Send">
+        <button class="send-btn2 pill-icon-btn " id="sendBtn" type="button" title="Send">
 
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 
-            <line x1="22" y1="2" x2="11" y2="13"></line>
+                <line x1="22" y1="2" x2="11" y2="13"></line>
 
-            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
 
-        </svg>
+            </svg>
 
-    </button>
+        </button>
 
-
+    </div> 
 
 </div>
 
@@ -1618,7 +1565,7 @@
 
     async function loadReplayMode(roomId) {
 
-        document.querySelector('.bottom-bar').style.display = 'none';
+        document.querySelector('.bottom-bar').remove()  ;
 
         const matchesRes = await fetch('/past-matches');
         const matches = await matchesRes.json();
@@ -1782,15 +1729,20 @@
 
         function sendMessage() {
 
+            if (isReplay || isSpectator || !mySide) return;
+
             if (messageInput.value.trim() === "") return;
 
             clearTimeout(typingTimeout);
             socket.emit('stop_typing', { roomId });
 
             socket.emit(
+
                 'send_argument',
                 { roomId, message: messageInput.value }
+
             );
+
 
             messageInput.value = '';
         }

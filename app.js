@@ -1463,34 +1463,57 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
     // 2. Listen for 'send_argument' from your frontend Send button  const { data: matches, error } = await supabase
     socket.on('send_argument', (data) => {
 
-        console.log(`Message received for room ${data.roomId}: ${data.message}`);
+        
 
         const match = activeMatches.find(m => m.roomId === data.roomId);
 
+
+
+        if (!match) {
+
+            return;
+        }
+
         let senderRole = null;
 
-        if (match) {
+        if (socket.id === match.creatorSocketId) senderRole = 'creator';
 
-            if (socket.id === match.creatorSocketId) senderRole = 'creator';
+        else if (socket.id === match.challengerSocketId) senderRole = 'challenger';
 
-            else if (socket.id === match.challengerSocketId) senderRole = 'challenger';
+
+        if (!senderRole) {
+
+            return; // sender is a spectator, not a debater — reject
 
         }
 
-    // typing
+        const message = typeof data.message === 'string' ? data.message.trim() : '';
 
-        // 3. Broadcast 'new_argument' back down to EVERYONE inside that specific room
+            if (!message || message.length > 2000) {
+
+                return; // basic sanity check — empty or absurdly long payloads
+
+            }
+
+        console.log(`Message received for room ${data.roomId}: ${message}`);
+
+
+
         
         io.to(data.roomId).emit('new_argument', {
-            message: data.message,
+
+            message: message,
             senderId: socket.id,
+
             senderRole: senderRole
+
         });
 
         supabase.from('past_arguments').insert({
+            
             room_id: data.roomId,
             sender_role: senderRole,
-            message: data.message
+            message: message
 
         }).then(({ error }) => {
 
