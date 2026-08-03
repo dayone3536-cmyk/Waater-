@@ -257,10 +257,13 @@
         let myCurrentMatchId = null;
 
         function startTimer(durationInSeconds) {
+
             let timeRemaining = durationInSeconds;
             countdownInterval = setInterval(() => {
+
                 let minutes = Math.floor(timeRemaining / 60);
                 let seconds = timeRemaining % 60;
+                
                 minutes = minutes < 10 ? '0' + minutes : minutes;
                 seconds = seconds < 10 ? '0' + seconds : seconds;
                 timerDisplay.textContent = `${minutes}:${seconds}`;
@@ -269,6 +272,7 @@
                     timerDisplay.textContent = "Expired";
                 }
             }, 1000);
+
         }
  
         btnIgnite.addEventListener('click', async () => {

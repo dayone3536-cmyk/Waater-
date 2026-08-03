@@ -1072,6 +1072,85 @@
     .comment-send-btn:hover{ transform:translateY(-1px); filter:brightness(1.1); }
     .comment-send-btn:disabled{ opacity:.5; cursor:default; transform:none; }
 
+    /* ---------------- VS INTRO SCREEN ---------------- */
+
+
+    .vs-overlay{
+        position:fixed; inset:0;
+        background:radial-gradient(circle at 50% 40%, #1b2333, #0a0c14 75%);
+        display:flex; align-items:center; justify-content:center;
+        z-index:3000;
+        opacity:0;
+        animation:vsFadeIn .4s ease-out forwards;
+    }
+    .vs-stage{
+        display:flex;
+        align-items:center;
+        gap:36px;
+        padding:0 24px;
+    }
+    .vs-card{
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap:10px;
+        width:180px;
+        opacity:0;
+        transform:translateY(20px);
+        animation:vsCardIn .5s cubic-bezier(.34,1.56,.64,1) forwards;
+    }
+    .vs-card.right{ animation-delay:.15s; }
+    .vs-avatar-ring{
+        width:96px; height:96px;
+        border-radius:50%;
+        padding:3px;
+        background:linear-gradient(135deg,#6d5dfc,#46c2ff);
+        box-shadow:0 0 30px rgba(70,194,255,.35);
+    }
+    .vs-avatar-ring img{
+        width:100%; height:100%;
+        border-radius:50%;
+        object-fit:cover;
+        display:block;
+        background:#1b2333;
+        border:3px solid #0a0c14;
+    }
+    .vs-username{ font-weight:800; font-size:1.05rem; color:#fff; }
+    .vs-rank{
+        font-size:.7rem; font-weight:700;
+        letter-spacing:.06em; text-transform:uppercase;
+        color:#46c2ff;
+        background:rgba(70,194,255,.12);
+        border:1px solid rgba(70,194,255,.3);
+        padding:3px 10px; border-radius:999px;
+    }
+    .vs-points{ font-size:.78rem; color:#9ca3af; font-weight:600; }
+    .vs-you-tag{
+        font-size:.65rem; font-weight:800; letter-spacing:.08em;
+        color:#22c55e; text-transform:uppercase;
+    }
+    .vs-middle{
+        display:flex; flex-direction:column; align-items:center; gap:6px;
+        opacity:0; animation:vsCardIn .5s .3s cubic-bezier(.34,1.56,.64,1) forwards;
+    }
+    .vs-middle .vs-text{
+        font-size:2.2rem; font-weight:900;
+        background:linear-gradient(135deg,#6d5dfc,#46c2ff);
+        -webkit-background-clip:text; background-clip:text; color:transparent;
+        letter-spacing:.05em;
+    }
+    @keyframes vsFadeIn{ to{ opacity:1; } }
+    @keyframes vsCardIn{ to{ opacity:1; transform:translateY(0); } }
+    .vs-overlay.closing{ animation:vsFadeOut .35s ease-in forwards; }
+    @keyframes vsFadeOut{ to{ opacity:0; } }
+
+    @media (max-width:600px){
+        .vs-stage{ gap:18px; }
+        .vs-card{ width:130px; }
+        .vs-avatar-ring{ width:76px; height:76px; }
+        .vs-middle .vs-text{ font-size:1.6rem; }
+    }
+
 
 
 
@@ -1429,6 +1508,8 @@
 
     const inviteCode = params.get('invite');
 
+
+
     if (inviteCode) {
 
         (async () => {
@@ -1478,6 +1559,70 @@
         console.log("2nd ststep")
 
     });
+
+    socket.on('match_players', (data) => {
+
+        showVsIntro(data.you, data.opponent);
+
+    });
+
+    function showVsIntro(you, opponent) {
+
+        const overlay = document.createElement('div');
+
+        overlay.className = 'vs-overlay';
+        overlay.id = 'vsOverlay';
+
+        const fallbackAvatar = 'https://api.dicebear.com/7.x/identicon/svg?seed=';
+
+        overlay.innerHTML = `
+            <div class="vs-stage">
+                <div class="vs-card left">
+                    <span class="vs-you-tag">You</span>
+
+                    <div class="vs-avatar-ring">
+                        <img src="${you.avatar_url || fallbackAvatar + encodeURIComponent(you.username || 'you')}" alt="">
+
+                    </div>
+                    <div class="vs-username">${escapeHtml(you.username || 'You')}</div>
+                    <div class="vs-rank">${escapeHtml(you.rank || 'Unranked')}</div>
+                    <div class="vs-points">${you.points ?? 0} drop points</div>
+
+                </div>
+
+                <div class="vs-middle">
+
+                    <div class="vs-text">VS</div>
+
+                </div>
+
+                <div class="vs-card right">
+
+                    <span class="vs-you-tag" style="color:#ef4444;">Opponent</span>
+
+                    <div class="vs-avatar-ring">
+                        <img src="${opponent.avatar_url || fallbackAvatar + encodeURIComponent(opponent.username || 'opponent')}" alt="">
+
+                    </div>
+
+                    <div class="vs-username">${escapeHtml(opponent.username || 'Opponent')}</div>
+                    <div class="vs-rank">${escapeHtml(opponent.rank || 'Unranked')}</div>
+
+                    <div class="vs-points">${opponent.points ?? 0} drop points</div>
+
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        setTimeout(() => {
+            overlay.classList.add('closing');
+            setTimeout(() => overlay.remove(), 350);
+        }, 20000);
+    }
+
+
 
     socket.on("match_error", (data) => {
 

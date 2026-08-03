@@ -1140,27 +1140,40 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
 
 
 
-        supabase.from('past_matches').insert({
 
-            room_id: roomId,
-            thesis: duel.thesis,
+        console.log('INSERTING past_matches with:', {
 
-            creator_socket_id: duel.socketId,
-            challenger_socket_id: socket.id,
+        creatorProfileId,
+        challengerProfileId
 
-            creator_profile_id: creatorProfileId,       // ✅ add this — this is what was missing
-            challenger_profile_id: challengerProfileId, // ✅ add this
+    });
+
+    supabase.from('past_matches').insert({
+        room_id: roomId,
+        thesis: duel.thesis,
+        creator_socket_id: duel.socketId,
+        challenger_socket_id: socket.id,
+        creator_profile_id: creatorProfileId,
+        challenger_profile_id: challengerProfileId,
+        started_at: new Date().toISOString()
+
+    }).select().then(({ data, error }) => {
+
+        if (error) {
+
+            console.error('Failed to create match record:', JSON.stringify(error, null, 2));
+
+        } else {
+
+            console.log('INSERT SUCCESS, row returned:', data);
+
+        }
+
+    });
 
 
-            started_at: new Date().toISOString()
-
-        }).then(({ error }) => {
-            if (error) console.error('Failed to create match record:', error);
-
-        });
 
 
-    
 
         broadcastLiveMatches();
 
@@ -1270,6 +1283,56 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
         }
 
         socket.emit('macth_info', { thesis: match.thesis });
+
+        (async () => {
+
+            const ids = [match.creatorProfileId, match.challengerProfileId].filter(Boolean);
+            let creatorProfile = null, challengerProfile = null;
+
+            if (ids.length > 0) {
+
+                const { data: profs, error: profErr } = await supabase
+
+                    .from('profiles')
+                    .select('id, username, avatar_url, drop_points')
+                    .in('id', ids);
+
+                if (profErr) {
+
+                    console.error('Failed to fetch profiles for VS intro:', profErr);
+
+                } else {
+
+                    creatorProfile = profs.find(p => p.id === match.creatorProfileId) || null;
+                    challengerProfile = profs.find(p => p.id === match.challengerProfileId) || null;
+
+                }
+            }
+
+            const toVsShape = (p) => ({
+
+                username: p?.username || 'Guest',
+                avatar_url: p?.avatar_url || null,
+                points: p?.drop_points || 0,
+                rank: getRank(p?.drop_points || 0)
+
+            });
+
+            const creatorVs = toVsShape(creatorProfile);
+            const challengerVs = toVsShape(challengerProfile);
+
+            if (role === 'creator') {
+
+                socket.emit('match_players', { you: creatorVs, opponent: challengerVs });
+
+            } else if (role === 'challenger') {
+
+                socket.emit('match_players', { you: challengerVs, opponent: creatorVs });
+                
+            }
+        })();
+
+
 
         supabase
             .from('past_arguments')
