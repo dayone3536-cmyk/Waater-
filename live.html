@@ -1072,6 +1072,39 @@
     .comment-send-btn:hover{ transform:translateY(-1px); filter:brightness(1.1); }
     .comment-send-btn:disabled{ opacity:.5; cursor:default; transform:none; }
 
+    .comment-header{
+
+        display:flex;
+        align-items:center;
+        gap:8px;
+        margin-bottom:6px;
+
+    }
+
+    .comment-avatar{
+
+        width:26px;
+        height:26px;
+        border-radius:50%;
+        object-fit:cover;
+        background:#0f1117;
+        flex-shrink:0;
+    }
+
+    .comment-username{
+        font-weight:700;
+        font-size:.82rem;
+        color:#e5e7eb;
+    }
+
+    .comment-time{
+        font-size:.68rem;
+        color:#6b7280;
+        margin-left:auto;
+    }
+
+
+
     /* ---------------- VS INTRO SCREEN ---------------- */
 
 
@@ -1287,19 +1320,86 @@
 
 
 
+    .header-actions{
 
+        display:flex;
+        align-items:center;
+        gap:10px;
+        flex-shrink:0;
 
+    }
 
+    .comment-fab-row{
 
+        display:flex;
+        justify-content:center;
+        padding:10px 0 4px;
+        background:#151924;
 
+        }
 
+        .comment-fab{
+
+        position:relative;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        width:50px;
+        height:50px;
+
+        border-radius:50%;
+        border:none;
+        cursor:pointer;
+        color:white;
+
+        background:linear-gradient(135deg,#6d5dfc,#4f7cff);
+        box-shadow:0 4px 16px rgba(79,124,255,.4);
+        transition:transform .2s, box-shadow .2s;
+
+        }
+
+        .comment-fab:hover{ transform:translateY(-2px); box-shadow:0 6px 20px rgba(79,124,255,.55); }
+        .comment-fab:active{ transform:translateY(0) scale(.94); }
+        .comment-fab svg{ width:24px; height:24px; }
+
+        .comment-count-badge{
+
+        position:absolute;
+        top:-4px; right:-4px;
+        background:#ef4444;
+        color:white;
+        font-size:.68rem;
+
+        font-weight:800;
+        min-width:18px;
+        height:18px;
+
+        border-radius:999px;
+        display:flex;
+        align-items:center;
+
+        justify-content:center;
+        padding:0 4px;
+        box-shadow:0 0 0 2px #151924;
+
+        }
 
 
 
 
     @media (max-width: 600px){
 
-        /* TOP BAR */
+        .share-btn{
+            padding:0;
+            width:44px;
+            height:44px;
+            justify-content:center;
+            gap:0;
+        }
+
+        .share-btn-label{ display:none; }
+        .icon-btn{ margin-left:0; }
+
 
         .top-bar{
             height:auto;
@@ -1402,45 +1502,36 @@
 
     </div>
 
-    <div class="share" id="Share">
+    <div class="header-actions">
+
         <button class="share-btn" id="shareBtn" type="button">
 
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="18" cy="5" r="3"></circle>
 
+                <circle cx="18" cy="5" r="3"></circle>
                 <circle cx="6" cy="12" r="3"></circle>
                 <circle cx="18" cy="19" r="3"></circle>
 
                 <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
                 <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-            </svg>
 
-            Share
+            </svg>
+            <span class="share-btn-label"></span>
 
         </button>
 
-    </div>
-    
         <button class="icon-btn" id="clipBtn" type="button" title="Clip">
-          
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-            
-            <circle cx="9" cy="9" r="2"></circle>
-            
-            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
-            
-        </svg>
-        
-    </button>
+
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+
+                <circle cx="12" cy="13" r="4"></circle>
+            </svg>
+        </button>
 
     </div>
-        
-    </div>
 
-
-
-
+</div>
 
 
 
@@ -1524,6 +1615,21 @@
 
 </div>
 
+   <div class="comment-fab-row">
+
+        <button class="comment-fab" id="commentFabBtn" type="button" title="Comments">
+
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+            </svg>
+
+            <span class="comment-count-badge" id="commentCountBadge" style="display:none;">0</span>
+
+        </button>
+    </div>
+
+
     <div class="voting-bar" id="votingBar">
         <div class="momentum-row">
             <button class="vote-avatar-btn left-side" id="voteLeftBtn">
@@ -1545,6 +1651,37 @@
     </div>
 
     <div class="share-toast" id="shareToast"> Link copied! </div>
+
+
+    <div class="comment-backdrop" id="commentBackdrop"></div>
+
+        <div class="comment-drawer" id="commentDrawer">
+            <div class="comment-drawer-inner">
+
+                <div class="comment-drawer-header">
+
+                <span>Comments</span>
+
+                <button class="comment-drawer-close" id="commentDrawerClose">✕</button>
+                </div>
+
+                <div class="comment-list" id="commentList">
+
+                    <div class="comment-empty">No comments yet — be the first!</div>
+
+                </div>
+
+                <div class="comment-input-row">
+
+                    <input type="text" id="commentInput" placeholder="Add a comment..." maxlength="500">
+                    <button class="comment-send-btn" id="commentSendBtn" disabled>Post</button>
+
+                </div>
+
+        </div>
+        </div>
+
+
 
 
 
@@ -1599,6 +1736,18 @@
         }
         return true;
     };
+
+
+    window.getIdToken = async function () {
+
+        await authReady;
+        const user = auth.currentUser;
+
+        if (!user) return null;
+        return await user.getIdToken();
+
+    };
+
 
 
 </script>
@@ -1705,6 +1854,16 @@
 
 
         console.log("2nd ststep")
+
+        fetch(`/match/${currentRoomId}/engagement`)
+
+        .then(r => r.json())
+
+        .then(e => updateCommentCount(e.comment_count || 0))
+
+        .catch(() => {});
+
+        
 
     });
 
@@ -3467,6 +3626,171 @@ function showClipModal(canvas, topicText) {
 
     window.addEventListener('beforeunload', () => flushDwellTime(true));
     window.addEventListener('pagehide', () => flushDwellTime(true));
+
+
+    const commentFabBtn = document.getElementById('commentFabBtn');
+    const commentBackdrop = document.getElementById('commentBackdrop');
+    const commentDrawer = document.getElementById('commentDrawer');
+    const commentDrawerClose = document.getElementById('commentDrawerClose');
+    const commentList = document.getElementById('commentList');
+    const commentInput = document.getElementById('commentInput');
+    const commentSendBtn = document.getElementById('commentSendBtn');
+    const commentCountBadge = document.getElementById('commentCountBadge');
+
+    let commentsLoadedFor = null;
+
+    function openCommentDrawer(){
+        commentBackdrop.classList.add('open');
+
+        commentDrawer.classList.add('open');
+        if (commentsLoadedFor !== currentRoomId) loadComments();
+
+    }
+
+    function closeCommentDrawer(){
+
+        commentBackdrop.classList.remove('open');
+        commentDrawer.classList.remove('open');
+
+    }
+
+    commentFabBtn.addEventListener('click', openCommentDrawer);
+    commentDrawerClose.addEventListener('click', closeCommentDrawer);
+
+    commentBackdrop.addEventListener('click', closeCommentDrawer);
+
+    async function loadComments(){
+
+        commentList.innerHTML = '<div class="comment-empty">Loading…</div>';
+
+        try {
+
+            const res = await fetch(`/match/${currentRoomId}/comments`);
+            const comments = await res.json();
+            commentsLoadedFor = currentRoomId;
+
+            renderComments(comments);
+        } catch(e){
+            commentList.innerHTML = '<div class="comment-empty">Could not load comments.</div>';
+
+
+        }
+    }
+
+    function renderComments(comments){
+
+        commentList.innerHTML = '';
+        if (!comments || comments.length === 0){
+            commentList.innerHTML = '<div class="comment-empty">No comments yet — be the first!</div>';
+
+        } else {
+            comments.forEach(addCommentToList);
+        }
+        updateCommentCount(comments ? comments.length : 0);
+
+        commentList.scrollTop = commentList.scrollHeight;
+
+    }
+
+    function addCommentToList(c){
+
+        const emptyEl = commentList.querySelector('.comment-empty');
+
+        if (emptyEl) emptyEl.remove();
+
+        const item = document.createElement('div');
+        item.className = 'comment-item';
+
+        const profile = c.profiles || {};
+
+        const username = profile.username || 'Unknown';
+
+        const avatarUrl = profile.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(username)}`;
+
+        const time = new Date(c.created_at).toLocaleString([], { hour:'2-digit', minute:'2-digit', month:'short', day:'numeric' });
+
+        item.innerHTML = `
+
+            <div class="comment-header">
+                <img class="comment-avatar" src="${avatarUrl}" alt="">
+                <span class="comment-username">${escapeHtml(username)}</span>
+
+                <span class="comment-time">${time}</span>
+
+            </div>
+            <div class="comment-text">${escapeHtml(c.message)}</div>
+
+        `;
+
+        commentList.appendChild(item);
+    }
+
+    function updateCommentCount(n){
+        if (n > 0){
+            commentCountBadge.style.display = 'flex';
+            commentCountBadge.textContent = n > 99 ? '99+' : n;
+        } else {
+            commentCountBadge.style.display = 'none';
+        }
+    }
+
+    async function postComment(){
+
+        const message = commentInput.value.trim();
+        if (!message) return;
+
+        if (!(await window.requireLogin())) return;
+
+        const idToken = await window.getIdToken();
+        if (!idToken) {
+            alert('Please sign in to comment.');
+            return;
+        }
+
+        commentSendBtn.disabled = true;
+        try {
+            const res = await fetch(`/match/${currentRoomId}/comments`, {
+                method:'POST',
+                headers:{
+                    'Content-Type':'application/json',
+                    'Authorization': `Bearer ${idToken}`
+                },
+                body: JSON.stringify({ message })
+            });
+            if (!res.ok){
+                const err = await res.json().catch(()=>({}));
+                alert(err.error || 'Could not post comment.');
+                return;
+            }
+            commentInput.value = '';
+        } catch(e){
+            alert('Could not post comment.');
+        } finally {
+            commentSendBtn.disabled = commentInput.value.trim().length === 0;
+
+        }
+    }
+
+
+
+    commentInput.addEventListener('input', () => {
+        commentSendBtn.disabled = commentInput.value.trim().length === 0;
+    });
+
+    
+    commentSendBtn.addEventListener('click', postComment);
+    commentInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter'){ e.preventDefault(); postComment(); }
+    });
+
+    // live updates for anyone with the drawer open
+    socket.on('new_comment', (comment) => {
+        if (comment.room_id !== currentRoomId) return;
+        addCommentToList(comment);
+        updateCommentCount(commentList.querySelectorAll('.comment-item').length);
+    });
+
+
 
 
 

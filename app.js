@@ -9,6 +9,9 @@ const io = new Server(server);
 
 require('dotenv').config();
 
+const nodemailer = require('nodemailer');
+
+
 const { initializeApp, cert } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
 
@@ -55,9 +58,76 @@ async function verifyFirebaseToken(req, res, next) {
 const { createClient } = require('@supabase/supabase-js');
 
 const supabase = createClient(
+
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+
+); 
+
+
+const mailTransporter = nodemailer.createTransport({
+
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT || 587),
+  secure: process.env.SMTP_SECURE === 'true',
+
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS
+
+  }
+});
+
+async function notifyDebatersOfComment(roomId, commentMessage) {
+
+    const { data: match, error } = await supabase
+        .from('past_matches')
+        .select('thesis, creator_profile_id, challenger_profile_id')
+        .eq('room_id', roomId)
+        .maybeSingle();
+
+    if (error || !match) return;
+
+    const profileIds = [match.creator_profile_id, match.challenger_profile_id].filter(Boolean);
+    if (profileIds.length === 0) return;
+
+    const { data: profiles, error: profErr } = await supabase
+        .from('profiles')
+        .select('id, email, username')
+        .in('id', profileIds);
+
+    if (profErr || !profiles) return;
+
+    const matchUrl = `${process.env.APP_BASE_URL || 'https://waater-yey2.onrender.com'}/live?match=${roomId}&replay=1`;
+
+    const debaterList = profiles
+        .filter(p => p.email)
+        .map(p => `<li>${p.username || 'Unknown'} — <a href="mailto:${p.email}">${p.email}</a></li>`)
+        .join('');
+
+    if (!debaterList) return; // no emails to report
+
+    try {
+        await mailTransporter.sendMail({
+            from: process.env.FROM_EMAIL || '"Waater" <onboarding@resend.dev>',
+            to: process.env.MY_EMAIL, // your own inbox
+            subject: `New comment on: ${match.thesis}`,
+            html: `
+                <p>New comment on debate "<strong>${match.thesis}</strong>":</p>
+                <blockquote style="border-left:3px solid #6d5dfc;margin:12px 0;padding-left:12px;color:#333;">${commentMessage}</blockquote>
+                <p><a href="${matchUrl}">View the debate</a></p>
+                <p>Debaters to notify:</p>
+                <ul>${debaterList}</ul>
+            `
+        });
+    } catch (mailErr) {
+        console.error('Failed to send comment notification email:', mailErr);
+    }
+}
+
+
+
+
 
 // .not('ended_at', 'is', null)
 
@@ -332,43 +402,67 @@ app.get('/match/:roomId/engagement', async (req, res) => {
 });
 
 
-app.get('/match/:roomId/comments', async (req, res) => {
-    const { roomId } = req.params;
-
-    const { data, error } = await supabase
-        .from('match_comments')
-        .select('*')
-        .eq('room_id', roomId)
-        .order('created_at', { ascending: true });
-
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data || []);
-
-});
-
-app.post('/match/:roomId/comments', express.json(), async (req, res) => {
+app.post('/match/:roomId/comments', express.json(), verifyFirebaseToken, async (req, res) => {
 
     const { roomId } = req.params;
-    const userId = req.cookies.anonId;
-
     const message = (req.body?.message || '').trim();
 
     if (!message) return res.status(400).json({ error: 'Comment cannot be empty' });
-    
     if (message.length > 500) return res.status(400).json({ error: 'Comment too long' });
+
+    const { data: profile, error: profErr } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .eq('firebase_uid', req.firebaseUser.uid)
+        .maybeSingle();
+
+    if (profErr) return res.status(500).json({ error: profErr.message });
+    if (!profile) return res.status(403).json({ error: 'Please finish setting up your profile before commenting.' });
 
     const { data, error } = await supabase
         .from('match_comments')
-        .insert({ room_id: roomId, user_id: userId, message })
+        .insert({
+            room_id: roomId,
+            user_id: req.firebaseUser.uid,
+            profile_id: profile.id,
+            message
+        })
         .select()
         .single();
 
     if (error) return res.status(500).json({ error: error.message });
 
-    io.to(roomId).emit('new_comment', data);
+    const enriched = { ...data, profiles: { username: profile.username, avatar_url: profile.avatar_url } };
 
-    res.json(data);
+    io.to(roomId).emit('new_comment', enriched);
+
+    notifyDebatersOfComment(roomId, message).catch(e => console.error('notify error', e));
+
+    res.json(enriched);
 });
+
+
+
+
+app.get('/match/:roomId/comments', async (req, res) => {
+
+    const { roomId } = req.params;
+
+    const { data, error } = await supabase
+
+        .from('match_comments')
+        .select('*, profiles(username, avatar_url)')
+
+        .eq('room_id', roomId)
+        .order('created_at', { ascending: true });
+
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    res.json(data || []);
+    
+});
+
 
 
 
