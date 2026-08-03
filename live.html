@@ -1075,81 +1075,220 @@
     /* ---------------- VS INTRO SCREEN ---------------- */
 
 
-    .vs-overlay{
-        position:fixed; inset:0;
-        background:radial-gradient(circle at 50% 40%, #1b2333, #0a0c14 75%);
-        display:flex; align-items:center; justify-content:center;
-        z-index:3000;
+    /* ---------------- VS INTRO SCREEN ---------------- */
+.vs-overlay{
+    position:fixed; inset:0;
+    background:radial-gradient(circle at 50% 35%, #1b2333, #0a0c14 75%);
+    display:flex; align-items:center; justify-content:center;
+    z-index:3000;
+    opacity:0;
+    animation:vsFadeIn .4s ease-out forwards;
+}
+.vs-panel{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:28px;
+    padding:0 24px;
+    width:100%;
+    max-width:520px;
+}
+.vs-stage{
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    gap:28px;
+    width:100%;
+}
+.vs-card{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+    width:150px;
+    opacity:0;
+    transform:translateY(20px);
+    animation:vsCardIn .5s cubic-bezier(.34,1.56,.64,1) forwards;
+}
+.vs-card.right{ animation-delay:.15s; }
+
+.vs-avatar-ring{
+
+    width:92px; height:92px;
+
+    border-radius:50%;
+    padding:3px;
+
+    background:linear-gradient(135deg, var(--ring-color, #6d5dfc), #46c2ff);
+
+    box-shadow:0 0 30px rgba(70,194,255,.3);
+    overflow:hidden
+
+}
+
+
+.vs-avatar-ring img{
+    width:100%; height:100%;
+    border-radius:50%;
+    object-fit:cover;
+    display:block;
+    background:#1b2333;
+    border:3px solid #0a0c14;
+}
+.vs-username{
+    font-weight:800;
+    font-size:1rem;
+    color:#fff;
+    text-align:center;
+    max-width:150px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+.vs-rank-pill{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    font-size:.68rem;
+    font-weight:800;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    color:#0a0c14;
+    background:var(--rank-color, #9ca3af);
+    padding:4px 11px;
+    border-radius:999px;
+}
+.vs-you-tag{
+    font-size:.62rem;
+    font-weight:800;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:#6b7280;
+}
+.vs-middle-label{
+    font-size:1.6rem;
+    font-weight:900;
+    background:linear-gradient(135deg,#6d5dfc,#46c2ff);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    letter-spacing:.05em;
+    margin-top:24px;
+    opacity:0;
+    animation:vsCardIn .5s .3s cubic-bezier(.34,1.56,.64,1) forwards;
+}
+
+    /* ---- points comparison bar (FC Mobile style) ---- */
+
+
+    .vs-points-compare{
+
+        width:100%;
         opacity:0;
-        animation:vsFadeIn .4s ease-out forwards;
+        animation:vsCardIn .5s .45s cubic-bezier(.34,1.56,.64,1) forwards;
+
     }
-    .vs-stage{
+
+    .vs-points-labels{
+
         display:flex;
-        align-items:center;
-        gap:36px;
-        padding:0 24px;
+        justify-content:space-between;
+        align-items:baseline;
+        margin-bottom:8px;
+
     }
-    .vs-card{
+
+    .vs-points-num{
+
+        font-size:1.4rem;
+        font-weight:900;
+        color:#fff;
+
+    }
+
+    .vs-points-num.dim{ color:#6b7280; }
+
+    .vs-points-sub{
+
+        font-size:.65rem;
+        font-weight:700;
+        letter-spacing:.08em;
+        text-transform:uppercase;
+        color:#6b7280;
+        text-align:center;
+
+    }
+
+    .vs-points-track{
+
+        position:relative;
+        height:10px;
+        border-radius:999px;
+        background:#1f2635;
+        overflow:hidden;
         display:flex;
-        flex-direction:column;
-        align-items:center;
-        gap:10px;
-        width:180px;
+
+    }
+
+    .vs-points-fill-left{
+
+        height:100%;
+        background:linear-gradient(90deg,#46c2ff,#6d5dfc);
+        transition:width .8s cubic-bezier(.4,0,.2,1);
+
+    }
+
+    .vs-points-fill-right{
+
+        height:100%;
+        background:linear-gradient(90deg,#ef4444,#f59e0b);
+        transition:width .8s cubic-bezier(.4,0,.2,1);
+        margin-left:auto;
+
+    }
+
+    .vs-spinner-wrap{
+
+        display:flex;
+        justify-content:center;
+
+        margin-top:22px;
         opacity:0;
-        transform:translateY(20px);
-        animation:vsCardIn .5s cubic-bezier(.34,1.56,.64,1) forwards;
+        animation:vsCardIn .5s .55s cubic-bezier(.34,1.56,.64,1) forwards;
+
     }
-    .vs-card.right{ animation-delay:.15s; }
-    .vs-avatar-ring{
-        width:96px; height:96px;
+
+    .vs-spinner{
+
+        width:34px;
+        height:34px;
+
         border-radius:50%;
-        padding:3px;
-        background:linear-gradient(135deg,#6d5dfc,#46c2ff);
-        box-shadow:0 0 30px rgba(70,194,255,.35);
+        border:3px solid rgba(255,255,255,.15);
+
+        border-top-color:#46c2ff;
+
+        border-right-color:#6d5dfc;
+        animation:vsSpin .8s linear infinite;
+
     }
-    .vs-avatar-ring img{
-        width:100%; height:100%;
-        border-radius:50%;
-        object-fit:cover;
-        display:block;
-        background:#1b2333;
-        border:3px solid #0a0c14;
+
+    @keyframes vsSpin{
+
+        to{ transform:rotate(360deg); }
+
     }
-    .vs-username{ font-weight:800; font-size:1.05rem; color:#fff; }
-    .vs-rank{
-        font-size:.7rem; font-weight:700;
-        letter-spacing:.06em; text-transform:uppercase;
-        color:#46c2ff;
-        background:rgba(70,194,255,.12);
-        border:1px solid rgba(70,194,255,.3);
-        padding:3px 10px; border-radius:999px;
-    }
-    .vs-points{ font-size:.78rem; color:#9ca3af; font-weight:600; }
-    .vs-you-tag{
-        font-size:.65rem; font-weight:800; letter-spacing:.08em;
-        color:#22c55e; text-transform:uppercase;
-    }
-    .vs-middle{
-        display:flex; flex-direction:column; align-items:center; gap:6px;
-        opacity:0; animation:vsCardIn .5s .3s cubic-bezier(.34,1.56,.64,1) forwards;
-    }
-    .vs-middle .vs-text{
-        font-size:2.2rem; font-weight:900;
-        background:linear-gradient(135deg,#6d5dfc,#46c2ff);
-        -webkit-background-clip:text; background-clip:text; color:transparent;
-        letter-spacing:.05em;
-    }
+
+
     @keyframes vsFadeIn{ to{ opacity:1; } }
     @keyframes vsCardIn{ to{ opacity:1; transform:translateY(0); } }
+
     .vs-overlay.closing{ animation:vsFadeOut .35s ease-in forwards; }
+
     @keyframes vsFadeOut{ to{ opacity:0; } }
 
-    @media (max-width:600px){
-        .vs-stage{ gap:18px; }
-        .vs-card{ width:130px; }
-        .vs-avatar-ring{ width:76px; height:76px; }
-        .vs-middle .vs-text{ font-size:1.6rem; }
-    }
+
+
+
+
 
 
 
@@ -1238,6 +1377,15 @@
             height:40px;
 
         }
+
+        .vs-stage{ gap:16px; }
+        .vs-card{ width:120px; }
+
+        .vs-avatar-ring{ width:72px; height:72px; }
+        .vs-username{ font-size:.88rem; max-width:120px; }
+
+        .vs-middle-label{ font-size:1.3rem; margin-top:18px; }
+
 
     }
 
@@ -1562,65 +1710,120 @@
 
     socket.on('match_players', (data) => {
 
+        const vsKey = `vsShown_${roomId}`;
+
+        if (sessionStorage.getItem(vsKey)) return; // already shown this session for this match
+
+        sessionStorage.setItem(vsKey, '1');
+
         showVsIntro(data.you, data.opponent);
 
     });
+
+    const RANK_COLORS = {
+
+        'Amateur':     '#9ca3af',
+        'Pro':         '#3b82f6',
+        'Master':      '#a78bfa',
+        'Legendary':   '#f59e0b',
+        'Grandmaster': '#facc15'
+    };
+
 
     function showVsIntro(you, opponent) {
 
         const overlay = document.createElement('div');
 
         overlay.className = 'vs-overlay';
+
         overlay.id = 'vsOverlay';
 
         const fallbackAvatar = 'https://api.dicebear.com/7.x/identicon/svg?seed=';
 
+        const youColor = RANK_COLORS[you.rank] || '#9ca3af';
+        const oppColor = RANK_COLORS[opponent.rank] || '#9ca3af';
+
+        const youPts = you.points ?? 0;
+        const oppPts = opponent.points ?? 0;
+
+        const total = youPts + oppPts;
+        const youPct = total === 0 ? 50 : Math.round((youPts / total) * 100);
+
+        const oppPct = 100 - youPct;
+
         overlay.innerHTML = `
-            <div class="vs-stage">
-                <div class="vs-card left">
-                    <span class="vs-you-tag">You</span>
 
-                    <div class="vs-avatar-ring">
-                        <img src="${you.avatar_url || fallbackAvatar + encodeURIComponent(you.username || 'you')}" alt="">
+            <div class="vs-panel">
+                <div class="vs-stage">
+                    <div class="vs-card left">
 
-                    </div>
-                    <div class="vs-username">${escapeHtml(you.username || 'You')}</div>
-                    <div class="vs-rank">${escapeHtml(you.rank || 'Unranked')}</div>
-                    <div class="vs-points">${you.points ?? 0} drop points</div>
+                        <span class="vs-you-tag">You</span>
 
-                </div>
+                        <div class="vs-avatar-ring" style="--ring-color:${youColor}">
+                            <img src="${you.avatar_url || fallbackAvatar + encodeURIComponent(you.username || 'you')}" alt="">
 
-                <div class="vs-middle">
-
-                    <div class="vs-text">VS</div>
-
-                </div>
-
-                <div class="vs-card right">
-
-                    <span class="vs-you-tag" style="color:#ef4444;">Opponent</span>
-
-                    <div class="vs-avatar-ring">
-                        <img src="${opponent.avatar_url || fallbackAvatar + encodeURIComponent(opponent.username || 'opponent')}" alt="">
+                        </div>
+                        <div class="vs-username">${escapeHtml(you.username || 'You')}</div>
+                        <div class="vs-rank-pill" style="--rank-color:${youColor}">${escapeHtml(you.rank || 'Unranked')}</div>
 
                     </div>
 
-                    <div class="vs-username">${escapeHtml(opponent.username || 'Opponent')}</div>
-                    <div class="vs-rank">${escapeHtml(opponent.rank || 'Unranked')}</div>
+                    <div class="vs-middle-label">VS</div>
 
-                    <div class="vs-points">${opponent.points ?? 0} drop points</div>
+
+                    <div class="vs-card right">
+                        <span class="vs-you-tag">Opponent</span>
+
+                        <div class="vs-avatar-ring" style="--ring-color:${oppColor}">
+                            <img src="${opponent.avatar_url || fallbackAvatar + encodeURIComponent(opponent.username || 'opponent')}" alt="">
+
+                        </div>
+                        <div class="vs-username">${escapeHtml(opponent.username || 'Opponent')}</div>
+                        <div class="vs-rank-pill" style="--rank-color:${oppColor}">${escapeHtml(opponent.rank || 'Unranked')}</div>
+
+                    </div>
+                </div>
+
+                <div class="vs-points-compare">
+
+                    <div class="vs-points-labels">
+                        <span class="vs-points-num">${youPts}</span>
+                        <span class="vs-points-sub">Drop Points</span>
+                        <span class="vs-points-num dim">${oppPts}</span>
+
+                    </div>
+
+
+                    <div class="vs-points-track">
+
+                        <div class="vs-points-fill-left" style="width:${youPct}%"></div>
+                        <div class="vs-points-fill-right" style="width:${oppPct}%"></div>
+
+                    </div>
 
                 </div>
+
+                <div class="vs-spinner-wrap">
+
+                    <div class="vs-spinner"></div>
+                    
+                </div>
+
+
             </div>
         `;
 
         document.body.appendChild(overlay);
 
         setTimeout(() => {
+
             overlay.classList.add('closing');
             setTimeout(() => overlay.remove(), 350);
-        }, 20000);
+
+        }, 4000); // auto-close after 4 seconds
+
     }
+
 
 
 
