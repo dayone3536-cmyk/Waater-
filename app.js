@@ -86,17 +86,35 @@ async function notifyDebatersOfComment(roomId, commentMessage) {
         .eq('room_id', roomId)
         .maybeSingle();
 
-    if (error || !match) return;
+    if (error || !match) {
+
+        console.log('[email] Bailing: no match found or error', { roomId, error })
+        return;
+
+    };
 
     const profileIds = [match.creator_profile_id, match.challenger_profile_id].filter(Boolean);
-    if (profileIds.length === 0) return;
+
+    if (profileIds.length === 0) {
+
+        console.log('[email] Bailing: no profile IDs on this match', { roomId, match })
+        return;
+
+    };
 
     const { data: profiles, error: profErr } = await supabase
         .from('profiles')
         .select('id, email, username')
         .in('id', profileIds);
 
-    if (profErr || !profiles) return;
+    if (profErr || !profiles) {
+
+        console.log('[email] Bailing: profile lookup failed', { profErr, profileIds });
+        return;
+
+    };
+
+    console.log('[email] Profiles found:', profiles);
 
     const matchUrl = `${process.env.APP_BASE_URL || 'https://waater-yey2.onrender.com'}/live?match=${roomId}&replay=1`;
 
@@ -105,7 +123,14 @@ async function notifyDebatersOfComment(roomId, commentMessage) {
         .map(p => `<li>${p.username || 'Unknown'} — <a href="mailto:${p.email}">${p.email}</a></li>`)
         .join('');
 
-    if (!debaterList) return; // no emails to report
+    if (!debaterList) {
+
+        console.log('[email] Bailing: no debater has an email on file', { profiles });
+        return;
+
+    }
+    
+    // no emails to report
 
     try {
         await mailTransporter.sendMail({

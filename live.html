@@ -3757,9 +3757,11 @@ function showClipModal(canvas, topicText) {
                 },
                 body: JSON.stringify({ message })
             });
+            
             if (!res.ok){
                 const err = await res.json().catch(()=>({}));
-                alert(err.error || 'Could not post comment.');
+
+                alert(err.error || 'Could not send comment.');
                 return;
             }
             commentInput.value = '';
@@ -3774,11 +3776,14 @@ function showClipModal(canvas, topicText) {
 
 
     commentInput.addEventListener('input', () => {
+
         commentSendBtn.disabled = commentInput.value.trim().length === 0;
+        
     });
 
     
     commentSendBtn.addEventListener('click', postComment);
+
     commentInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter'){ e.preventDefault(); postComment(); }
     });
