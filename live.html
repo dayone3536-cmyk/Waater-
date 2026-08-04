@@ -1332,8 +1332,10 @@
     .comment-fab-row{
 
         display:flex;
-        justify-content:center;
-        padding:10px 0 4px;
+        justify-content : flex-end ;
+
+        padding:10px 16px 4px;
+
         background:#151924;
 
         }
@@ -1573,6 +1575,24 @@
 </div>
 
 
+<div class="comment-fab-row">
+
+        <button class="comment-fab" id="commentFabBtn" type="button" title="Comments">
+
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+
+            </svg>
+
+            <span class="comment-count-badge" id="commentCountBadge" style="display:none;">0</span>
+
+        </button>
+
+    </div>
+
+
+
 <div class="bottom-bar">
 
     <div class="input-pill">
@@ -1615,22 +1635,15 @@
 
 </div>
 
-   <div class="comment-fab-row">
 
-        <button class="comment-fab" id="commentFabBtn" type="button" title="Comments">
 
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+   
 
-                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
-            </svg>
 
-            <span class="comment-count-badge" id="commentCountBadge" style="display:none;">0</span>
-
-        </button>
-    </div>
 
 
     <div class="voting-bar" id="votingBar">
+
         <div class="momentum-row">
             <button class="vote-avatar-btn left-side" id="voteLeftBtn">
                 <div class="ring"></div>
@@ -3694,17 +3707,20 @@ function showClipModal(canvas, topicText) {
 
     function addCommentToList(c){
 
-        const emptyEl = commentList.querySelector('.comment-empty');
+        // dedupe: if we already rendered this comment (by id), skip
 
+        if (c.id && commentList.querySelector(`[data-comment-id="${c.id}"]`)) return;
+
+        const emptyEl = commentList.querySelector('.comment-empty');
         if (emptyEl) emptyEl.remove();
 
         const item = document.createElement('div');
+
         item.className = 'comment-item';
+        if (c.id) item.dataset.commentId = c.id;
 
         const profile = c.profiles || {};
-
         const username = profile.username || 'Unknown';
-
         const avatarUrl = profile.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(username)}`;
 
         const time = new Date(c.created_at).toLocaleString([], { hour:'2-digit', minute:'2-digit', month:'short', day:'numeric' });
@@ -3712,6 +3728,7 @@ function showClipModal(canvas, topicText) {
         item.innerHTML = `
 
             <div class="comment-header">
+
                 <img class="comment-avatar" src="${avatarUrl}" alt="">
                 <span class="comment-username">${escapeHtml(username)}</span>
 
@@ -3724,6 +3741,8 @@ function showClipModal(canvas, topicText) {
 
         commentList.appendChild(item);
     }
+
+
 
     function updateCommentCount(n){
         if (n > 0){
@@ -3742,36 +3761,61 @@ function showClipModal(canvas, topicText) {
         if (!(await window.requireLogin())) return;
 
         const idToken = await window.getIdToken();
+
         if (!idToken) {
             alert('Please sign in to comment.');
             return;
         }
 
         commentSendBtn.disabled = true;
+
         try {
             const res = await fetch(`/match/${currentRoomId}/comments`, {
+
                 method:'POST',
                 headers:{
                     'Content-Type':'application/json',
                     'Authorization': `Bearer ${idToken}`
+
                 },
+
                 body: JSON.stringify({ message })
+
             });
-            
+
             if (!res.ok){
+
                 const err = await res.json().catch(()=>({}));
 
                 alert(err.error || 'Could not send comment.');
                 return;
+
             }
+
+            const newComment = await res.json(); // <-- server must return the created comment
+
             commentInput.value = '';
+
+            // render instantly, don't wait for the socket broadcast
+
+            addCommentToList(newComment);
+            updateCommentCount(commentList.querySelectorAll('.comment-item').length);
+
+            commentList.scrollTop = commentList.scrollHeight;
+
         } catch(e){
+
             alert('Could not post comment.');
+
         } finally {
+
             commentSendBtn.disabled = commentInput.value.trim().length === 0;
 
         }
     }
+
+
+
 
 
 
@@ -3789,10 +3833,14 @@ function showClipModal(canvas, topicText) {
     });
 
     // live updates for anyone with the drawer open
+
     socket.on('new_comment', (comment) => {
+
         if (comment.room_id !== currentRoomId) return;
+
         addCommentToList(comment);
         updateCommentCount(commentList.querySelectorAll('.comment-item').length);
+
     });
 
 
