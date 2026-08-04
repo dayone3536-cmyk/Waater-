@@ -1340,7 +1340,7 @@
 
         }
 
-        .comment-fab{
+    .comment-fab{
 
         position:relative;
         display:flex;
@@ -1387,29 +1387,240 @@
         }
 
 
-        .like-fab.liked{
+    .like-fab.liked{
 
-            background: linear-gradient(135deg, #22c55e, #16a34a);
-            box-shadow: 0 4px 16px rgba(34,197,94,.45);
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        box-shadow: 0 4px 16px rgba(34,197,94,.45);
 
-        }
+    }
 
-        .dislike-fab.disliked{
+    .dislike-fab.disliked{
 
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-            box-shadow: 0 4px 16px rgba(239,68,68,.45);
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        box-shadow: 0 4px 16px rgba(239,68,68,.45);
 
-        }
+    }
 
-        .comment-fab.reacting{
+    .comment-fab.reacting{
 
-            transform: scale(.9);
+        transform: scale(.9);
 
-        }
+    }
+
+    .fab-icon{
+        width: 23px;
+        height: 23px;
+        color: rgba(255,255,255,.85);
+        transition: transform .2s ease, color .2s ease;
+    }
+
+    .like-fab.liked .fab-icon{
+
+        fill: #ffffff;
+        stroke: #ffffff;
+        transform: scale(1.08);
+
+    }
+
+    .dislike-fab.disliked .fab-icon{
+
+        fill: #ffffff;
+        stroke: #ffffff;
+        transform: scale(1.08);
+
+    }
+
+    .comment-fab{
+
+        position: relative;
+        overflow: visible;
+
+    }
+
+    @keyframes fabLikePop{
+
+        0%   { transform: scale(1); }
+        35%  { transform: scale(1.35); }
+        55%  { transform: scale(0.9); }
+        75%  { transform: scale(1.12); }
+        100% { transform: scale(1); }
+
+    }
+
+    .comment-fab.like-burst{
+
+        animation: fabLikePop 0.5s cubic-bezier(.34, 1.56, .64, 1);
+
+    }
+
+    .comment-fab.like-burst .fab-icon{
+
+        filter: drop-shadow(0 0 6px #22c55eaa);
+
+    }
+
+    @keyframes fabDislikeShake{
+
+        0%, 100% { transform: rotate(0deg); }
+        15% { transform: rotate(-12deg) translateX(-3px); }
+        30% { transform: rotate(10deg) translateX(3px); }
+
+        45% { transform: rotate(-8deg) translateX(-2px); }
+        60% { transform: rotate(6deg) translateX(2px); }
+
+        75% { transform: rotate(-3deg); }
+
+    }
+
+    .comment-fab.dislike-burst{
+        animation: fabDislikeShake 0.5s ease;
+    }
+
+    .comment-fab.dislike-burst .fab-icon{
+
+        filter: drop-shadow(0 0 6px #ef4444aa);
+
+    }
+
+
+    .fab-particle{
+
+        position: absolute;
+        top: -6px;
+        left: 50%;
+
+        pointer-events: none;
+        font-size: 16px;
+
+        z-index: 20;
+        will-change: transform, opacity;
+
+    }
+
+    @keyframes fabParticleUp{
+        0%   { transform: translate(-50%, 0) scale(0.5) rotate(0deg); opacity: 1; }
+        70%  { opacity: 1; }
+        100% { transform: translate(calc(-50% + var(--drift)), -70px) scale(1.15) rotate(var(--spin)); opacity: 0; }
+    }
+
+    @keyframes fabParticleDown{
+        0%   { transform: translate(-50%, 0) scale(0.6) rotate(0deg); opacity: 1; }
+        70%  { opacity: 1; }
+        100% { transform: translate(calc(-50% + var(--drift)), 55px) scale(1.05) rotate(var(--spin)); opacity: 0; }
+    }
+
+    .fab-particle.up{
+        animation: fabParticleUp 1.2s ease-out forwards;
+    }
+
+    .fab-particle.down{
+        animation: fabParticleDown 1.1s ease-in forwards;
+    }
+
+
+    .comment-fab-row{
+        display:flex;
+        align-items:center;
+        justify-content:flex-end;
+        gap:12px;
+        padding:12px 16px 6px;
+        background:#151924;
+    }
+
+    .reaction-group{
+        display:flex;
+        align-items:center;
+        background:#1b2333;
+        border:1px solid rgba(255,255,255,0.08);
+        border-radius:999px;
+        padding:4px;
+    }
+
+    .reaction-divider{
+        width:1px;
+        height:22px;
+        background:rgba(255,255,255,0.1);
+        flex-shrink:0;
+    }
+
+    .reaction-btn{
+        display:flex;
+        align-items:center;
+        gap:7px;
+        background:transparent;
+        border:none;
+        cursor:pointer;
+        padding:9px 16px;
+        border-radius:999px;
+        color:#9ca3af;
+        font-weight:700;
+        font-size:.85rem;
+        font-family:Inter,system-ui,sans-serif;
+        transition:background .2s ease, color .2s ease;
+    }
+
+    .reaction-btn svg{
+        width:19px;
+        height:19px;
+        flex-shrink:0;
+    }
+
+    .reaction-count{
+        min-width:8px;
+        font-variant-numeric:tabular-nums;
+    }
+
+    .reaction-btn:hover{
+        background:rgba(255,255,255,0.06);
+        color:#e5e7eb;
+    }
+
+    .reaction-btn.like.active{
+        color:#22c55e;
+        background:rgba(34,197,94,.14);
+    }
+    .reaction-btn.like.active svg{
+        fill:#22c55e;
+    }
+
+    .reaction-btn.dislike.active{
+        color:#ef4444;
+        background:rgba(239,68,68,.14);
+    }
+    .reaction-btn.dislike.active svg{
+        fill:#ef4444;
+    }
+
+    @keyframes reactionPop{
+        0%   { transform:scale(1); }
+        40%  { transform:scale(1.18); }
+        100% { transform:scale(1); }
+    }
+
+    .reaction-btn.pop{
+        animation:reactionPop .28s ease;
+    }
+
+
+
 
 
 
     @media (max-width: 600px){
+
+        .comment-fab-row{
+
+            padding:10px 12px 4px;
+
+        }
+
+        .reaction-btn{
+
+            padding:8px 12px;
+            font-size:.8rem;
+
+        }
+
 
         .share-btn{
             padding:0;
@@ -1596,35 +1807,39 @@
 
 </div>
 
+
+
 <div class="comment-fab-row">
 
-    <button class="comment-fab like-fab" id="likeFabBtn" type="button" title="Like">
+    <div class="reaction-group">
 
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button class="reaction-btn like" id="likeFabBtn" type="button" title="Like">
 
-            <path d="M7 10v11M2 13v6a2 2 0 002 2h12.5a2 2 0 002-1.6l1.4-7A2 2 0 0017.5 10H13l1-5a2 2 0 00-2-2.4L11 3 7 10H2z"></path>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M7 22V11M2 13v7a2 2 0 002 2h12.5a2.5 2.5 0 002.45-1.96l1.4-6.5A2.5 2.5 0 0017.9 11H14l1-6a2 2 0 00-2-2.4L12 3 7 11H2z"></path>
+            </svg>
 
-        </svg>
+            <span class="reaction-count" id="likeCountText"></span>
 
-        <span class="comment-count-badge" id="likeCountBadge" style="display:none;">0</span>
+        </button>
 
-    </button>
+        <div class="reaction-divider"></div>
 
-    <button class="comment-fab dislike-fab" id="dislikeFabBtn" type="button" title="Dislike">
+        <button class="reaction-btn dislike" id="dislikeFabBtn" type="button" title="Dislike">
 
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M17 14V3M22 11v-6a2 2 0 00-2-2H7.5a2 2 0 00-2 1.6l-1.4 7A2 2 0 006.5 14H11l-1 5a2 2 0 002 2.4L13 21l4-7h5z"></path>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 2v11M22 11V4a2 2 0 00-2-2H7.5a2.5 2.5 0 00-2.45 1.96l-1.4 6.5A2.5 2.5 0 006.1 13H10l-1 6a2 2 0 002 2.4L12 21l5-8h5z"></path>
 
-        </svg>
+            </svg>
 
-        <span class="comment-count-badge" id="dislikeCountBadge" style="display:none;">0</span>
+            <span class="reaction-count" id="dislikeCountText"></span>
 
-    </button>
+        </button>
+    </div>
 
     <button class="comment-fab" id="commentFabBtn" type="button" title="Comments">
 
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-
             <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
 
         </svg>
@@ -3692,34 +3907,64 @@ function showClipModal(canvas, topicText) {
     const commentCountBadge = document.getElementById('commentCountBadge');
 
     const likeFabBtn = document.getElementById('likeFabBtn');
-    const dislikeFabBtn = document.getElementById('dislikeFabBtn');
-    const likeCountBadge = document.getElementById('likeCountBadge');
+    const dislikeFabBtn = document.getElementById('dislikeFabBtn')
 
-    const dislikeCountBadge = document.getElementById('dislikeCountBadge');
+    const likeCountText = document.getElementById('likeCountText');
+
+    const dislikeCountText = document.getElementById('dislikeCountText');
+
+
+
 
     let myReaction = null;
 
-    function updateReactionBadge(el, count){
 
-        if (count > 0){
-            el.style.display = 'flex';
-            el.textContent = count > 99 ? '99+' : count;
-        } else {
-            el.style.display = 'none';
+    function updateReactionCount(el, count){
 
-        }
-    }
-
-    function applyReactionState(likeCount, dislikeCount, reaction){
-
-        myReaction = reaction;
-        likeFabBtn.classList.toggle('liked', reaction === 'like');
-        dislikeFabBtn.classList.toggle('disliked', reaction === 'dislike');
-
-        updateReactionBadge(likeCountBadge, likeCount);
-        updateReactionBadge(dislikeCountBadge, dislikeCount);
+        el.textContent = count > 0 ? (count > 99 ? '99+' : count) : '';
 
     }
+
+function reactionPop(btn){
+
+    btn.classList.remove('pop');
+    void btn.offsetWidth;
+    btn.classList.add('pop');
+
+    btn.addEventListener('animationend', () => btn.classList.remove('pop'), { once: true });
+
+}
+
+function applyReactionState(likeCount, dislikeCount, reaction){
+
+
+    const wasLiked = myReaction === 'like';
+    const wasDisliked = myReaction === 'dislike';
+
+    myReaction = reaction;
+    likeFabBtn.classList.toggle('active', reaction === 'like');
+
+    dislikeFabBtn.classList.toggle('active', reaction === 'dislike');
+
+    updateReactionCount(likeCountText, likeCount);
+
+    updateReactionCount(dislikeCountText, dislikeCount);
+
+    if (reaction === 'like' && !wasLiked){
+        reactionPop(likeFabBtn);
+    }
+
+    if (reaction === 'dislike' && !wasDisliked){
+        reactionPop(dislikeFabBtn);
+    }
+    
+}
+
+
+
+    
+
+
 
     function loadEngagement(roomId){
 
