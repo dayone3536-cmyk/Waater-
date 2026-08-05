@@ -1737,21 +1737,9 @@
 
     <div class="header-actions">
 
-        <button class="share-btn" id="shareBtn" type="button">
+        
 
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 
-                <circle cx="18" cy="5" r="3"></circle>
-                <circle cx="6" cy="12" r="3"></circle>
-                <circle cx="18" cy="19" r="3"></circle>
-
-                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-
-            </svg>
-            <span class="share-btn-label"></span>
-
-        </button>
 
         <button class="icon-btn" id="clipBtn" type="button" title="Clip">
 
@@ -1811,31 +1799,26 @@
 
 <div class="comment-fab-row">
 
-    <div class="reaction-group">
-
-        <button class="reaction-btn like" id="likeFabBtn" type="button" title="Like">
+    <button class="share-btn" id="shareBtn" type="button">
 
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M7 22V11M2 13v7a2 2 0 002 2h12.5a2.5 2.5 0 002.45-1.96l1.4-6.5A2.5 2.5 0 0017.9 11H14l1-6a2 2 0 00-2-2.4L12 3 7 11H2z"></path>
-            </svg>
 
-            <span class="reaction-count" id="likeCountText"></span>
+                <circle cx="18" cy="5" r="3"></circle>
+                <circle cx="6" cy="12" r="3"></circle>
+                <circle cx="18" cy="19" r="3"></circle>
 
-        </button>
-
-        <div class="reaction-divider"></div>
-
-        <button class="reaction-btn dislike" id="dislikeFabBtn" type="button" title="Dislike">
-
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M17 2v11M22 11V4a2 2 0 00-2-2H7.5a2.5 2.5 0 00-2.45 1.96l-1.4 6.5A2.5 2.5 0 006.1 13H10l-1 6a2 2 0 002 2.4L12 21l5-8h5z"></path>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
 
             </svg>
 
-            <span class="reaction-count" id="dislikeCountText"></span>
+            <span class="share-btn-label"></span>
 
         </button>
-    </div>
+
+
+
+
 
     <button class="comment-fab" id="commentFabBtn" type="button" title="Comments">
 
@@ -3906,113 +3889,25 @@ function showClipModal(canvas, topicText) {
     const commentSendBtn = document.getElementById('commentSendBtn');
     const commentCountBadge = document.getElementById('commentCountBadge');
 
-    const likeFabBtn = document.getElementById('likeFabBtn');
-    const dislikeFabBtn = document.getElementById('dislikeFabBtn')
-
-    const likeCountText = document.getElementById('likeCountText');
-
-    const dislikeCountText = document.getElementById('dislikeCountText');
-
-
-
-
-    let myReaction = null;
-
-
-    function updateReactionCount(el, count){
-
-        el.textContent = count > 0 ? (count > 99 ? '99+' : count) : '';
-
-    }
-
-function reactionPop(btn){
-
-    btn.classList.remove('pop');
-    void btn.offsetWidth;
-    btn.classList.add('pop');
-
-    btn.addEventListener('animationend', () => btn.classList.remove('pop'), { once: true });
-
-}
-
-function applyReactionState(likeCount, dislikeCount, reaction){
-
-
-    const wasLiked = myReaction === 'like';
-    const wasDisliked = myReaction === 'dislike';
-
-    myReaction = reaction;
-    likeFabBtn.classList.toggle('active', reaction === 'like');
-
-    dislikeFabBtn.classList.toggle('active', reaction === 'dislike');
-
-    updateReactionCount(likeCountText, likeCount);
-
-    updateReactionCount(dislikeCountText, dislikeCount);
-
-    if (reaction === 'like' && !wasLiked){
-        reactionPop(likeFabBtn);
-    }
-
-    if (reaction === 'dislike' && !wasDisliked){
-        reactionPop(dislikeFabBtn);
-    }
-    
-}
-
-
-
-    
 
 
 
     function loadEngagement(roomId){
 
         fetch(`/match/${roomId}/engagement`)
+
             .then(r => r.json())
 
             .then(e => {
+
                 updateCommentCount(e.comment_count || 0);
-                applyReactionState(e.like_count || 0, e.dislike_count || 0, e.myReaction || null);
 
             })
+
             .catch(() => {});
 
     }
-
-    async function handleFabReaction(reaction, btn){
-
-        if (!(await window.requireLogin())) return;
-
-        btn.classList.add('reacting');
-        setTimeout(() => btn.classList.remove('reacting'), 150);
-
-        try {
-
-            const res = await fetch(`/match/${currentRoomId}/react`, {
-
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reaction })
-
-            });
-
-            if (!res.ok) throw new Error('Request failed');
-
-            const data = await res.json();
-            applyReactionState(data.like_count, data.dislike_count, data.myReaction);
-
-
-        } catch (err) {
-            console.error('Reaction failed:', err);
-        }
-    }
-
-    likeFabBtn.addEventListener('click', () => handleFabReaction('like', likeFabBtn));
-
-    dislikeFabBtn.addEventListener('click', () => handleFabReaction('dislike', dislikeFabBtn));
-
-
+    
 
     let commentsLoadedFor = null;
 
