@@ -74,6 +74,7 @@
     }
 
     .avatar{
+
         width:55px;
         height:55px;
         border-radius:50%;
@@ -82,6 +83,10 @@
             #6d5dfc,
             #46c2ff
         );
+
+        object-fit:cover;
+        display:block;
+
     }
 
     .name{
@@ -438,6 +443,15 @@
         
 
     }
+
+    .ring-avatar{
+        width:100%;
+        height:100%;
+        border-radius:50%;
+        object-fit:cover;
+    }
+
+
 
     .vote-avatar-btn.left-side .ring{
         background:#000000;   /* matches your .left bubble */
@@ -1975,11 +1989,13 @@
 
     <div class="user-card">
 
-        <div class="avatar"></div>
+        <img class="avatar" id="debaterYouAvatar" src="" alt="">
 
         <div>
-            <div class="name">You</div>
-            <div class="role">Pro Position</div>
+
+            <div class="name" id="debaterYouName">You</div>
+
+            <div class="role" id="debaterYouRole">Pro Position</div>
         </div>
 
     </div>
@@ -1988,17 +2004,20 @@
 
     <div class="user-card">
 
-        <div class="avatar"></div>
+        <img class="avatar" id="debaterOppAvatar" src="" alt="">
 
         <div>
-            <div class="name">Opponent</div>
-            <div class="role">Against Position</div>
+            <div class="name" id="debaterOppName">Opponent</div>
+            <div class="role" id="debaterOppRole">Against Position</div>
 
         </div>
 
     </div>
 
 </div>
+
+
+
 
 
 <div id="chat" class="chat-container">
@@ -2048,7 +2067,7 @@
 <div class="reply-preview-bar" id="replyPreviewBar">
 
     <div class="reply-preview-accent"></div>
-    
+
     <div class="reply-preview-body">
 
         <span class="reply-preview-label" id="replyPreviewLabel">Replying to</span>
@@ -2117,8 +2136,11 @@
 
         <div class="momentum-row">
             <button class="vote-avatar-btn left-side" id="voteLeftBtn">
-                <div class="ring"></div>
+
+                <div class="ring"><img class="ring-avatar" id="voteLeftAvatar" src="" alt=""></div>
+
                 <span class="vote-pct" id="leftPct">50%</span>
+
             </button>
 
             <div class="momentum-bar">
@@ -2127,12 +2149,20 @@
             </div>
 
             <button class="vote-avatar-btn right-side" id="voteRightBtn">
-                <div class="ring"></div>
+
+                <div class="ring"><img class="ring-avatar" id="voteRightAvatar" src="" alt=""></div>
+
                 <span class="vote-pct" id="rightPct">50%</span>
             </button>
         </div>
+
         <div class="crowd-lean" id="crowdLean">Share to your friends and let them decide</div>
+
     </div>
+
+
+
+
 
     <div class="share-toast" id="shareToast"> Link copied! </div>
 
@@ -2561,9 +2591,17 @@
 
                 challenger: parts.challenger ? { username: parts.challenger.username, avatar_url: parts.challenger.avatar_url } : null
             };
+
+            populateDebaterUI();
+            
         } catch (e) {
             console.error('Failed to load participants:', e);
+
         }
+
+
+
+
 
         const votesRes = await fetch(`/past-matches/${roomId}/votes`);
         const tally = await votesRes.json();
@@ -3828,7 +3866,55 @@ function showClipModal(canvas, topicText) {
             applyIdentityToBubble(el, senderRole === 'creator' ? participants.creator : participants.challenger, senderRole);
 
         });
+
+        populateDebaterUI();
     });
+
+    function populateDebaterUI(){
+
+        const fallback = (seed) => 'https://api.dicebear.com/7.x/identicon/svg?seed=' + encodeURIComponent(seed);
+
+        const creatorAvatar = participants.creator?.avatar_url || fallback('creator');
+        const challengerAvatar = participants.challenger?.avatar_url || fallback('challenger');
+        const creatorName = participants.creator?.username || 'Pro';
+        const challengerName = participants.challenger?.username || 'Against';
+
+        // top debaters cards: "You" is whichever side matches this viewer's role
+        const youIsCreator = role === 'creator';
+        const youAvatar = youIsCreator ? creatorAvatar : (role === 'challenger' ? challengerAvatar : creatorAvatar);
+        const youName = youIsCreator ? creatorName : (role === 'challenger' ? challengerName : creatorName);
+        const oppAvatar = youIsCreator ? challengerAvatar : creatorAvatar;
+        const oppName = youIsCreator ? challengerName : creatorName;
+
+        const debaterYouAvatar = document.getElementById('debaterYouAvatar');
+        const debaterYouName = document.getElementById('debaterYouName');
+        const debaterOppAvatar = document.getElementById('debaterOppAvatar');
+        const debaterOppName = document.getElementById('debaterOppName');
+
+        if (role === 'creator' || role === 'challenger') {
+            if (debaterYouAvatar) debaterYouAvatar.src = youAvatar;
+            if (debaterYouName) debaterYouName.textContent = youName;
+            if (debaterOppAvatar) debaterOppAvatar.src = oppAvatar;
+            if (debaterOppName) debaterOppName.textContent = oppName;
+        } else {
+
+            // spectator: just show creator vs challenger as-is
+            if (debaterYouAvatar) debaterYouAvatar.src = creatorAvatar;
+            if (debaterYouName) debaterYouName.textContent = creatorName;
+            if (debaterOppAvatar) debaterOppAvatar.src = challengerAvatar;
+            if (debaterOppName) debaterOppName.textContent = challengerName;
+
+        }
+
+        // voting bar rings: left = against/challenger, right = pro/creator
+        const voteLeftAvatar = document.getElementById('voteLeftAvatar');
+        const voteRightAvatar = document.getElementById('voteRightAvatar');
+
+        if (voteLeftAvatar) voteLeftAvatar.src = challengerAvatar;
+        if (voteRightAvatar) voteRightAvatar.src = creatorAvatar;
+
+    }
+
 
 
 
