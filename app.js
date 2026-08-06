@@ -588,6 +588,8 @@ app.post('/invite/:code/redeem', async (req, res) => {
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
 
 // Check if the signed-in Firebase user already has a profile
+
+
 app.get('/api/profile', verifyFirebaseToken, async (req, res) => {
   const { data, error } = await supabase
     .from('profiles')
@@ -600,6 +602,8 @@ app.get('/api/profile', verifyFirebaseToken, async (req, res) => {
 });
 
 // Live username availability check
+
+
 app.get('/api/username-available', async (req, res) => {
   const username = (req.query.u || '').trim();
   if (!USERNAME_RE.test(username)) {
@@ -619,6 +623,7 @@ app.get('/api/username-available', async (req, res) => {
 // Create the profile
 
 app.post('/api/profile', express.json(), verifyFirebaseToken, async (req, res) => {
+
   const username = (req.body?.username || '').trim();
 
   if (!USERNAME_RE.test(username)) {
@@ -653,6 +658,38 @@ app.post('/api/profile', express.json(), verifyFirebaseToken, async (req, res) =
 });
 
 
+
+app.get('/past-matches/:roomId/participants', async (req, res) => {
+
+    const { data: match } = await supabase
+        .from('past_matches')
+
+        .select('creator_profile_id, challenger_profile_id')
+
+        .eq('room_id', req.params.roomId)
+        .maybeSingle();
+
+    if (!match) return res.json({ creator: null, challenger: null });
+
+    const ids = [match.creator_profile_id, match.challenger_profile_id].filter(Boolean);
+
+    const { data: profs } = await supabase
+
+        .from('profiles')
+
+        .select('id, username, avatar_url')
+
+        .in('id', ids);
+
+    const find = (id) => profs?.find(p => p.id === id) || null;
+
+    res.json({
+
+        creator: find(match.creator_profile_id),
+        challenger: find(match.challenger_profile_id)
+
+    });
+});
 
 
 
@@ -1440,6 +1477,16 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
             const creatorVs = toVsShape(creatorProfile);
             const challengerVs = toVsShape(challengerProfile);
 
+            socket.emit('match_identities', {
+
+                creator: { username: creatorProfile?.username || 'Guest', avatar_url: creatorProfile?.avatar_url || null },
+
+                challenger: { username: challengerProfile?.username || 'Guest', avatar_url: challengerProfile?.avatar_url || null }
+                
+            });
+
+
+
             if (role === 'creator') {
 
                 socket.emit('match_players', { you: creatorVs, opponent: challengerVs });
@@ -1643,17 +1690,13 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
 
 
 
-    // 2. Listen for 'send_argument' from your frontend Send button  const { data: matches, error } = await supabase
-    socket.on('send_argument', (data) => {
+    // 2. Listen for 'send_argument' from your frontend Send button  const { data: matches, error } = await supabase;
 
-        
+    socket.on('send_argument', (data) => {
 
         const match = activeMatches.find(m => m.roomId === data.roomId);
 
-
-
         if (!match) {
-
             return;
         }
 
@@ -1663,11 +1706,8 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
 
         else if (socket.id === match.challengerSocketId) senderRole = 'challenger';
 
-
         if (!senderRole) {
-
             return; // sender is a spectator, not a debater — reject
-
         }
 
         const message = typeof data.message === 'string' ? data.message.trim() : '';
@@ -1678,34 +1718,40 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
 
             }
 
-        console.log(`Message received for room ${data.roomId}: ${message}`);
+        // NEW: sanitize the reply quote — must be a string, capped so nobody sends a novel as a "quote"
+
+            let replyTo = typeof data.replyTo === 'string' ? data.replyTo.trim() : null;
+
+            if (replyTo && replyTo.length > 500) replyTo = replyTo.slice(0, 500);
+            if (!replyTo) replyTo = null;
+
+            const replyToRole = ['creator', 'challenger'].includes(data.replyToRole) ? data.replyToRole : null;
+
+            io.to(data.roomId).emit('new_argument', {
+
+                message, senderId: socket.id, senderRole,
+                replyTo, replyToRole
+
+            });
+
+            supabase.from('past_arguments').insert({
+
+                room_id: data.roomId,
+                sender_role: senderRole,
+                message,
+
+                reply_to: replyTo,
+                reply_to_role: replyToRole   // add this column too: ALTER TABLE past_arguments ADD COLUMN reply_to_role text;
+                
+            });
 
 
-
-        
-        io.to(data.roomId).emit('new_argument', {
-
-            message: message,
-            senderId: socket.id,
-
-            senderRole: senderRole
-
-        });
-
-        supabase.from('past_arguments').insert({
-            
-            room_id: data.roomId,
-            sender_role: senderRole,
-            message: message
-
-        }).then(({ error }) => {
-
-            if (error) console.error('Failed to save argument:', error);
-
-
-        });
 
     });
+
+
+
+
 
     socket.on('typing', (data) => {
 

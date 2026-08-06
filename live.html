@@ -117,6 +117,24 @@
         box-shadow: 0 4px 20px rgba(0,0,0,.25);
     }
 
+    .argument{
+
+        position:relative;
+        touch-action:pan-y;
+        cursor:grab;
+        transition:transform .2s ease;
+    }
+
+    .argument.dragging{ transition:none; }
+
+
+    .argument.left .reply-icon{ right:-38px; }
+
+    .argument.right .reply-icon{ left:-38px; }
+
+    
+
+
     .left{
         align-self:flex-start;
         background:#1b2333;
@@ -1603,6 +1621,200 @@
 
 
 
+    /* ---- Reply quote INSIDE a sent bubble ---- */
+
+    .reply-quote{
+
+        display:flex;
+        flex-direction:column;
+        gap:2px;
+
+        background:rgba(0,0,0,.18);
+        border-left:3px solid #46c2ff;
+
+        border-radius:8px;
+        padding:6px 10px;
+        margin-bottom:8px;
+        max-width:100%;
+        overflow:hidden;
+
+    }
+
+    .right .reply-quote{
+        background:rgba(0,0,0,.15);
+        border-left-color:#ffffff;
+
+    }
+
+    .reply-quote-name{
+
+        font-size:.72rem;
+        font-weight:700;
+        color:#46c2ff;
+
+    }
+
+    .right .reply-quote-name{
+
+        color:#ffffff;
+    }
+
+
+    .reply-quote-text{
+
+        font-size:.8rem;
+        color:rgba(255,255,255,.65);
+
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+
+    }
+
+    .right .reply-quote-text{
+        color:rgba(255,255,255,.8);
+    }
+
+    /* ---- Swipe-to-reply icon ---- */
+
+    .reply-icon{
+
+        position:absolute;
+        top:50%;
+        transform:translateY(-50%) scale(.5);
+        width:32px; height:32px;
+        border-radius:50%;
+
+        background:#242b3d;
+        display:flex; align-items:center; justify-content:center;
+
+        opacity:0;
+        pointer-events:none;
+
+        box-shadow:0 2px 8px rgba(0,0,0,.3);
+
+        transition:background .15s ease;
+    }
+
+
+    .reply-icon svg{ width:16px; height:16px; color:#46c2ff; }
+    .argument.left .reply-icon{ right:-42px; }
+
+    .argument.right .reply-icon{ left:-42px; }
+    .reply-icon.ready{ background:#46c2ff; }
+
+    .reply-icon.ready svg{ color:#0f1117; }
+
+    /* ---- Reply preview bar ABOVE the input ---- */
+
+
+    .reply-preview-bar{
+
+        display:none;
+        align-items:center;
+        gap:12px;
+
+        padding:10px 14px;
+        background:#1b2333;
+
+        border-top:1px solid rgba(255,255,255,0.08);
+
+        animation:replyBarIn .18s ease-out;
+    }
+
+    .reply-preview-bar.show{ display:flex; }
+
+    @keyframes replyBarIn{
+        from{ opacity:0; transform:translateY(6px); }
+        to{ opacity:1; transform:translateY(0); }
+    }
+
+    .reply-preview-accent{
+        width:3px;
+        align-self:stretch;
+        background:#46c2ff;
+        border-radius:999px;
+        flex-shrink:0;
+    }
+
+    .reply-preview-body{
+        flex:1;
+        min-width:0;
+        display:flex;
+        flex-direction:column;
+        gap:2px;
+    }
+
+    .reply-preview-label{
+        font-size:.75rem;
+        font-weight:700;
+        color:#46c2ff;
+    }
+
+    .reply-preview-content{
+        font-size:.85rem;
+        color:#9ca3af;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+    }
+
+    .reply-preview-cancel{
+        background:rgba(255,255,255,.06);
+        border:none;
+        cursor:pointer;
+        width:26px; height:26px;
+        border-radius:50%;
+        color:#9ca3af;
+        font-size:1rem;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        flex-shrink:0;
+        transition:background .15s ease, color .15s ease;
+    }
+    .reply-preview-cancel:hover{
+        background:rgba(255,255,255,.12);
+        color:white;
+    }
+
+
+    .msg-header{
+
+        display:flex;
+        align-items:center;
+        gap:8px;
+        margin-bottom:6px;
+
+    }
+
+    .msg-avatar{
+
+
+        width:24px;
+        height:24px;
+        border-radius:50%;
+        object-fit:cover;
+        background:#0f1117;
+
+    }
+
+    .msg-username{
+
+        font-size:.78rem;
+        font-weight:700;
+        color:#9ca3af;
+
+    }
+
+    .right .msg-username{ color:rgba(255,255,255,.85); }
+
+
+
+
+
+
+
 
 
 
@@ -1830,6 +2042,21 @@
         <span class="comment-count-badge" id="commentCountBadge" style="display:none;">0</span>
 
     </button>
+
+</div>
+
+<div class="reply-preview-bar" id="replyPreviewBar">
+
+    <div class="reply-preview-accent"></div>
+    
+    <div class="reply-preview-body">
+
+        <span class="reply-preview-label" id="replyPreviewLabel">Replying to</span>
+
+        <span class="reply-preview-content" id="replyPreviewContent"></span>
+    </div>
+
+    <button class="reply-preview-cancel" id="replyPreviewCancel" type="button">✕</button>
 
 </div>
 
@@ -2271,15 +2498,15 @@
     socket.on('match_history', (messages) => {
 
         messages.forEach(arg => {
-            const div = document.createElement('div');
-            div.classList.add('argument');
-            
-            div.classList.add(arg.sender_role === 'creator' ? 'right' : 'left');
 
-            div.textContent = arg.message;
-            chat.appendChild(div);
+            chat.appendChild(createMessageBubble(arg.message, arg.sender_role,
+            
+             arg.reply_to ? { text: arg.reply_to, senderRole: arg.reply_to_role } : null));
+
         });
+
         chat.scrollTop = 0;
+
     });
 
 // update_live_matches
@@ -2316,27 +2543,49 @@
         document.querySelector('.bottom-bar').style.display = 'none';
 
         const matchesRes = await fetch('/past-matches');
+
         const matches = await matchesRes.json();
+
         const match = matches.find(m => m.room_id === roomId);
+
         dynamic_title.textContent = match ? match.thesis : 'Replay';
+
+        try {
+
+            const partRes = await fetch(`/past-matches/${roomId}/participants`);
+
+            const parts = await partRes.json();
+            participants = {
+
+                creator: parts.creator ? { username: parts.creator.username, avatar_url: parts.creator.avatar_url } : null,
+
+                challenger: parts.challenger ? { username: parts.challenger.username, avatar_url: parts.challenger.avatar_url } : null
+            };
+        } catch (e) {
+            console.error('Failed to load participants:', e);
+        }
 
         const votesRes = await fetch(`/past-matches/${roomId}/votes`);
         const tally = await votesRes.json();
+
         renderReplayVoteBar(roomId, tally);
 
         const argsRes = await fetch(`/past-matches/${roomId}/arguments`);
+
         const args = await argsRes.json();
 
         args.forEach(arg => {
-            const div = document.createElement('div');
-            div.classList.add('argument');
-            div.classList.add(arg.sender_role === 'creator' ? 'right' : 'left');
-            div.textContent = arg.message;
-            chat.appendChild(div);
+
+            chat.appendChild(createMessageBubble(arg.message, arg.sender_role, arg.replyTo || null));
+
         });
 
         chat.scrollTop = 0;
     }
+
+
+
+
 
     function renderReplayVoteBar(roomId, tally) {
 
@@ -2478,22 +2727,27 @@
         function sendMessage() {
 
             if (isReplay || isSpectator || !mySide) return;
-
             if (messageInput.value.trim() === "") return;
 
             clearTimeout(typingTimeout);
+
             socket.emit('stop_typing', { roomId });
 
-            socket.emit(
+            socket.emit('send_argument', {
 
-                'send_argument',
-                { roomId, message: messageInput.value }
+                roomId,
+                message: messageInput.value,
+                replyTo: replyingTo ? replyingTo.text : null,
 
-            );
+                replyToRole: replyingTo ? replyingTo.senderRole : null
 
+            });
 
             messageInput.value = '';
+            clearReplyTarget();
         }
+
+
 
         document.getElementById('sendBtn').addEventListener('click', sendMessage);
 
@@ -3324,32 +3578,19 @@ function showClipModal(canvas, topicText) {
 
 
     socket.on(
+
         'new_argument',
         (data) => {
 
-            const div = document.createElement('div');
+            chat.appendChild(createMessageBubble(data.message, data.senderRole,
 
-            div.classList.add('argument');
+                data.replyTo ? { text: data.replyTo, senderRole: data.replyToRole } : null
 
-            // 2. Compare the sender's ID with YOUR unique socket ID
-
-            if (data.senderRole === 'creator') {
-                
-                div.classList.add('right');
-
-            } else {
-
-                div.classList.add('left');
-            }
-
-            div.textContent = data.message;
-            
-            div.dataset.ts = Date.now();
-
-            chat.appendChild(div);
+            ));
+             
+            // div.dataset.ts = Date.now();
 
             chat.scrollTop = chat.scrollHeight
-
 
         }
     );
@@ -3425,6 +3666,210 @@ function showClipModal(canvas, topicText) {
         liveMatches.forEach(match => feed.appendChild(buildLiveCard(match)));
         filteredPastMatches.forEach(match => feed.appendChild(buildPastCard(match)));
     }
+
+
+    function createMessageBubble(text, senderRole, replyTo){
+
+        const div = document.createElement('div');
+
+        div.classList.add('argument');
+
+        div.classList.add(senderRole === 'creator' ? 'right' : 'left');
+
+        const identity = senderRole === 'creator' ? participants.creator : participants.challenger;
+
+        const header = document.createElement('div');
+
+        header.className = 'msg-header';
+
+        header.innerHTML = `
+            <img class="msg-avatar" src="${identity?.avatar_url || 'https://api.dicebear.com/7.x/identicon/svg?seed=' + senderRole}" alt="">
+
+            <span class="msg-username">${escapeHtml(identity?.username || (senderRole === 'creator' ? 'Pro' : 'Against'))}</span>
+        `;
+
+        div.appendChild(header);
+
+        
+
+        if (replyTo && replyTo.text){
+
+            const quote = document.createElement('div');
+            quote.className = 'reply-quote';
+
+            const name = document.createElement('div');
+            name.className = 'reply-quote-name';
+
+            name.textContent = replyTo.senderRole === 'creator' ? 'Pro' : 'Against';
+
+            const preview = document.createElement('div');
+            preview.className = 'reply-quote-text';
+
+            preview.textContent = replyTo.text.length > 100 ? replyTo.text.slice(0, 100) + '…' : replyTo.text;
+
+            quote.appendChild(name);
+            quote.appendChild(preview);
+            div.appendChild(quote);
+
+        }
+
+        const body = document.createElement('div');
+        body.textContent = text;
+        div.appendChild(body);
+
+        const icon = document.createElement('div');
+        icon.className = 'reply-icon';
+        icon.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"></polyline><path d="M20 18v-2a4 4 0 0 0-4-4H4"></path></svg>`;
+        div.appendChild(icon);
+
+        if (!isReplay && !isSpectator && mySide){
+            attachSwipeToReply(div, text, senderRole);
+        }
+
+        return div;
+    }
+
+
+
+
+    const SWIPE_REPLY_THRESHOLD = 60;
+
+    const SWIPE_REPLY_MAX = 90;
+
+    function attachSwipeToReply(el, text, senderRole){
+
+        let startX = 0, currentX = 0, dragging = false, pointerId = null;
+
+        el.addEventListener('pointerdown', (e) => {
+
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+            dragging = true;
+            pointerId = e.pointerId;
+
+            startX = e.clientX;
+            el.classList.add('dragging');
+            el.setPointerCapture(pointerId);
+
+        });
+
+        el.addEventListener('pointermove', (e) => {
+
+            if (!dragging || e.pointerId !== pointerId) return;
+            currentX = e.clientX - startX;
+
+            const isLeft = el.classList.contains('left');
+            if (isLeft && currentX < 0) currentX = 0;
+            if (!isLeft && currentX > 0) currentX = 0;
+
+
+            const clamped = Math.max(-SWIPE_REPLY_MAX, Math.min(SWIPE_REPLY_MAX, currentX));
+            el.style.transform = `translateX(${clamped}px)`;
+
+            const icon = el.querySelector('.reply-icon');
+            const progress = Math.min(1, Math.abs(clamped) / SWIPE_REPLY_THRESHOLD);
+
+            icon.style.opacity = progress;
+            icon.style.transform = `translateY(-50%) scale(${0.5 + 0.5 * progress})`;
+            icon.classList.toggle('ready', progress >= 1);
+
+        });
+
+        function endDrag(e){
+
+            if (!dragging || e.pointerId !== pointerId) return;
+            dragging = false;
+            el.classList.remove('dragging');
+
+            el.style.transform = '';
+            const icon = el.querySelector('.reply-icon');
+
+            icon.style.opacity = 0;
+            icon.classList.remove('ready');
+
+            if (Math.abs(currentX) >= SWIPE_REPLY_THRESHOLD){
+
+                if (navigator.vibrate) navigator.vibrate(15);
+                setReplyTarget(text, senderRole);
+
+            }
+
+            currentX = 0;
+        }
+
+        el.addEventListener('pointerup', endDrag);
+
+        el.addEventListener('pointercancel', endDrag);
+    }
+
+    let participants = { creator: null, challenger: null };
+
+    function applyIdentityToBubble(el, identity, senderRole){
+
+        const img = el.querySelector('.msg-avatar');
+        const name = el.querySelector('.msg-username');
+
+        if (img) img.src = identity?.avatar_url || 'https://api.dicebear.com/7.x/identicon/svg?seed=' + senderRole;
+
+        if (name) name.textContent = identity?.username || (senderRole === 'creator' ? 'Pro' : 'Against');
+
+    }
+
+    socket.on('match_identities', (data) => {
+
+        participants = data;
+
+        // if messages already rendered before this arrived, backfill them:
+
+        document.querySelectorAll('.argument').forEach(el => {
+
+            const senderRole = el.classList.contains('right') ? 'creator' : 'challenger';
+
+            applyIdentityToBubble(el, senderRole === 'creator' ? participants.creator : participants.challenger, senderRole);
+
+        });
+    });
+
+
+
+
+
+
+
+    let replyingTo = null;
+    const replyPreviewBar = document.getElementById('replyPreviewBar');
+    const replyPreviewContent = document.getElementById('replyPreviewContent');
+    const replyPreviewCancel = document.getElementById('replyPreviewCancel');
+
+
+
+    function setReplyTarget(text, senderRole){
+
+        replyingTo = { text, senderRole };
+
+        const label = senderRole === (role === 'creator' ? 'creator' : 'challenger')
+
+            ? 'Replying to yourself'
+            : 'Replying to ' + (senderRole === 'creator' ? 'Pro' : 'Against');
+
+        document.getElementById('replyPreviewLabel').textContent = label;
+
+        replyPreviewContent.textContent = text.length > 120 ? text.slice(0, 120) + '…' : text;
+
+        replyPreviewBar.classList.add('show');
+        messageInput.focus();
+
+    }
+
+
+    function clearReplyTarget(){
+        replyingTo = null;
+        replyPreviewBar.classList.remove('show');
+    }
+
+    replyPreviewCancel.addEventListener('click', clearReplyTarget);
+
+
 
 
     function setupVotingBar() {
@@ -4099,6 +4544,11 @@ function showClipModal(canvas, topicText) {
         updateCommentCount(commentList.querySelectorAll('.comment-item').length);
 
     });
+
+
+
+
+
 
 
 
