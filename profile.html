@@ -632,6 +632,50 @@
     });
 </script>
 
+
+<script>
+
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-messaging.js";
+
+async function registerPushToken() {
+    if (!('serviceWorker' in navigator)) return;
+
+    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return;
+
+    const messaging = getMessaging(app);
+    const token = await getToken(messaging, {
+
+        vapidKey: 'BNbQ1h9O3LQS0y5Pq_ZrYdwQXeucfAZxSp7biLnDYErswiTpTxY_i3jAsFkGMaM1NnQODbmX2G8ymZNOHA0w-ng',
+
+        serviceWorkerRegistration: registration
+
+    });
+
+    if (token) {
+        const idToken = await window.getIdToken();
+        await fetch('/api/profile/push-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+            body: JSON.stringify({ token })
+        });
+    }
+
+    // foreground messages (tab open) — show your own toast/status banner instead of native notif
+    onMessage(messaging, (payload) => {
+        console.log('Foreground push:', payload);
+    });
+}
+
+// call this after requireLogin() succeeds, not on every page load blind —
+
+// ask at a moment tied to value, e.g. right after they finish their first duel
+
+
+</script>
+
+
 <script src="/socket.io/socket.io.js"></script>
 <script src="/notification.js"></script>
 
@@ -977,8 +1021,14 @@ function whenFirebaseReady(callback) {
 }
 
 whenFirebaseReady(async () => {
+
     if (!(await window.requireLogin())) return;
+
     loadProfile();
+
+    registerPushToken();
+
+
 });
 </script>
 

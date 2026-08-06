@@ -9,7 +9,6 @@ const io = new Server(server);
 
 require('dotenv').config();
 
-const nodemailer = require('nodemailer');
 
 
 const { initializeApp, cert } = require('firebase-admin/app');
@@ -63,92 +62,6 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 
 ); 
-
-
-const mailTransporter = nodemailer.createTransport({
-
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT || 587),
-  secure: process.env.SMTP_SECURE === 'true',
-
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
-
-  }
-});
-
-async function notifyDebatersOfComment(roomId, commentMessage) {
-
-    const { data: match, error } = await supabase
-        .from('past_matches')
-        .select('thesis, creator_profile_id, challenger_profile_id')
-        .eq('room_id', roomId)
-        .maybeSingle();
-
-    if (error || !match) {
-
-        console.log('[email] Bailing: no match found or error', { roomId, error })
-        return;
-
-    };
-
-    const profileIds = [match.creator_profile_id, match.challenger_profile_id].filter(Boolean);
-
-    if (profileIds.length === 0) {
-
-        console.log('[email] Bailing: no profile IDs on this match', { roomId, match })
-        return;
-
-    };
-
-    const { data: profiles, error: profErr } = await supabase
-        .from('profiles')
-        .select('id, email, username')
-        .in('id', profileIds);
-
-    if (profErr || !profiles) {
-
-        console.log('[email] Bailing: profile lookup failed', { profErr, profileIds });
-        return;
-
-    };
-
-    console.log('[email] Profiles found:', profiles);
-
-    const matchUrl = `${process.env.APP_BASE_URL || 'https://waater-yey2.onrender.com'}/live?match=${roomId}&replay=1`;
-
-    const debaterList = profiles
-        .filter(p => p.email)
-        .map(p => `<li>${p.username || 'Unknown'} — <a href="mailto:${p.email}">${p.email}</a></li>`)
-        .join('');
-
-    if (!debaterList) {
-
-        console.log('[email] Bailing: no debater has an email on file', { profiles });
-        return;
-
-    }
-    
-    // no emails to report
-
-    try {
-        await mailTransporter.sendMail({
-            from: process.env.FROM_EMAIL || '"Waater" <onboarding@resend.dev>',
-            to: process.env.MY_EMAIL, // your own inbox
-            subject: `New comment on: ${match.thesis}`,
-            html: `
-                <p>New comment on debate "<strong>${match.thesis}</strong>":</p>
-                <blockquote style="border-left:3px solid #6d5dfc;margin:12px 0;padding-left:12px;color:#333;">${commentMessage}</blockquote>
-                <p><a href="${matchUrl}">View the debate</a></p>
-                <p>Debaters to notify:</p>
-                <ul>${debaterList}</ul>
-            `
-        });
-    } catch (mailErr) {
-        console.error('Failed to send comment notification email:', mailErr);
-    }
-}
 
 
 
@@ -280,6 +193,7 @@ app.get('/past-matches/:roomId/arguments', async (req, res) => {
 });
 
 app.post('/past-matches/:roomId/vote', express.json(), async (req, res) => {
+
     const { roomId } = req.params;
     const { side } = req.body;
     const userId = req.cookies.anonId; // same anonymous identity you already use for reactions
@@ -313,32 +227,50 @@ app.post('/past-matches/:roomId/vote', express.json(), async (req, res) => {
 
     if (previousSide !== side) {
 
-        const { data: matchRow } = await supabase
+       const { data: matchRow } = await supabase
+
             .from('past_matches')
-            .select('creator_profile_id, challenger_profile_id')
+            .select('thesis, creator_profile_id, challenger_profile_id')  // add thesis
             .eq('room_id', roomId)
             .maybeSingle();
 
-        if (matchRow) {
+    if (matchRow) {
             const winnerProfileId = side === 'pro' ? matchRow.creator_profile_id : matchRow.challenger_profile_id;
             const { error: incErr } = await supabase.rpc('increment_drop_points', {
                 p_profile_id: winnerProfileId,
                 p_amount: 1
             });
 
-
             if (incErr) console.error('increment_drop_points failed:', incErr);
 
+            sendPush(winnerProfileId, {
+
+                title: 'Someone voted for you!',
+                body: matchRow.thesis,
+
+                url: `/live?match=${roomId}&replay=1`
+
+            }).catch(e => console.error('push vote error', e));
+
+
             if (previousSide) {
-                // they switched sides — undo the point given to the old side
+
                 const prevWinnerId = previousSide === 'pro' ? matchRow.creator_profile_id : matchRow.challenger_profile_id;
+
                 const { error: decErr } = await supabase.rpc('increment_drop_points', {
+
                     p_profile_id: prevWinnerId,
+
                     p_amount: -1
+
                 });
+
                 if (decErr) console.error('increment_drop_points (decrement) failed:', decErr);
+
             }
         }
+
+
     }
 
 
@@ -461,7 +393,18 @@ app.post('/match/:roomId/comments', express.json(), verifyFirebaseToken, async (
 
     io.to(roomId).emit('new_comment', enriched);
 
-    notifyDebatersOfComment(roomId, message).catch(e => console.error('notify error', e));
+    pushToDebaters(roomId, {
+
+        title: 'New comment on your debate',
+        body: `${profile.username}: ${message.slice(0, 100)}`,
+
+        url: `/live?match=${roomId}&replay=1`,
+
+        excludeProfileId: profile.id   // don't notify the person who just commented
+
+}).catch(e => console.error('push comment error', e));
+
+
 
     res.json(enriched);
 });
@@ -842,24 +785,46 @@ app.post('/match/:roomId/react', express.json(), async (req, res) => {
 
         if (likeDelta !== 0 || dislikeDelta !== 0) {
 
-            const { data: matchRow } = await supabase
-                .from('past_matches')
+        const { data: matchRow } = await supabase
 
-                .select('creator_profile_id, challenger_profile_id')
-                .eq('room_id', roomId)
+            .from('past_matches')
+            .select('thesis, creator_profile_id, challenger_profile_id')  // add thesis
 
-                .maybeSingle();
+            .eq('room_id', roomId)
+            .maybeSingle();
 
-            if (matchRow) {
-                const pointDelta = likeDelta - dislikeDelta; // like = +1, dislike = -1, switch = net
+        if (matchRow) {
 
-                await Promise.all([
-                    supabase.rpc('increment_drop_points', { p_profile_id: matchRow.creator_profile_id, p_amount: pointDelta }),
-                    supabase.rpc('increment_drop_points', { p_profile_id: matchRow.challenger_profile_id, p_amount: pointDelta })
+            const pointDelta = likeDelta - dislikeDelta;
 
-                ]);
+            await Promise.all([
+                supabase.rpc('increment_drop_points', { p_profile_id: matchRow.creator_profile_id, p_amount: pointDelta }),
+                supabase.rpc('increment_drop_points', { p_profile_id: matchRow.challenger_profile_id, p_amount: pointDelta })
+
+            ]);
+
+            // only push on a genuine new like, not a toggle-off or a dislike
+
+            const isNewLike = reaction === 'like' && !(existing && existing.reaction === 'like');
+            if (isNewLike) {
+
+                [matchRow.creator_profile_id, matchRow.challenger_profile_id]
+
+                    .filter(Boolean)
+                    .forEach(id => sendPush(id, {
+
+                        title: 'Someone liked your debate!',
+
+                        body: matchRow.thesis,
+                        url: `/live?match=${roomId}&replay=1`
+
+                    }).catch(e => console.error('push like error', e)));
+
             }
         }
+    }
+
+
 
 
 
@@ -896,6 +861,7 @@ app.post('/match/:roomId/react', express.json(), async (req, res) => {
 
 
 app.get('/past-matches/:roomId/votes', async (req, res) => {
+
     const userId = req.cookies.anonId;
 
     const { data, error } = await supabase
@@ -951,6 +917,90 @@ app.post('/match/:roomId/view', async (req, res) => {
 
     res.json({ view_count: data?.[0]?.new_view_count ?? 0 }); 
 });
+
+app.post('/api/profile/push-token', express.json(), verifyFirebaseToken, async (req, res) => {
+
+    const { token } = req.body;
+
+    if (!token) return res.status(400).json({ error: 'No token' });
+
+    const { error } = await supabase
+
+        .from('profiles')
+        .update({ fcm_token: token })
+        .eq('firebase_uid', req.firebaseUser.uid);
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.sendStatus(204);
+
+});
+
+const { getMessaging } = require('firebase-admin/messaging');
+const messaging = getMessaging();
+
+async function sendPush(profileId, { title, body, url }) {
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('fcm_token')
+        .eq('id', profileId)
+        .maybeSingle();
+
+    if (!profile?.fcm_token) return;
+
+
+    try {
+
+        await messaging.send({
+
+            token: profile.fcm_token,
+            notification: { title, body },
+
+            data: { url: url || '/' },
+            webpush: { fcmOptions: { link: url || '/' } }
+
+        });
+
+    } catch (err) {
+        // token expired/invalid — clear it so you stop retrying a dead token
+
+        if (err.code === 'messaging/registration-token-not-registered') {
+
+            await supabase.from('profiles').update({ fcm_token: null }).eq('id', profileId);
+
+        } else {
+
+            console.error('Push send failed:', err);
+
+        }
+    }
+
+}
+
+async function pushToDebaters(roomId, { title, body, url, excludeProfileId } = {}) {
+
+
+    const { data: match } = await supabase
+        .from('past_matches')
+        
+        .select('thesis, creator_profile_id, challenger_profile_id')
+
+        .eq('room_id', roomId)
+        .maybeSingle();
+
+    if (!match) return;
+
+    const ids = [match.creator_profile_id, match.challenger_profile_id]
+
+        .filter(Boolean)
+        .filter(id => id !== excludeProfileId);
+
+    await Promise.all(ids.map(id => sendPush(id, { title, body, url })));
+
+    return match;
+}
+
+
 
 
 
@@ -1586,16 +1636,34 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
         }
 
         // Award drop points to whoever the vote now favors
+
+
         if (match && previousSide !== side) {
             const { data: matchRow } = await supabase
+
                 .from('past_matches')
-                .select('creator_profile_id, challenger_profile_id')
+
+                .select('thesis, creator_profile_id, challenger_profile_id')
+
+
                 .eq('room_id', roomId)
                 .maybeSingle();
 
             if (matchRow) {
+
                 const winnerProfileId = side === 'pro' ? matchRow.creator_profile_id : matchRow.challenger_profile_id;
                 await supabase.rpc('increment_drop_points', { p_profile_id: winnerProfileId, p_amount: 1 });
+
+                sendPush(winnerProfileId, {
+
+                    title: 'Someone voted for you!',
+                    body: matchRow.thesis,
+
+                    url: `/live?match=${roomId}&replay=1`
+
+                }).catch(e => console.error('push vote error', e));
+
+
 
                 if (previousSide) {
                     // they switched sides — undo the point given to the old side
@@ -1710,7 +1778,7 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
             return; // sender is a spectator, not a debater — reject
         }
 
-        const message = typeof data.message === 'string' ? data.message.trim() : '';
+            const message = typeof data.message === 'string' ? data.message.trim() : '';
 
             if (!message || message.length > 2000) {
 
@@ -1748,6 +1816,30 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
                 if (error) console.error('Failed to save argument to past_arguments:', error);
                 
             });
+
+
+
+            const recipientRole = senderRole === 'creator' ? 'challenger' : 'creator';
+            const recipientProfileId = recipientRole === 'creator' ? match.creatorProfileId : match.challengerProfileId;
+
+            const recipientSocketId = recipientRole === 'creator' ? match.creatorSocketId : match.challengerSocketId;
+            const recipientSocket = io.sockets.sockets.get(recipientSocketId);
+
+            const recipientInRoom = recipientSocket?.rooms.has(data.roomId);
+
+            if (recipientProfileId && !recipientInRoom) {
+
+                sendPush(recipientProfileId, {
+                    title: 'New reply in your debate',
+
+                    body: message.slice(0, 100),
+                    url: `/live?match=${data.roomId}`
+
+                });
+            }
+
+
+
 
 
 
