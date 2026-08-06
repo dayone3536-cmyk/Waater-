@@ -1741,9 +1741,17 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
                 message,
 
                 reply_to: replyTo,
-                reply_to_role: replyToRole   // add this column too: ALTER TABLE past_arguments ADD COLUMN reply_to_role text;
+                reply_to_role: replyToRole
+
+            }).then(({ error }) => {
+
+                if (error) console.error('Failed to save argument to past_arguments:', error);
                 
             });
+
+
+
+
 
 
 
