@@ -2308,10 +2308,23 @@
     // Without this, background pushes work fine, but if the tab is OPEN and focused,
     // FCM delivers the message silently to onMessage instead of showing a notification —
     // your onBackgroundMessage handler in the SW only fires when the tab isn't focused.
+
+
     onMessage(messaging, (payload) => {
-        console.log('Foreground push:', payload);
-        // optional: show a toast/banner here since no native notification will pop
+
+        const { title, body, url } = payload.data || {};
+        // no native notification appears when tab is focused — show your own UI
+
+        if (Notification.permission === 'granted') {
+            const n = new Notification(title || 'Waater', { body, icon: '/icon-192.png' });
+
+            n.onclick = () => window.focus();
+
+        }
+        
     });
+
+
 
 
 
