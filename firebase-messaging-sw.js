@@ -19,18 +19,19 @@ const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
 
-    const { title, body, icon } = payload.notification || {};
+    const { title, body, url } = payload.data || {};
 
     self.registration.showNotification(title || "Waater", {
-
+        
         body,
-        icon: icon || "/icon-192.png",
 
-        data: payload.data
+        icon: "/icon-192.png",
+
+        data: { url: url || '/' }
 
     });
-
 });
+
 
 
 self.addEventListener('notificationclick', (event) => {

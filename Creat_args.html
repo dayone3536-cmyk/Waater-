@@ -99,6 +99,124 @@
             color: #3b82f6;
         }
 
+        .live-ticker{
+            display:flex;
+            align-items:center;
+            gap:8px;
+            background:#111827;
+            border:1px solid #1f2937;
+            border-radius:999px;
+            padding:8px 18px;
+            margin-bottom:1.5rem;
+            font-size:.85rem;
+            color:#9ca3af;
+            font-weight:600;
+        }
+
+        .live-ticker .dot{
+            width:8px; height:8px;
+            border-radius:50%;
+            background:#22c55e;
+            box-shadow:0 0 8px #22c55e;
+            animation:tickerPulse 1.5s infinite;
+            flex-shrink:0;
+        }
+
+        @keyframes tickerPulse{
+            0%,100%{ opacity:1; }
+            50%{ opacity:.4; }
+        }
+
+        .radar-hint{
+            transition:opacity .3s ease;
+        }
+
+        .radar-hint.fade{
+            opacity:0;
+        }
+
+        /* ---- Invite nudge modal ---- */
+
+        .invite-nudge-overlay{
+            position:fixed; inset:0;
+            background:rgba(10,12,20,.75);
+            backdrop-filter:blur(6px);
+            -webkit-backdrop-filter:blur(6px);
+            display:flex; align-items:center; justify-content:center;
+            z-index:3000;
+            opacity:0;
+            animation:nudgeFadeIn .25s ease-out forwards;
+        }
+
+        @keyframes nudgeFadeIn{ to{ opacity:1; } }
+
+        .invite-nudge-box{
+            background:#111827;
+            border:1px solid rgba(59,130,246,.25);
+            border-radius:20px;
+            padding:32px 28px;
+            max-width:380px;
+            width:90%;
+            text-align:center;
+            box-shadow:0 20px 60px rgba(0,0,0,.55);
+            transform:scale(.9) translateY(10px);
+            animation:nudgePop .3s cubic-bezier(.34,1.56,.64,1) forwards;
+        }
+
+        @keyframes nudgePop{ to{ transform:scale(1) translateY(0); } }
+
+        .invite-nudge-box .icon{
+            font-size:2.2rem;
+            margin-bottom:10px;
+        }
+
+        .invite-nudge-box h3{
+            color:#fff;
+            font-size:1.15rem;
+            margin-bottom:8px;
+        }
+
+        .invite-nudge-box p{
+            color:#9ca3af;
+            font-size:.9rem;
+            line-height:1.5;
+            margin-bottom:22px;
+        }
+
+        .invite-nudge-actions{
+            display:flex;
+            flex-direction:column;
+            gap:10px;
+        }
+
+        .invite-nudge-primary{
+            border:none;
+            cursor:pointer;
+            padding:14px 0;
+            border-radius:12px;
+            font-weight:700;
+            font-size:.95rem;
+            color:#fff;
+            background:linear-gradient(135deg,#3b82f6,#2563eb);
+            box-shadow:0 4px 16px rgba(59,130,246,.35);
+            transition:transform .15s ease, filter .15s ease;
+        }
+
+        .invite-nudge-primary:hover{ transform:translateY(-1px); filter:brightness(1.1); }
+
+        .invite-nudge-secondary{
+            background:none;
+            border:none;
+            cursor:pointer;
+            color:#6b7280;
+            font-size:.85rem;
+            padding:6px;
+        }
+
+        .invite-nudge-secondary:hover{ color:#9ca3af; }
+
+
+
 
     </style>
 </head>
@@ -176,26 +294,47 @@
             </div>
 
             <!-- Matchmaking Radar State -->
+
             <div class="radar-container" id="matchmaking-status" style="display: none;">
+
+                <div class="live-ticker" id="liveTicker">
+
+                    <span class="dot"></span>
+
+                    <span id="liveTickerText">Checking the arena...</span>
+
+                </div>
+
+
                 <div class="radar-circle">
+
                     <div class="radar-pulse"></div>
+
                     <div class="radar-core">⚔️</div>
                 </div>
-                <h3 class="radar-title">Searching the Arena Grid...</h3>
-                <div class="radar-timer" id="timer-display">03:00</div>
-                <p class="radar-hint">Your topic is locked. We are tracking an opponent...</p>
 
-                <!-- MOVED HERE: only shows once matchmaking-status is visible -->
+                <h3 class="radar-title">Searching the Arena Grid...</h3>
+
+                <div class="radar-timer" id="timer-display">03:00</div>
+
+                <p class="radar-hint" id="radarHintText">Your topic is locked. We are tracking an opponent...</p>
+
                 <button class="radar-invite-btn" id="btn-invite-friend">
+
                     <span class="material-symbols-outlined">ios_share</span>
-                    <span>Invite</span>
+                    <span>Skip the wait — invite someone</span>
+
                 </button>
 
-                <br>
-                <br>
+                <br><br>
 
                 <button class="radar-cancel-btn" id="btn-cancel-queue">Abort Search</button>
+
             </div>
+
+
+
+
 
         </main>
     </div>
@@ -227,16 +366,28 @@
             const idToken = await user.getIdToken();
 
             socket.emit('authenticate', idToken);
-            resolve();
 
 
         });
 
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            signOut(auth).then(() => {
-                window.location.href = "Sigh-in.html";
+        const logoutBtn = document.getElementById('logout-btn');
+
+
+        if (logoutBtn) {
+
+            logoutBtn.addEventListener('click', () => {
+
+                signOut(auth).then(() => {
+
+                    window.location.href = "Sigh-in.html";
+
+                });
+
             });
-        });
+
+        }
+
+
     </script>
 
     <script src="/notification.js"> </script>
@@ -357,6 +508,146 @@
             clearInterval(countdownInterval);
             window.location.href = `/live?match=${data.matchId}&role=${data.role}`;
         });
+
+
+        /* ---- Live ticker: queue depth + live match count ---- */
+
+    let currentQueueLen = 0;
+
+    let currentLiveLen = 0;
+
+    function updateTickerText(){
+
+        const el = document.getElementById('liveTickerText');
+        if (!el) return;
+
+        if (currentLiveLen > 0){
+            el.textContent = `${currentLiveLen} debate${currentLiveLen === 1 ? '' : 's'} live right now`;
+        } else if (currentQueueLen > 0){
+            el.textContent = `${currentQueueLen} other${currentQueueLen === 1 ? '' : 's'} waiting for a match`;
+        } else {
+            el.textContent = `You're first in the queue — invite someone for an instant match`;
+
+        }
+    }
+
+    socket.on('update_duel_list', (queue) => {
+
+        currentQueueLen = Math.max(0, (queue || []).length - 1); // exclude self
+
+        updateTickerText();
+    });
+
+    socket.on('update_live_matches', (matches) => {
+
+        currentLiveLen = (matches || []).length;
+        updateTickerText();
+        
+    });
+
+
+/* ---- Rotating hint text while waiting ---- */
+
+    const HINT_MESSAGES = [
+        'Your topic is locked. We are tracking an opponent...',
+        'Scanning the arena for a worthy challenger...',
+        'Still looking — this can take a minute during off-peak hours.',
+        'Pro tip: inviting a friend gets you into a debate instantly.',
+        'Hang tight, someone sharp is out there.'
+    ];
+
+    let hintIndex = 0;
+    let hintInterval = null;
+
+    function startHintRotation(){
+        hintIndex = 0;
+        clearInterval(hintInterval);
+        hintInterval = setInterval(() => {
+            const el = document.getElementById('radarHintText');
+            if (!el) return;
+
+            el.classList.add('fade');
+            setTimeout(() => {
+                hintIndex = (hintIndex + 1) % HINT_MESSAGES.length;
+                el.textContent = HINT_MESSAGES[hintIndex];
+                el.classList.remove('fade');
+            }, 300);
+
+        }, 4000);
+    }
+
+    function stopHintRotation(){
+        clearInterval(hintInterval);
+    }
+
+
+    /* ---- Auto-prompt invite nudge after 20s of no match ---- */
+
+    let nudgeTimeout = null;
+
+    function scheduleInviteNudge(){
+        clearTimeout(nudgeTimeout);
+        nudgeTimeout = setTimeout(showInviteNudge, 20000);
+    }
+
+    function clearInviteNudge(){
+        clearTimeout(nudgeTimeout);
+        const existing = document.getElementById('inviteNudgeOverlay');
+        if (existing) existing.remove();
+    }
+
+    function showInviteNudge(){
+        if (document.getElementById('inviteNudgeOverlay')) return;
+
+        const overlay = document.createElement('div');
+        overlay.id = 'inviteNudgeOverlay';
+        overlay.className = 'invite-nudge-overlay';
+
+        overlay.innerHTML = `
+            <div class="invite-nudge-box">
+                <div class="icon">👀</div>
+                <h3>No one's around right now</h3>
+                <p>Want to challenge a specific friend instead of waiting on a stranger?</p>
+                <div class="invite-nudge-actions">
+                    <button class="invite-nudge-primary" id="nudgeInviteBtn">Invite a friend to debate</button>
+                    <button class="invite-nudge-secondary" id="nudgeKeepWaitingBtn">Keep waiting</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        document.getElementById('nudgeInviteBtn').onclick = () => {
+            overlay.remove();
+            btnInviteMatch.click();
+        };
+
+        document.getElementById('nudgeKeepWaitingBtn').onclick = () => {
+            overlay.remove();
+        };
+    }
+
+
+    /* ---- Hook into existing start/cancel/match_found flow ---- */
+
+    const _originalIgniteHandler = btnIgnite.onclick;
+
+    btnIgnite.addEventListener('click', () => {
+        startHintRotation();
+        scheduleInviteNudge();
+    });
+
+    btnCancel.addEventListener('click', () => {
+        stopHintRotation();
+        clearInviteNudge();
+    });
+
+    socket.on('match_found', () => {
+        stopHintRotation();
+        clearInviteNudge();
+    });
+
+
     </script>
 
 </body>

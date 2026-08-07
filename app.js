@@ -938,6 +938,7 @@ app.post('/api/profile/push-token', express.json(), verifyFirebaseToken, async (
 const { getMessaging } = require('firebase-admin/messaging');
 const messaging = getMessaging();
 
+
 async function sendPush(profileId, { title, body, url }) {
 
     const { data: profile } = await supabase
@@ -952,30 +953,29 @@ async function sendPush(profileId, { title, body, url }) {
     try {
 
         await messaging.send({
-
             token: profile.fcm_token,
-            notification: { title, body },
+            data: {
+                title: title || 'Waater',
 
-            data: { url: url || '/' },
+                body: body || '',
+                url: url || '/'
+            },
+
             webpush: { fcmOptions: { link: url || '/' } }
 
         });
 
     } catch (err) {
-        // token expired/invalid — clear it so you stop retrying a dead token
-
         if (err.code === 'messaging/registration-token-not-registered') {
-
             await supabase.from('profiles').update({ fcm_token: null }).eq('id', profileId);
 
         } else {
-
             console.error('Push send failed:', err);
 
         }
     }
-
 }
+
 
 async function pushToDebaters(roomId, { title, body, url, excludeProfileId } = {}) {
 
