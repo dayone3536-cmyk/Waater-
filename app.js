@@ -1198,7 +1198,7 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
         globalMatchmakingQueue //sends the user the current duels then the html takes that to show them te beautifull btutton
     );
 
-    socket.on('authenticate', async (idToken) => {
+    socket.on('authenticate', async (idToken, callback) => {
 
         try {
 
@@ -1219,7 +1219,13 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
 
         }
 
+        if (callback) callback();
+
     });
+
+    
+
+
 
     socket.on('join_queue', (data) => {
 

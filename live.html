@@ -2321,7 +2321,7 @@
             n.onclick = () => window.focus();
 
         }
-        
+
     });
 
 
@@ -2562,16 +2562,31 @@
 
     const isReplay = params.get('replay') === '1';
 
-    if (isReplay) {
+    async function authenticateThenJoin() {
 
-        loadReplayMode(roomId);
+        const idToken = await window.getIdToken(); // waits for Firebase auth state internally
+
+        if (idToken) {
+            await new Promise(resolve => socket.emit('authenticate', idToken, resolve));
+        }
+
+        if (isReplay) {
+
+            loadReplayMode(roomId);
+
+        } else {
+            
+            socket.emit("join_room", { roomId, role });
+
+        }
+
         recordView(roomId);
 
-    } else {
-
-        socket.emit("join_room", { roomId, role });
-        recordView(roomId);
     }
+
+    authenticateThenJoin();
+
+
 
     if (role === 'creator' || role === 'challenger') {
 
