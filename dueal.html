@@ -149,6 +149,8 @@
 
             await window.authReady;
             socket.emit('join_match', { matchId: matchId });
+
+            window.joinMatch = joinMatch;   // ← add this line so inline onclick can reach it
             
         }
 
