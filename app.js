@@ -1203,31 +1203,42 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
         try {
 
             const decoded = await auth.verifyIdToken(idToken);
+            socket.data.uid = decoded.uid; // ← the actual auth flag
+
 
             const { data: profile } = await supabase
+
                 .from('profiles')
                 .select('id, username, avatar_url')
                 .eq('firebase_uid', decoded.uid)
                 .maybeSingle();
-                
 
             socket.data.profile = profile || null;
 
         } catch (err) {
-
+            socket.data.uid = null;
             socket.data.profile = null;
-
         }
 
-        if (callback) callback();
-
+        if (callback) callback({ ok: !!socket.data.uid });
     });
+
+
+
 
     
 
 
 
     socket.on('join_queue', (data) => {
+
+        if (!socket.data.uid) {
+
+            socket.emit('match_error', { message: 'Please sign in to start a duel.' });
+
+            return;
+        }
+
 
         if (
             !data || //the  mode and theses
@@ -1262,7 +1273,6 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
 
 
 
-
 // send_argument
 
         globalMatchmakingQueue.push(newMatch); //puts the new duel into the globalmacthmakingqueue
@@ -1281,6 +1291,14 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
 
 
     socket.on('join_match', (data) => { //macthID : macthID  cast_vote
+
+        if (!socket.data.uid) {
+
+            socket.emit('match_error', { message: 'Please sign in to join a duel.' });
+            return;
+
+        }
+
 
         if (!data || !data.matchId) {
             return;
@@ -1843,16 +1861,6 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
 
                 });
             }
-
-
-
-
-
-
-
-
-
-
     });
 
 
@@ -2004,4 +2012,7 @@ server.listen(3000, () => {
     console.log(
         'Arena live at http://localhost:3000'
     );
+    
 });
+
+

@@ -342,53 +342,71 @@
     <script src="/socket.io/socket.io.js"></script>
 
     <script type="module">
+
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
         import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
 
         const firebaseConfig = {
+
             apiKey: "AIzaSyDc6wwJq_iQtLoZT2RMA1-qyqN3U5W2ZL0",
             authDomain: "waater-65596.firebaseapp.com",
             projectId: "waater-65596",
+
             storageBucket: "waater-65596.firebasestorage.app",
             messagingSenderId: "840770803135",
             appId: "1:840770803135:web:1425f583ad04315b87fd0a",
             measurementId: "G-48T9GVZF3N"
+
         };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
-        onAuthStateChanged(auth, async  (user) => {
-            if (!user) {
-                window.location.href = "Sigh-in";
-            }
+        // Real auth gate — nothing else on this page should run until this resolves
 
-            const idToken = await user.getIdToken();
+        window.authReady = new Promise((resolve) => {
 
-            socket.emit('authenticate', idToken);
 
+            onAuthStateChanged(auth, async (user) => {
+                if (!user) {
+                    // Preserve the invite link so they land back here after signing in
+                    const params = new URLSearchParams(window.location.search);
+                    const matchId = params.get('matchId');
+                    const redirect = matchId ? `?matchId=${matchId}` : '';
+                    window.location.href = `/Sigh-in${redirect}`;
+                    return; // stop here, don't resolve — page is navigating away
+                }
+
+                const idToken = await user.getIdToken();
+
+
+                socket.emit('authenticate', idToken, (ack) => {
+
+                    if (ack && ack.ok) resolve();
+
+                    // if ack.ok is false, token verification failed server-side — you may want to redirect to Sigh-in here too
+
+                });
+
+
+
+            });
 
         });
 
         const logoutBtn = document.getElementById('logout-btn');
-
-
         if (logoutBtn) {
-
             logoutBtn.addEventListener('click', () => {
-
                 signOut(auth).then(() => {
-
                     window.location.href = "Sigh-in.html";
-
                 });
-
             });
-
         }
-
-
     </script>
+
+
+
+
 
     <script src="/notification.js"> </script>
     
@@ -452,27 +470,60 @@
             myCurrentMatchId = data.matchId;
         });
 
+        function isMobileDevice() {
+
+            return /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+
+                || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform)); // catches iPadOS
+
+        }
+
         btnInviteMatch.addEventListener('click', () => {
+
             if (!myCurrentMatchId) {
                 alert('Still setting up your duel — try again in a second.');
                 return;
             }
 
+
             const thesis = argumentInput.value.trim();
             const inviteLink = `${window.location.origin}/Create?matchId=${myCurrentMatchId}`;
 
-            if (navigator.share) {
+            if (isMobileDevice() && navigator.share) {
+
                 navigator.share({
                     title: 'Want to challenge me ? ',
                     text: `Debate me on: "${thesis}"`,
                     url: inviteLink
                 }).catch(() => {});
+
             } else {
+
                 navigator.clipboard.writeText(inviteLink).then(() => {
+
                     alert('Invite link copied to clipboard!\n' + inviteLink);
+                }).catch(() => {
+
+                    // Fallback for browsers without clipboard API access (e.g. non-HTTPS)
+
+                    const tempInput = document.createElement('input');
+
+                    tempInput.value = inviteLink;
+                    document.body.appendChild(tempInput);
+
+                    tempInput.select();
+
+                    document.execCommand('copy');
+                    document.body.removeChild(tempInput);
+
+                    alert('Invite link copied to clipboard!\n' + inviteLink);
+
                 });
+
             }
+
         });
+
 
         btnCancel.addEventListener('click', () => {
             clearInterval(countdownInterval);
@@ -487,17 +538,29 @@
         });
 
         window.addEventListener('DOMContentLoaded', () => {
+
             const params = new URLSearchParams(window.location.search);
             const inviteMatchId = params.get('matchId');
 
             if (inviteMatchId) {
+
                 workspace.style.display = 'none';
+
                 matchmakingStatus.style.display = 'flex';
+
                 timerDisplay.textContent = "Joining...";
 
-                socket.emit('join_match', { matchId: inviteMatchId });
+                window.authReady.then(() => {
+
+                    socket.emit('join_match', { matchId: inviteMatchId });
+
+                });
+                
             }
         });
+
+
+
 
         socket.on('match_error', (data) => {
             alert(data.message);

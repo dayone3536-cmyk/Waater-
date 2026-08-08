@@ -115,6 +115,8 @@
         const auth = getAuth(app);
 
         // Auth Gatekeeper Check
+
+
         window.authReady = new Promise((resolve) => {
 
             onAuthStateChanged(auth, async   (user) => {
@@ -130,8 +132,14 @@
                 }
             
                 const idToken = await user.getIdToken();
-                socket.emit('authenticate', idToken);
-                resolve();
+
+                socket.emit('authenticate', idToken, (ack) => {
+
+                    if (ack && ack.ok) resolve();
+
+                    // if ack.ok is false, token verification failed server-side — you may want to redirect to Sigh-in here too
+
+                });
 
             });
 
@@ -198,22 +206,7 @@
             });
         });
 
-        function joinMatch(matchId) {
-
-
-            socket.emit('join_match',  {
-       
-                matchId: matchId
-
-
-
-                
-
-            });
-
-         
-
-        };
+        
 
         socket.on('match_found', (data) => {
             window.location.href = `/live?match=${data.matchId}&role=${data.role}`;
