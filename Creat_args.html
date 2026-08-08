@@ -362,6 +362,16 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
+        window.reauth = async () => {
+
+            const user = auth.currentUser;
+            if (!user) return;
+            const idToken = await user.getIdToken();
+            socket.emit('authenticate', idToken, () => {});
+        };
+
+
+
         // Real auth gate — nothing else on this page should run until this resolves
 
         window.authReady = new Promise((resolve) => {
@@ -413,6 +423,17 @@
 
     <script>
         const socket = io();
+
+        socket.on('reconnect', () => {
+            if (window.reauth) window.reauth();
+        });
+
+
+        socket.on('reconnect', () => {
+
+            if (window.reauth) window.reauth();
+
+        });
 
         const btnIgnite = document.getElementById('btn-ignite');
         const workspace = document.getElementById('creation-workspace');

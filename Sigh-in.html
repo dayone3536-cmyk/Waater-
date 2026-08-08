@@ -289,11 +289,18 @@
 
     function getRedirectTarget() {
 
-      const params = new URLSearchParams(window.location.search);
-      const redirect = params.get('redirect');
-      return redirect ? decodeURIComponent(redirect) : 'index.html';
+    const params = new URLSearchParams(window.location.search);
 
-    }
+    const matchId = params.get('matchId');
+
+    if (matchId) return `/Create?matchId=${matchId}`;
+
+    const redirect = params.get('redirect');
+    
+    return redirect ? decodeURIComponent(redirect) : 'index.html';
+
+  }
+
 
     function showMsg(type, html) {
 

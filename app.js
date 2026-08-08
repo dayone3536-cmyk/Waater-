@@ -22,7 +22,9 @@ initializeApp({
 
 const auth = getAuth();
 
- 
+
+
+
 const multer = require('multer');
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -1203,7 +1205,17 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
         try {
 
             const decoded = await auth.verifyIdToken(idToken);
+
             socket.data.uid = decoded.uid; // ← the actual auth flag
+
+            globalMatchmakingQueue.forEach(duel => {
+
+                if (duel.uid && duel.uid === decoded.uid) {
+
+                    duel.socketId = socket.id;
+                }
+
+            });   
 
 
             const { data: profile } = await supabase
@@ -1260,14 +1272,18 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
         //     thesis
         // }) macth_info
 
-        const newMatch = { //when a new duel has been created 
+        const newMatch = { //when a new duel has been created
+
             id: crypto.randomUUID(),
+
             thesis,
             startTime: Date.now(),
 
 
             socketId: socket.id,
-            profileId: socket.data.profile?.id || null   // ADD THIS LINE
+            profileId: socket.data.profile?.id || null,   // ADD THIS LINE
+
+            uid: socket.data.uid          
 
         };
 
@@ -1907,11 +1923,31 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
             `Disconnected: ${socket.id}`
         );
 
-        globalMatchmakingQueue =
-            globalMatchmakingQueue.filter(
-                duel =>
-                    duel.socketId !== socket.id
+        const disconnectedSocketId = socket.id;
+
+        setTimeout(() => {
+
+            const stillStale = globalMatchmakingQueue.some(
+
+                duel => duel.socketId === disconnectedSocketId
             );
+
+            if (stillStale) {
+
+                globalMatchmakingQueue = globalMatchmakingQueue.filter(
+
+                    duel => duel.socketId !== disconnectedSocketId
+
+                );
+
+                io.emit('update_duel_list', globalMatchmakingQueue);
+
+            }
+
+        }, DISCONNECT_GRACE_MS);
+        
+
+
 
         const roomsToRemove = [];
 
