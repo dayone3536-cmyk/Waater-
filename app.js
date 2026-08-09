@@ -131,6 +131,8 @@ app.get('/Sigh-in', (req, res) => {
 
 app.get('/profile', (req, res) => res.sendFile(__dirname + '/profile.html'));
 
+app.get('/profile/:id', (req, res) => res.sendFile(__dirname + '/profile.html')); // ← add this
+
 app.get('/leaderboard', (req, res) => res.sendFile(__dirname + '/leaderboard.html'));
 
 
@@ -394,6 +396,7 @@ app.post('/match/:roomId/comments', express.json(), verifyFirebaseToken, async (
     const enriched = { ...data, profiles: { id: profile.id,  username: profile.username, avatar_url: profile.avatar_url } };
 
     io.to(roomId).emit('new_comment', enriched);
+
 
     pushToDebaters(roomId, {
 
@@ -1181,7 +1184,8 @@ app.get('/api/leaderboard', async (req, res) => {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('username, avatar_url, drop_points')
+    .select( 'id , username, avatar_url, drop_points')
+
     .order('drop_points', { ascending: false })
     .limit(100);
  
