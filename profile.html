@@ -1020,16 +1020,62 @@ function whenFirebaseReady(callback) {
     }, 20);
 }
 
-whenFirebaseReady(async () => {
 
-    if (!(await window.requireLogin())) return;
+const __params = new URLSearchParams(window.location.search);
+const __viewId = __params.get('id');
 
-    loadProfile();
+if (__viewId) {
+    loadPublicProfile(__viewId);
+} else {
+    whenFirebaseReady(async () => {
+        if (!(await window.requireLogin())) return;
+        loadProfile();
+        registerPushToken();
+    });
+}
 
-    registerPushToken();
+async function loadPublicProfile(id){
+    document.getElementById('loadingCard').style.display = 'block';
+    document.getElementById('setupCard').style.display = 'none';
+    document.getElementById('profileBlock').style.display = 'none';
+
+    try {
+        const res = await fetch(`/api/profiles/${encodeURIComponent(id)}`);
+        const json = await safeJson(res);
+        if (!res.ok) throw new Error(json.error || `Could not load profile (HTTP ${res.status})`);
+
+        hideStatus();
+        document.getElementById('loadingCard').style.display = 'none';
+        document.getElementById('profileBlock').style.display = 'block';
+
+        currentProfile = json.profile;
+        renderProfile(currentProfile);
+        enterReadOnlyMode();
+
+    } catch (err) {
+        document.getElementById('loadingCard').style.display = 'none';
+        document.getElementById('profileBlock').style.display = 'block';
+        document.getElementById('usernameEl').textContent = 'Couldn\u2019t load';
+        showStatus(err.message || 'Could not load profile.', true);
+    }
+}
+
+function enterReadOnlyMode(){
+
+    // hide avatar upload affordance
+
+    const avatarEdit = document.querySelector('.avatar-edit');
+
+    if (avatarEdit) avatarEdit.style.display = 'none';
+
+    // bio becomes non-editable — strip the click-to-edit behavior
+    bioDisplay.style.cursor = 'default';
+
+    bioDisplay.replaceWith(bioDisplay.cloneNode(true)); // drops the click listener
+
+}
 
 
-});
 </script>
 
 </body>

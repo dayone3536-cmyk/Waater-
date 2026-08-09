@@ -391,7 +391,7 @@ app.post('/match/:roomId/comments', express.json(), verifyFirebaseToken, async (
 
     if (error) return res.status(500).json({ error: error.message });
 
-    const enriched = { ...data, profiles: { username: profile.username, avatar_url: profile.avatar_url } };
+    const enriched = { ...data, profiles: { id: profile.id,  username: profile.username, avatar_url: profile.avatar_url } };
 
     io.to(roomId).emit('new_comment', enriched);
 
@@ -421,7 +421,7 @@ app.get('/match/:roomId/comments', async (req, res) => {
     const { data, error } = await supabase
 
         .from('match_comments')
-        .select('*, profiles(username, avatar_url)')
+        .select('*, profiles(id, username, avatar_url)')
 
         .eq('room_id', roomId)
         .order('created_at', { ascending: true });
@@ -977,6 +977,23 @@ async function sendPush(profileId, { title, body, url }) {
         }
     }
 }
+
+// Public, read-only — anyone can view any profile by id, no login required
+
+app.get('/api/profiles/:id', async (req, res) => {
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url, bio, drop_points')
+        .eq('id', req.params.id)
+        .maybeSingle();
+
+    if (error) return res.status(500).json({ error: error.message });
+    if (!data) return res.status(404).json({ error: 'Profile not found' });
+
+    res.json({ profile: data });
+});
+
+
 
 
 async function pushToDebaters(roomId, { title, body, url, excludeProfileId } = {}) {

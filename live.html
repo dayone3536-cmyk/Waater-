@@ -1135,6 +1135,19 @@
         margin-left:auto;
     }
 
+    .comment-avatar-link,
+
+    .comment-username-link{
+
+        text-decoration:none;
+        color:inherit;
+
+        cursor:pointer;
+        
+    }
+
+
+
 
 
     /* ---------------- VS INTRO SCREEN ---------------- */
@@ -4640,40 +4653,47 @@ function showClipModal(canvas, topicText) {
 
     function addCommentToList(c){
 
-        // dedupe: if we already rendered this comment (by id), skip
-
         if (c.id && commentList.querySelector(`[data-comment-id="${c.id}"]`)) return;
 
         const emptyEl = commentList.querySelector('.comment-empty');
         if (emptyEl) emptyEl.remove();
 
         const item = document.createElement('div');
-
         item.className = 'comment-item';
         if (c.id) item.dataset.commentId = c.id;
 
         const profile = c.profiles || {};
         const username = profile.username || 'Unknown';
+
         const avatarUrl = profile.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(username)}`;
 
+        const profileId = c.profile_id || profile.id || null;
+
         const time = new Date(c.created_at).toLocaleString([], { hour:'2-digit', minute:'2-digit', month:'short', day:'numeric' });
+
+        const profileHref = profileId ? `/profile?id=${encodeURIComponent(profileId)}` : null;
 
         item.innerHTML = `
 
             <div class="comment-header">
-
+                ${profileHref ? `<a href="${profileHref}" class="comment-avatar-link">` : ''}
                 <img class="comment-avatar" src="${avatarUrl}" alt="">
+                ${profileHref ? `</a>` : ''}
+
+                ${profileHref ? `<a href="${profileHref}" class="comment-username-link">` : ''}
                 <span class="comment-username">${escapeHtml(username)}</span>
+                ${profileHref ? `</a>` : ''}
 
                 <span class="comment-time">${time}</span>
-
             </div>
+
             <div class="comment-text">${escapeHtml(c.message)}</div>
 
         `;
 
         commentList.appendChild(item);
     }
+
 
 
 
