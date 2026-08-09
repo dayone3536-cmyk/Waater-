@@ -833,14 +833,20 @@ function renderResults() {
         return;
     }
 
-    const rows = members.map(p => `
+    const rows = members.map((p, i) => `
+
         <div class="leader-row">
-            <span class="leader-position">#${p.position}</span>
+            <span class="leader-position">#${i + 1}</span>
+
             <img class="leader-avatar" src="${avatarSrc(p)}" alt="${escapeHtml(p.username)}">
             <span class="leader-username">${escapeHtml(p.username)}</span>
+            
             <span class="leader-points">${p.drop_points || 0} pts</span>
         </div>
     `).join('');
+
+
+
 
     resultsContainer.innerHTML = `
         <div class="profile-block results-block" style="--tier-color:${tier.color}">
