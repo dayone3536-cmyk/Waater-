@@ -1862,17 +1862,87 @@
     }
 
 
+    .live-comment-feed{
+        position: fixed;
+        right: 20px;
+        left: auto;                 /* was left:16px — now anchored right */
+        bottom: 150px;
+        max-width: 46%;
+        width: 420px;                /* bigger */
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;       /* bubbles hug the right edge */
+        gap: 8px;
+        pointer-events: none;
+        z-index: 900;
+    }
 
+    .live-comment-bubble{
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        background: rgba(21,25,36,0.42);      /* more transparent, was .82 */
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        border: 1px solid rgba(255,255,255,0.10);
+        border-radius: 16px;
+        padding: 12px 16px;                    /* bigger padding */
+        max-width: 100%;
+        animation: liveCommentIn .25s cubic-bezier(.34,1.56,.64,1);
+        box-shadow: 0 4px 18px rgba(0,0,0,.25);
+    }
 
+    .live-comment-bubble.fade-out{
+        animation: liveCommentOut .35s ease-in forwards;
+    }
 
+    .live-comment-avatar{
+        width: 30px;                 /* bigger */
+        height: 30px;
+        border-radius: 50%;
+        object-fit: cover;
+        flex-shrink: 0;
+        background: #0f1117;
+    }
 
+    .live-comment-body{
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
 
+    .live-comment-username{
+        font-size: .82rem;           /* bigger */
+        font-weight: 700;
+        color: #46c2ff;
+    }
 
+    .live-comment-text{
+        font-size: .95rem;           /* bigger */
+        color: #f1f5f9;
+        line-height: 1.4;
+        word-wrap: break-word;
+    }
 
+    @keyframes liveCommentIn{
+        from{ opacity: 0; transform: translateX(20px); }  /* slides in from the right */
+        to{ opacity: 1; transform: translateX(0); }
+    }
 
-
-
+    @keyframes liveCommentOut{
+        from{ opacity: 1; transform: translateY(0); }
+        to{ opacity: 0; transform: translateY(-8px); }
+    }
     @media (max-width: 600px){
+
+        .live-comment-feed{
+            bottom: 190px;
+            right: 10px;
+            left: auto;
+            width: min(80%, 340px);
+        }
+
+
 
         .comment-fab-row{
 
@@ -2088,6 +2158,8 @@
     <!-- messages  -->
 
 </div>
+
+<div class="live-comment-feed" id="liveCommentFeed"></div>
 
 
 
@@ -4767,6 +4839,45 @@ function showClipModal(canvas, topicText) {
     }
 
 
+    const LIVE_COMMENT_MAX_VISIBLE = 4;
+    const LIVE_COMMENT_LIFETIME_MS = 6000;
+
+    function showLiveCommentBubble(c){
+
+        const feed = document.getElementById('liveCommentFeed');
+        if (!feed) return;
+
+        const profile = c.profiles || {};
+        const username = profile.username || 'Unknown';
+        const avatarUrl = profile.avatar_url || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(username)}`;
+
+        const bubble = document.createElement('div');
+        bubble.className = 'live-comment-bubble';
+
+        bubble.innerHTML = `
+            <img class="live-comment-avatar" src="${avatarUrl}" alt="">
+            <div class="live-comment-body">
+                <span class="live-comment-username">${escapeHtml(username)}</span>
+                <span class="live-comment-text">${escapeHtml(c.message)}</span>
+            </div>
+        `;
+
+        feed.appendChild(bubble);
+
+        // cap how many are on screen at once
+        while (feed.children.length > LIVE_COMMENT_MAX_VISIBLE) {
+            feed.removeChild(feed.firstChild);
+        }
+
+        setTimeout(() => {
+            bubble.classList.add('fade-out');
+            setTimeout(() => bubble.remove(), 350);
+        }, LIVE_COMMENT_LIFETIME_MS);
+    }
+
+
+
+
 
 
     function updateCommentCount(n){
@@ -4861,6 +4972,11 @@ function showClipModal(canvas, topicText) {
 
         addCommentToList(comment);
         updateCommentCount(commentList.querySelectorAll('.comment-item').length);
+
+
+        showLiveCommentBubble(comment);
+
+
 
     });
 
