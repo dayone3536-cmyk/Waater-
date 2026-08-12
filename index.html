@@ -26,7 +26,7 @@
             padding: 24px 28px 12px;
         }
 
-        .feed-header h2 {
+        .feed-header1 h2 {
             font-size: 1.2rem;
             font-weight: 700;
             color: #f1f5f9;
@@ -72,6 +72,57 @@
             align-items: center;
             
         }
+
+
+        .active-debate-banner{
+            display:none;
+            align-items:center;
+            justify-content:space-between;
+            gap:16px;
+            margin:16px 28px 0;
+            padding:14px 20px;
+            border-radius:16px;
+            background:linear-gradient(135deg, rgba(59,130,246,.16), rgba(239,68,68,.10));
+            border:1px solid rgba(59,130,246,.35);
+            animation:adbSlideIn .3s ease-out;
+        }
+
+    .active-debate-banner.show{ display:flex; }
+    .active-debate-banner.losing{ border-color:rgba(239,68,68,.4); background:linear-gradient(135deg, rgba(239,68,68,.16), rgba(59,130,246,.08)); }
+    .active-debate-banner.expiring{ animation:adbUrgentPulse 1s ease-in-out infinite; }
+
+    @keyframes adbSlideIn{ from{ opacity:0; transform:translateY(-8px);} to{ opacity:1; transform:translateY(0);} }
+    @keyframes adbUrgentPulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(239,68,68,.35);} 50%{ box-shadow:0 0 0 6px rgba(239,68,68,0);} }
+
+    .adb-left{ display:flex; align-items:center; gap:12px; min-width:0; }
+
+    .adb-dot{
+        width:9px; height:9px; border-radius:50%;
+        background:#3b82f6; flex-shrink:0;
+        animation:livePulse 1.5s infinite;
+    }
+    .active-debate-banner.losing .adb-dot{ background:#ef4444; }
+
+    .adb-text{ min-width:0; }
+    .adb-title{ font-size:.88rem; font-weight:700; color:#f1f5f9; }
+    .adb-sub{ font-size:.8rem; color:#9ca3af; margin-top:2px; }
+    .adb-sub span#adbCountdown{ font-variant-numeric:tabular-nums; color:#e5e7eb; font-weight:700; }
+    .adb-sub strong{ color:#f1f5f9; }
+
+    .adb-cta{
+        flex-shrink:0;
+        border:none; cursor:pointer;
+        padding:10px 18px;
+        border-radius:999px;
+        font-weight:700; font-size:.82rem;
+        color:#fff;
+        background:linear-gradient(135deg,#6d5dfc,#4f7cff);
+        transition:transform .15s ease, filter .15s ease;
+    }
+    .adb-cta:hover{ transform:translateY(-1px); filter:brightness(1.1); }
+
+
+
 
 
 
@@ -377,6 +428,13 @@
             background: #6b7280;
         }
 
+        @media (max-width:600px){
+            .active-debate-banner{ margin:12px 16px 0; padding:12px 14px; }
+            .adb-title{ font-size:.82rem; }
+            .adb-sub{ font-size:.75rem; }
+            .adb-cta{ padding:9px 14px; font-size:.78rem; }
+        }
+
 
     </style>
 
@@ -385,6 +443,23 @@
     <!-- 1. The Fixed Top Header -->
 
     <header class="top-navbar">
+
+            <div id="activeDebateBanner" class="active-debate-banner">
+                <div class="adb-left">
+                    <span class="adb-dot"></span>
+                    <div class="adb-text">
+                        <div class="adb-title" id="adbTitle">Your debate is still open for votes</div>
+                        <div class="adb-sub">
+                            <span id="adbCountdown">--:--:--</span> left ·
+                            <strong id="adbMyVotes">0</strong> votes vs
+                            <span id="adbOppVotes">0</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="adb-cta" id="adbShareBtn">Rally votes</button>
+            </div>
+
+
         <div class="nav-left-group">
 
             <span class="brand-logo"> Waater </span>
@@ -554,21 +629,34 @@
 
         window.isLoggedIn = false;
 
-        onAuthStateChanged(auth, async (user) => {
-            
-            window.isLoggedIn = !!user;
+        window.authReady = authReady;
 
+
+        window.getIdToken = async function () {
+            await authReady;
+            const user = auth.currentUser;
+
+            if (!user) return null;
+            return await user.getIdToken();
+
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+
+            window.isLoggedIn = !!user;
             if (user) {
                 const idToken = await user.getIdToken();
+
                 socket.emit('authenticate', idToken);
+
             }
-
-
 
             authReadyResolve();
 
-
         });
+
+
+
 
         const logoutBtn = document.getElementById('logout-btn');
         if (logoutBtn) {
@@ -992,6 +1080,106 @@
         }
 
         loadPastMatches();
+
+        let activeDebate = null;
+        let adbInterval = null;
+
+        async function loadActiveDebateBanner() {
+
+            await window.authReady;
+
+            if (!window.isLoggedIn) return;
+
+            const idToken = await window.getIdToken();
+
+            const res = await fetch('/api/my-active-debate', {
+                headers: { Authorization: `Bearer ${idToken}` }
+            }).catch(() => null);
+
+            if (!res || !res.ok) return;
+            const { debate } = await res.json();
+            if (!debate) return;
+
+            activeDebate = debate;
+            renderActiveDebateBanner();
+            clearInterval(adbInterval);
+            adbInterval = setInterval(renderActiveDebateBanner, 1000);
+        }
+
+        function renderActiveDebateBanner() {
+            const banner = document.getElementById('activeDebateBanner');
+            const msLeft = new Date(activeDebate.expiresAt).getTime() - Date.now();
+
+            if (msLeft <= 0) {
+                banner.classList.remove('show');
+                clearInterval(adbInterval);
+                return;
+            }
+
+            const { myVotes, opponentVotes } = activeDebate;
+
+            document.getElementById('adbMyVotes').textContent = myVotes;
+            document.getElementById('adbOppVotes').textContent = opponentVotes;
+
+            const h = Math.floor(msLeft / 3600000);
+            const m = Math.floor((msLeft % 3600000) / 60000);
+            const s = Math.floor((msLeft % 60000) / 1000);
+            document.getElementById('adbCountdown').textContent =
+                `${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+
+            const title = document.getElementById('adbTitle');
+            const losing = myVotes < opponentVotes;
+
+            banner.classList.toggle('losing', losing);
+            banner.classList.toggle('expiring', msLeft < 60 * 60 * 1000); // last hour, add urgency
+            banner.classList.add('show');
+
+            title.textContent =
+                myVotes > opponentVotes ? "You're ahead — defend your lead" :
+                myVotes < opponentVotes ? "You're behind — rally votes now" :
+                "It's dead even — break the tie";
+        }
+
+        document.getElementById('adbShareBtn').addEventListener('click', async () => {
+            const shareUrl = `${window.location.origin}/live?match=${activeDebate.roomId}&replay=1`;
+            const text = `Vote for me: "${activeDebate.thesis}"`;
+
+            if (navigator.share) {
+                try { await navigator.share({ title: 'Waater', text, url: shareUrl }); } catch (e) {}
+            } else {
+                await navigator.clipboard.writeText(shareUrl);
+            }
+        });
+
+        document.getElementById('activeDebateBanner').addEventListener('click', (e) => {
+            if (e.target.id === 'adbShareBtn') return;
+            window.location.href = `/live?match=${activeDebate.roomId}&replay=1`;
+        });
+
+        loadActiveDebateBanner();
+
+        document.getElementById('adbShareBtn').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            
+            if (!activeDebate) return;
+            const shareUrl = `${window.location.origin}/live?match=${activeDebate.roomId}&replay=1`;
+            const text = `Vote for me: "${activeDebate.thesis}"`;
+
+            if (navigator.share) {
+                try { await navigator.share({ title: 'Waater', text, url: shareUrl }); } catch (e) {}
+            } else {
+                await navigator.clipboard.writeText(shareUrl);
+            }
+        });
+
+        document.getElementById('activeDebateBanner').addEventListener('click', (e) => {
+            if (e.target.id === 'adbShareBtn' || !activeDebate) return;
+            window.location.href = `/live?match=${activeDebate.roomId}&replay=1`;
+        });
+
+
+
+
 
 
     </script>

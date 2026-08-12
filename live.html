@@ -1837,6 +1837,33 @@
     .right .msg-username{ color:rgba(255,255,255,.85); }
 
 
+    .topic-row{
+
+        display:flex;
+        align-items:center;
+        gap:10px;
+        flex:1;
+        min-width:0;
+    }
+
+    .view-count{
+        display:flex;
+        align-items:center;
+        gap:5px;
+        color:#9ca3af;
+        font-size:.8rem;
+        font-weight:700;
+        flex-shrink:0;
+    }
+
+    .view-count svg{
+        width:16px;
+        height:16px;
+    }
+
+
+
+
 
 
 
@@ -1890,6 +1917,13 @@
             font-weight : 200;
 
         }
+
+        .topic-row{
+            justify-content:center;
+            flex-wrap:wrap;
+        }
+
+        
 
 
         .debaters{
@@ -1969,10 +2003,26 @@
 
 <div class="top-bar">
 
-    <div class="topic" id="Topic">
-        loading topic...
+    <div class="topic-row">
+
+        <div class="view-count" id="viewCount" title="Views">
+
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+
+                <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+
+            <span id="viewCountText">0</span>
+        </div>
+
+        <div class="topic" id="Topic">
+            loading topic...
+        </div>
 
     </div>
+
 
     <div class="header-actions">
 
@@ -2367,9 +2417,31 @@
     function recordView(id) {
 
         if (!id) return;
-        fetch(`/match/${id}/view`, { method: 'POST' }).catch(() => {});
+        fetch(`/match/${id}/view`, { method: 'POST' })
+            .then(res => res.json())
+
+            .then(data => updateViewCount(data.view_count))
+            .catch(() => {});
 
     }
+
+    function updateViewCount(count) {
+
+        const el = document.getElementById('viewCountText');
+        if (el) el.textContent = formatViewCount(count ?? 0);
+
+    }
+
+    function formatViewCount(n) {
+
+        if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+        if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+
+        return String(n);
+    }
+    
+
+
 
 
 

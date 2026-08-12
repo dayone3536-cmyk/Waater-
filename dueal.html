@@ -150,20 +150,11 @@
             await window.authReady;
             socket.emit('join_match', { matchId: matchId });
 
-            window.joinMatch = joinMatch;   // ← add this line so inline onclick can reach it
+               // ← add this line so inline onclick can reach it
             
         }
 
-
-
-
-
-    </script>
-
-    <script src="/notification.js"> </script>
-
-    <script>
-
+        window.joinMatch = joinMatch;
 
         const socket = io();
 
@@ -221,6 +212,7 @@
 
     </script>
 
+    <script src="/notification.js"> </script>
 
 
 </body>

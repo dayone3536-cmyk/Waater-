@@ -720,6 +720,61 @@ app.post('/engagement/dwell', express.json(), async (req, res) => {
 });
 
 
+app.get('/api/my-active-debate', verifyFirebaseToken, async (req, res) => {
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('firebase_uid', req.firebaseUser.uid)
+        .maybeSingle();
+
+    if (!profile) return res.json({ debate: null });
+
+    const windowStart = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    const { data: match, error } = await supabase
+        .from('past_matches')
+        .select('*')
+        .or(`creator_profile_id.eq.${profile.id},challenger_profile_id.eq.${profile.id}`)
+        .not('ended_at', 'is', null)
+        .gte('ended_at', windowStart)
+        .order('ended_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    if (error) return res.status(500).json({ error: error.message });
+    if (!match) return res.json({ debate: null });
+
+    const mySide = match.creator_profile_id === profile.id ? 'pro' : 'against';
+
+    const { data: votes, error: voteErr } = await supabase
+        .from('match_votes')
+        .select('side')
+        .eq('room_id', match.room_id);
+
+    if (voteErr) return res.status(500).json({ error: voteErr.message });
+
+    const tally = { pro: 0, against: 0 };
+    (votes || []).forEach(v => tally[v.side]++);
+
+    const expiresAt = new Date(new Date(match.ended_at).getTime() + 24 * 60 * 60 * 1000).toISOString();
+
+    res.json({
+
+        debate: {
+            roomId: match.room_id,
+            thesis: match.thesis,
+            myVotes: tally[mySide],
+            
+            opponentVotes: mySide === 'pro' ? tally.against : tally.pro,
+            expiresAt
+        }
+
+    });
+
+});
+
+
 
 
 app.post('/match/:roomId/react', express.json(), async (req, res) => {
@@ -1386,8 +1441,9 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
             roomId,
             thesis: duel.thesis,
 
-            creatorSocketId: duel.socketId,
-            challengerSocketId: socket.id,
+            creatorSocketId: null,
+
+            challengerSocketId: null ,
 
             creatorProfileId,
             challengerProfileId,
