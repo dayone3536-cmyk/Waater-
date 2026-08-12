@@ -168,6 +168,20 @@
             background: linear-gradient(145deg, #1a2030, #1e2436);
         }
 
+        .duel-thumb {
+
+            width: 100%;
+            max-height: 240px;
+
+            object-fit: cover;
+            border-radius: 16px;
+
+            display: block;
+
+        }
+
+
+
 
 
 
@@ -857,8 +871,12 @@
         card.className = 'duel-card';
 
         card.innerHTML = `
+        ${match.thesisImage ? `<img class="duel-thumb" src="${match.thesisImage}">` : ''}
+
             <div class="duel-card-top">
+
                 <p class="duel-thesis">${escapeHtml(match.thesis)}</p>
+
                 <span class="status-badge live">
                     <span class="status-dot"></span> Live
                 </span>
@@ -892,10 +910,16 @@
 
 
         card.innerHTML = `
+
+        ${match.thesis_image_url ? `<img class="duel-thumb" src="${match.thesis_image_url}">` : ''}
+
+        
             <div class="duel-card-top">
                 <p class="duel-thesis">${escapeHtml(match.thesis)}</p>
+
                 <span class="status-badge finished">
                     <span class="status-dot"></span> Finished
+
                 </span>
 
             </div>

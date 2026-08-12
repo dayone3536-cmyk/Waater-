@@ -287,6 +287,25 @@
                     <input type="text" id="argument-point" class="premium-input" placeholder="eg: Ronaldo is better than messi  ">
                 </div>
 
+                <div class="premium-input-container" style="margin-top:1rem;">
+
+                    <label class="premium-label">Add a photo (optional)</label>
+                    <input type="file" id="duel-image" accept="image/*" style="display:none;">
+
+                    <button type="button" id="duel-image-btn" class="radar-invite-btn" style="margin:0; max-width:100%;">
+
+                        <span class="material-symbols-outlined">add_photo_alternate</span>
+
+                        <span id="duel-image-btn-text">Attach a photo</span>
+
+                    </button>
+
+                    <img id="duel-image-preview" style="display:none; width:100%; border-radius:16px; margin-top:8px; max-height:200px; object-fit:cover;">
+
+                </div>
+
+
+
                 <button class="arena-submit-btn" id="btn-ignite" style="max-width: 500px; margin-top: 2rem; padding: 1.1rem;">
                     <span> Start </span>
                 </button>
@@ -412,7 +431,16 @@
                 });
             });
         }
-        
+
+
+        window.getIdToken = async () => {
+            const user = auth.currentUser;
+            if (!user) return null;
+            return await user.getIdToken();
+        };
+
+
+                
     </script>
 
 
@@ -484,8 +512,12 @@
 
             socket.emit('join_queue', {
                 mode: '1v1',
-                thesis: thesis
+                thesis: thesis,
+
+                imageUrl: uploadedImageUrl   // ADD THIS
+
             });
+
         });
 
         socket.on('duel_created', (data) => {
@@ -730,6 +762,56 @@
     socket.on('match_found', () => {
         stopHintRotation();
         clearInviteNudge();
+    });
+
+
+    let uploadedImageUrl = null;
+
+    const duelImageInput = document.getElementById('duel-image');
+    const duelImageBtn = document.getElementById('duel-image-btn');
+
+    const duelImageBtnText = document.getElementById('duel-image-btn-text');
+    const duelImagePreview = document.getElementById('duel-image-preview');
+
+    duelImageBtn.addEventListener('click', () => duelImageInput.click());
+
+    duelImageInput.addEventListener('change', async () => {
+
+        const file = duelImageInput.files[0];
+        if (!file) return;
+
+        duelImagePreview.src = URL.createObjectURL(file);
+        duelImagePreview.style.display = 'block';
+        duelImageBtnText.textContent = 'Uploading...';
+
+        await window.authReady;
+        const idToken = await window.getIdToken();
+        const formData = new FormData();
+        formData.append('image', file);
+
+        try {
+            const res = await fetch('/api/duel-image', {
+
+                method: 'POST',
+                headers: { Authorization: `Bearer ${idToken}` },
+                body: formData
+
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Upload failed');
+
+            uploadedImageUrl = data.url;
+            duelImageBtnText.textContent = 'Photo attached ✓';
+
+        } catch (err) {
+            alert('Image upload failed: ' + err.message);
+
+            duelImageBtnText.textContent = 'Attach a photo';
+
+            duelImagePreview.style.display = 'none';
+            uploadedImageUrl = null;
+        }
     });
 
 

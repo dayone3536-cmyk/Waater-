@@ -186,13 +186,20 @@
                 duelCard.style.marginBottom = '1rem';
 
                 duelCard.innerHTML = `
+
                     <div>
+                        ${duel.imageUrl ? `<img src="${duel.imageUrl}" style="width:100%; max-height:180px; object-fit:cover; border-radius:12px;">` : ''}
+
                         <h3 style="color: #ffffff; margin: 0;">${duel.thesis}</h3>
+
                     </div>
 
                     <button class="arena-submit-btn" onclick="joinMatch('${duel.id}')">
+
                         <span>Fight ⚔️</span>
+
                     </button>
+                    
                 `;
 
                 listContainer.appendChild(duelCard);

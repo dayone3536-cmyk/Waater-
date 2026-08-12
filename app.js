@@ -1090,8 +1090,14 @@ function broadcastLiveMatches() {
     const liveList = activeMatches.map(m => ({
         roomId: m.roomId,
         thesis: m.thesis,
+
+        thesisImage: m.thesisImage,
+
+
         spectatorCount: m.spectators.length
+
     }));
+
     io.emit('update_live_matches', liveList);
 }
 
@@ -1232,6 +1238,33 @@ app.post('/api/profile/avatar', verifyFirebaseToken, upload.single('avatar'), as
 
 });
 
+
+app.post('/api/duel-image', verifyFirebaseToken, upload.single('image'), async (req, res) => {
+
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+    if (!req.file.mimetype.startsWith('image/')) {
+        return res.status(400).json({ error: 'File must be an image' });
+    }
+
+    const ext = (req.file.originalname.split('.').pop() || 'jpg').toLowerCase();
+
+    const filePath = `${req.firebaseUser.uid}-${Date.now()}.${ext}`;
+
+    const { error: uploadErr } = await supabase.storage
+
+        .from('duel-images')
+
+        .upload(filePath, req.file.buffer, { contentType: req.file.mimetype, upsert: true });
+
+    if (uploadErr) return res.status(500).json({ error: uploadErr.message });
+
+    const { data: publicUrlData } = supabase.storage.from('duel-images').getPublicUrl(filePath);
+    res.json({ url: publicUrlData.publicUrl });
+});
+
+
+
  
 /* ---- leaderboard ---- */
 
@@ -1353,11 +1386,14 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
             id: crypto.randomUUID(),
 
             thesis,
+
+            imageUrl: typeof data.imageUrl === 'string' ? data.imageUrl : null,  
+
             startTime: Date.now(),
 
 
             socketId: socket.id,
-            profileId: socket.data.profile?.id || null,   // ADD THIS LINE
+            profileId: socket.data.profile?.id || null,   
 
             uid: socket.data.uid          
 
@@ -1441,6 +1477,8 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
             roomId,
             thesis: duel.thesis,
 
+            thesisImage: duel.imageUrl,
+
             creatorSocketId: null,
 
             challengerSocketId: null ,
@@ -1474,11 +1512,17 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
     supabase.from('past_matches').insert({
         room_id: roomId,
         thesis: duel.thesis,
+
+        thesis_image_url: duel.imageUrl,
+
         creator_socket_id: duel.socketId,
+
         challenger_socket_id: socket.id,
         creator_profile_id: creatorProfileId,
+
         challenger_profile_id: challengerProfileId,
         started_at: new Date().toISOString()
+
 
     }).select().then(({ data, error }) => {
 
