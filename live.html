@@ -2762,7 +2762,11 @@
 
     // messageInput replay 
 
+    let matchArguments = [];
+
     socket.on('match_history', (messages) => {
+
+    matchArguments = messages.slice();
 
         messages.forEach(arg => {
 
@@ -2851,7 +2855,15 @@
 
         args.forEach(arg => {
 
-            chat.appendChild(createMessageBubble(arg.message, arg.sender_role, arg.replyTo || null));
+            chat.appendChild(createMessageBubble(
+
+                arg.message,
+
+                arg.sender_role,
+
+                arg.reply_to ? { text : arg.reply_to, senderRole: arg.reply_to_role } : null
+
+        ));
 
         });
 
@@ -3420,12 +3432,24 @@ async function showResultsScreen(roomId, resultReason) {
     const topicText = dynamic_title.textContent || 'Debate Arena';
 
     let args = [];
-    try {
-        const argsRes = await fetch(`/past-matches/${roomId}/arguments`);
-        args = await argsRes.json();
-    } catch (e) {
-        console.error('Failed to load arguments:', e);
+
+    if (isReplay) {
+
+        try {
+            const argsRes = await fetch(`/past-matches/${roomId}/arguments`);
+
+            args = await argsRes.json();
+        } catch (e) {
+            
+            console.error('Failed to load arguments:', e);
+
+        }
+    } else {
+        args = matchArguments;                                  // ADD THIS — no race condition
     }
+
+
+
 
     const chosen = pickRandomMessages(args, 3);
 
@@ -3917,6 +3941,16 @@ function showClipModal(canvas, topicText) {
 
         'new_argument',
         (data) => {
+
+            matchArguments.push({                              // ADD THIS
+                message: data.message,                          // ADD THIS
+                sender_role: data.senderRole,                    // ADD THIS
+                created_at: new Date().toISOString(),            // ADD THIS
+                reply_to: data.replyTo,                           // ADD THIS
+                reply_to_role: data.replyToRole                  // ADD THIS
+            }); 
+
+            
 
             chat.appendChild(createMessageBubble(data.message, data.senderRole,
 
