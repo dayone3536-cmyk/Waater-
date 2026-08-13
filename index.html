@@ -144,33 +144,41 @@
         .duel-card {
 
             background: linear-gradient(145deg, #161b27, #1a2030);
-
-            border: 1px solid #2a3142 ;
-
-            border-bottom: 1px solid #262d3d;
-
+            border: 1px solid #2a3142;
             border-radius: 22px;
-
             padding: 18px 28px;
-
             margin-bottom: 25px;
 
             display: flex;
             flex-direction: column;
-
             gap: 14px;
-            transition: background .2s ease;
+            transition: background .2s ease, border-color .2s ease, transform .15s ease;
+            cursor: pointer;
 
         }
 
         .duel-card:hover {
-
             background: linear-gradient(145deg, #1a2030, #1e2436);
+            border-color: #3b4356;
+            transform: translateY(-2px);
         }
+
+        .duel-card:active {
+            transform: translateY(0) scale(0.99);
+        }
+
+
+
+
 
         .duel-thumb {
 
             width: 100%;
+
+
+            max-height: 300px; 
+
+
             aspect-ratio: 16 / 9;
 
             object-fit: cover;
@@ -200,12 +208,7 @@
             color: #8b94a7;
         }
 
-        .duel-card-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-        }
+
 
         .duel-reactions {
             display: flex;
@@ -261,12 +264,19 @@
         }
 
         .duel-card-footer {
+
             display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 12px;
+
             flex-wrap: wrap;
+            padding-top: 4px;
+            border-top: 1px solid #23283780;
+            
         }
+
+
 
         .duel-actions {
             display: flex;
@@ -889,7 +899,7 @@
     }
 
     function buildPastCard(match) {
-        
+
         const card = document.createElement('div');
         card.className = 'duel-card';
 
