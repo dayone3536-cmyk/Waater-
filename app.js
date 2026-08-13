@@ -102,7 +102,7 @@ let activeMatches = [];
 
 let currentRoom = null;
 
-const DISCONNECT_GRACE_MS = 8000;
+const DISCONNECT_GRACE_MS = 20000;
 
 
 /* ---------------- ROUTES ---------------- */

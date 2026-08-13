@@ -2722,27 +2722,34 @@
     // Fire authenticate in the background — join_room doesn't need to wait for it,
     // it identifies debaters by socket.id, not by profile.
 
-    (async () => {
+    async function joinRoomOnConnect() {
 
         const idToken = await window.getIdToken();
         if (idToken) {
             socket.emit('authenticate', idToken);
-
         }
-        
-    })();
+        if (!isReplay) {
+            socket.emit("join_room", { roomId: currentRoomId, role });
+        }
+}
 
-    if (isReplay) {
 
-        loadReplayMode(roomId);
+// fires on the initial connect AND every auto-reconnect after a drop —
 
-    } else {
+// this is what was missing. Without it, a reconnecting client keeps a dead
 
-        socket.emit("join_room", { roomId, role });
+// socket.id registered on the server and gets forfeited by the grace timer.
 
-    }
 
-    recordView(roomId);
+socket.on('connect', joinRoomOnConnect);
+
+if (isReplay) {
+    loadReplayMode(roomId);
+}
+
+recordView(roomId);
+
+
 
 
 
@@ -2766,19 +2773,26 @@
 
     socket.on('match_history', (messages) => {
 
-    matchArguments = messages.slice();
+        matchArguments = messages.slice();
+
+        // clear previously rendered arguments so a reconnect-triggered re-join
+        // doesn't duplicate every past message in the chat
+        chat.querySelectorAll('.argument').forEach(el => el.remove());
 
         messages.forEach(arg => {
 
             chat.appendChild(createMessageBubble(arg.message, arg.sender_role,
             
-             arg.reply_to ? { text: arg.reply_to, senderRole: arg.reply_to_role } : null));
+            arg.reply_to ? { text: arg.reply_to, senderRole: arg.reply_to_role } : null));
 
         });
 
         chat.scrollTop = 0;
 
     });
+
+
+
 
 // update_live_matches
     let typingBubble = null;
