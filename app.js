@@ -102,6 +102,8 @@ let activeMatches = [];
 
 let currentRoom = null;
 
+const onlineProfileSockets = new Map(); // profileId -> current socket.id, for instant DM delivery
+
 const DISCONNECT_GRACE_MS = 20000;
 
 
