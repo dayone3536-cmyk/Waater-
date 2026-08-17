@@ -4,6 +4,7 @@
   "description": "",
   "main": "app.js",
   "dependencies": {
+    "@napi-rs/canvas": "^1.0.6",
     "@supabase/supabase-js": "^2.108.2",
     "accepts": "^2.0.0",
     "base64id": "^2.0.0",

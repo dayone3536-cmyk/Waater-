@@ -1191,6 +1191,10 @@
             window.location.href = `/live?match=${activeDebate.roomId}&replay=1`;
         });
 
+        socket.on('match_found', () => window.clearActiveDuel());
+        socket.on('match_error', () => window.clearActiveDuel());
+
+
 
 
 
@@ -1198,7 +1202,7 @@
 
     </script>
 
-
+    <script src="/active-duel.js"></script>
 
 </body>
 </html>

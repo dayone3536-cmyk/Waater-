@@ -521,8 +521,24 @@
         });
 
         socket.on('duel_created', (data) => {
+
             myCurrentMatchId = data.matchId;
+            window.setActiveDuel({
+
+                matchId: data.matchId,
+
+                thesis: argumentInput.value.trim(),
+
+                imageUrl: uploadedImageUrl,
+
+                startTime: Date.now(),
+                duration: 180
+
+            });
+
         });
+
+
 
         function isMobileDevice() {
 
@@ -589,6 +605,9 @@
             matchmakingStatus.style.display = 'none';
             workspace.style.display = 'flex';
             myCurrentMatchId = null;
+
+            window.clearActiveDuel();
+            
         });
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -755,8 +774,10 @@
     });
 
     btnCancel.addEventListener('click', () => {
+
         stopHintRotation();
         clearInviteNudge();
+
     });
 
     socket.on('match_found', () => {
@@ -815,7 +836,14 @@
     });
 
 
+    socket.on('match_found', () => window.clearActiveDuel());
+    
+    socket.on('match_error', () => window.clearActiveDuel());
+
+
     </script>
+
+    <script src="/active-duel.js"></script>
 
 </body>
 </html>

@@ -1010,7 +1010,14 @@ updateToggleLabel();
 renderResults();
 loadLeaderboard();
 
+
+socket.on('match_found', () => window.clearActiveDuel());
+socket.on('match_error', () => window.clearActiveDuel());
+
+
 </script>
+
+<script src="/active-duel.js"></script>
 
 </body>
 </html>

@@ -215,11 +215,22 @@
         // Add this inside your existing script block
 
 
+        socket.on('match_error', (data) => {
+
+            alert(data.message);
+
+        });
+
+        socket.on('match_found', () => window.clearActiveDuel());
+        socket.on('match_error', () => window.clearActiveDuel());
+
 
 
     </script>
 
     <script src="/notification.js"> </script>
+
+    <script src="/active-duel.js"></script>
 
 
 </body>

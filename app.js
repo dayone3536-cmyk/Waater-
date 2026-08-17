@@ -122,9 +122,67 @@ app.get('/dueal', (req, res) => {
 });
 
 
-app.get('/live', (req, res) => {
-    res.sendFile(__dirname + '/live.html');
+app.get('/live', async (req, res) => {
+
+    const matchId = req.query.match;
+
+    if (!matchId) {
+        return res.sendFile(__dirname + '/live.html');
+    }
+
+    try {
+
+        const { data: match } = await supabase
+            .from('past_matches')
+
+            .select('thesis, creator_profile_id, challenger_profile_id')
+
+            .eq('room_id', matchId)
+            .maybeSingle();
+
+        if (!match) return res.sendFile(__dirname + '/live.html');
+
+        const ogImageUrl = await getOrCreateShareImage(matchId, match);
+
+        const pageUrl = `https://waater-yey2.onrender.com/live?match=${matchId}`;
+
+        let html = fs.readFileSync(__dirname + '/live.html', 'utf8');
+
+        const ogTags = `
+    <meta property="og:title" content="${escapeHtmlServer(match.thesis || 'Waater Debate')}">
+
+
+    <meta property="og:description" content="Who do you think is right? Vote now on Waater.">
+
+    <meta property="og:image" content="${ogImageUrl}">
+
+    <meta property="og:image:width" content="1200">
+
+    <meta property="og:image:height" content="630">
+
+    <meta property="og:url" content="${pageUrl}">
+
+    <meta property="og:type" content="website">
+
+    <meta name="twitter:card" content="summary_large_image">
+
+    <meta name="twitter:image" content="${ogImageUrl}">`;
+
+        html = html.replace('<!--OG_TAGS-->', ogTags);
+
+        res.send(html);
+
+    } catch (err) {
+
+        console.error('Failed to render /live with OG tags:', err);
+
+        res.sendFile(__dirname + '/live.html');
+        
+    }
 });
+
+
+
 
 // you_are_spectator
 app.get('/Sigh-in', (req, res) => {
@@ -1293,6 +1351,225 @@ app.get('/api/leaderboard', async (req, res) => {
 
 });
 
+const fs = require('fs');
+const path = require('path');
+const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
+
+GlobalFonts.registerFromPath(path.join(__dirname, 'fonts/Inter-Bold.ttf'), 'Inter-Bold');
+GlobalFonts.registerFromPath(path.join(__dirname, 'fonts/Inter-Regular.ttf'), 'Inter');
+
+function escapeHtmlServer(str) {
+    return String(str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+    const words = text.split(' ');
+    let line = '', curY = y;
+    ctx.textAlign = 'center';
+    for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        if (ctx.measureText(testLine).width > maxWidth && n > 0) {
+            ctx.fillText(line, x, curY);
+            line = words[n] + ' ';
+            curY += lineHeight;
+        } else {
+            line = testLine;
+        }
+    }
+    ctx.fillText(line, x, curY);
+    return curY;
+}
+
+const shareImageCache = new Map(); // roomId -> { url, ts }
+
+const SHARE_IMAGE_CACHE_MS = 60 * 1000; // don't regenerate more than once a minute per match
+
+async function getOrCreateShareImage(roomId, matchRow) {
+
+    const cached = shareImageCache.get(roomId);
+
+    if (cached && Date.now() - cached.ts < SHARE_IMAGE_CACHE_MS) return cached.url;
+
+    const url = await generateShareImage(roomId, matchRow);
+
+    shareImageCache.set(roomId, { url, ts: Date.now() });
+
+    return url;
+}
+
+async function generateShareImage(roomId, matchRow) {
+
+    const ids = [matchRow.creator_profile_id, matchRow.challenger_profile_id].filter(Boolean);
+
+    const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', ids);
+
+    const creator = profiles?.find(p => p.id === matchRow.creator_profile_id) || null;
+    const challenger = profiles?.find(p => p.id === matchRow.challenger_profile_id) || null;
+
+    const { data: votes } = await supabase
+
+        .from('match_votes')
+        .select('side')
+        .eq('room_id', roomId);
+
+    const tally = { pro: 0, against: 0 };
+
+    (votes || []).forEach(v => tally[v.side]++);
+
+    const total = tally.pro + tally.against;
+
+    const proPct = total === 0 ? 50 : Math.round((tally.pro / total) * 100);
+
+    const againstPct = 100 - proPct;
+
+    const W = 1200, H = 630;
+
+    const canvas = createCanvas(W, H);
+
+    const ctx = canvas.getContext('2d');
+
+    // background
+
+    ctx.fillStyle = '#0f1117';
+
+    ctx.fillRect(0, 0, W, H);
+
+    // topic
+    ctx.fillStyle = '#46c2ff';
+
+    ctx.font = '700 40px Inter-Bold';
+
+    wrapText(ctx, matchRow.thesis || 'Waater Debate', W / 2, 90, 1000, 50);
+
+    // avatars
+    const avatarSize = 160;
+    const fallback = (seed) => `https://api.dicebear.com/7.x/identicon/png?seed=${encodeURIComponent(seed)}`;
+
+    async function drawAvatar(url, x, y, ringColor) {
+
+        try {
+
+            const img = await loadImage(url);
+            ctx.save();
+            ctx.beginPath();
+
+            ctx.arc(x + avatarSize / 2, y + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+            ctx.closePath();
+
+            ctx.clip();
+            ctx.drawImage(img, x, y, avatarSize, avatarSize);
+            ctx.restore();
+
+
+            ctx.beginPath();
+
+            ctx.arc(x + avatarSize / 2, y + avatarSize / 2, avatarSize / 2 + 4, 0, Math.PI * 2);
+            ctx.strokeStyle = ringColor;
+
+            ctx.lineWidth = 6;
+
+            ctx.stroke();
+        } catch (e) {
+            console.error('avatar load failed:', e.message);
+        }
+    }
+
+    const leftX = 220, rightX = W - 220 - avatarSize, avatarY = 220;
+
+    await drawAvatar(challenger?.avatar_url || fallback('challenger'), leftX, avatarY, '#000000');
+
+    await drawAvatar(creator?.avatar_url || fallback('creator'), rightX, avatarY, '#2563eb');
+
+    // usernam
+
+    ctx.fillStyle = '#ffffff';
+
+    ctx.font = '700 32px Inter-Bold';
+
+    ctx.textAlign = 'center';
+    ctx.fillText(challenger?.username || 'Against', leftX + avatarSize / 2, avatarY + avatarSize + 44);
+
+    ctx.fillText(creator?.username || 'Pro', rightX + avatarSize / 2, avatarY + avatarSize + 44);
+
+    // VS
+    ctx.fillStyle = '#6b7280';
+    ctx.font = '900 44px Inter-Bold';
+
+    ctx.fillText('VS', W / 2, avatarY + avatarSize / 2 + 16);
+
+    // vote bar
+    const barY = 480, barH = 22, barX = 220, barW = W - 440;
+
+    ctx.fillStyle = '#1f2635';
+
+    roundRect(ctx, barX, barY, barW, barH, 11);
+    ctx.fill();
+
+
+    ctx.fillStyle = '#4f7cff';
+
+    roundRect(ctx, barX, barY, (proPct / 100) * barW, barH, 11);
+
+    ctx.fill();
+
+    ctx.font = '700 26px Inter-Bold';
+
+    ctx.fillStyle = '#9ca3af';
+
+    ctx.textAlign = 'left';
+
+    ctx.fillText(`${againstPct}% · ${tally.against} votes`, barX, barY - 16);
+
+    ctx.textAlign = 'right';
+
+    ctx.fillText(`${proPct}% · ${tally.pro} votes`, barX + barW, barY - 16);
+
+
+    ctx.textAlign = 'center';
+    ctx.font = '600 22px Inter';
+
+    ctx.fillStyle = '#6b7280';
+    ctx.fillText(`${total} total votes`, W / 2, barY + 60);
+
+
+    // watermark
+    ctx.textAlign = 'right';
+    ctx.font = '700 24px Inter-Bold';
+
+    ctx.fillStyle = '#9ca3af';
+    ctx.fillText('waater-yey2.onrender.com', W - 60, H - 40);
+
+    const buffer = canvas.toBuffer('image/png');
+    const filePath = `share-${roomId}.png`;
+
+    const { error: uploadErr } = await supabase.storage
+        .from('duel-images')
+        .upload(filePath, buffer, { contentType: 'image/png', upsert: true });
+
+    if (uploadErr) {
+        console.error('Failed to upload share image:', uploadErr);
+        return 'https://waater-yey2.onrender.com/default-og.png';
+    }
+
+    const { data: publicUrlData } = supabase.storage.from('duel-images').getPublicUrl(filePath);
+    return publicUrlData.publicUrl + `?v=${Date.now()}`; // bust cache when votes change
+}
+
 
 
 
@@ -1449,10 +1726,20 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
             return;
         }
 
+
+
 //   leave_room 
 
         const duel =
             globalMatchmakingQueue[index];
+
+        if (duel.uid && duel.uid === socket.data.uid) {
+                
+            socket.emit('match_error', { message: "That's your own debate — wait for someone else to join, or invite a friend to skip the wait." });
+            return;
+        }
+
+
 
         globalMatchmakingQueue.splice(index, 1);
 
