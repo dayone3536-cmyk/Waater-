@@ -2791,7 +2791,11 @@ recordView(roomId);
 
         });
 
-        chat.scrollTop = 0;
+        const savedPos = chatScrollPositions.get(currentRoomId);
+
+        chat.scrollTop = savedPos !== undefined ? savedPos : 0;
+
+        
 
     });
 
@@ -2885,7 +2889,12 @@ recordView(roomId);
 
         });
 
-        chat.scrollTop = 0;
+        const savedPos = chatScrollPositions.get(roomId);
+        chat.scrollTop = savedPos !== undefined ? savedPos : 0;
+
+        
+
+
     }
 
 
@@ -4715,6 +4724,14 @@ function showClipModal(canvas, topicText) {
 
     /* ---------------- REELS-STYLE HORIZONTAL SWIPE (LIVE + REPLAY) ---------------- */
 
+    const chatScrollPositions = new Map(); // roomId -> last scrollTop
+
+    function saveScrollPosition(roomId) {
+        if (roomId) chatScrollPositions.set(roomId, chat.scrollTop);
+    }
+
+
+
     let liveMatches = [];
     let pastMatches = [];
 
@@ -4755,6 +4772,8 @@ function showClipModal(canvas, topicText) {
         isSwitching = true;
 
         flushDwellTime();
+
+        saveScrollPosition(currentRoomId);
 
         socket.emit('leave_room', { roomId: currentRoomId });
         clearChatUI();
