@@ -2210,84 +2210,116 @@ io.on('connection', (socket) => { //wen a new user is connceted run this
 
     // 2. Listen for 'send_argument' from your frontend Send button  const { data: matches, error } = await supabase;
 
-    socket.on('send_argument', (data) => {
+        socket.on('send_argument', async (data) => {
 
         const match = activeMatches.find(m => m.roomId === data.roomId);
-
-        if (!match) {
-            return;
-        }
+        if (!match) return;
 
         let senderRole = null;
-
         if (socket.id === match.creatorSocketId) senderRole = 'creator';
-
         else if (socket.id === match.challengerSocketId) senderRole = 'challenger';
+        if (!senderRole) return; // sender is a spectator, not a debater — reject
 
-        if (!senderRole) {
-            return; // sender is a spectator, not a debater — reject
-        }
+        const message = typeof data.message === 'string' ? data.message.trim() : '';
+        if (!message || message.length > 2000) return; // basic sanity check
 
-            const message = typeof data.message === 'string' ? data.message.trim() : '';
+        // sanitize the reply quote — must be a string, capped so nobody sends a novel as a "quote"
+        let replyTo = typeof data.replyTo === 'string' ? data.replyTo.trim() : null;
+        if (replyTo && replyTo.length > 500) replyTo = replyTo.slice(0, 500);
+        if (!replyTo) replyTo = null;
 
-            if (!message || message.length > 2000) {
+        const replyToRole = ['creator', 'challenger'].includes(data.replyToRole) ? data.replyToRole : null;
+        const replyToId = typeof data.replyToId === 'string' ? data.replyToId : null; // NEW
 
-                return; // basic sanity check — empty or absurdly long payloads
-
-            }
-
-        // NEW: sanitize the reply quote — must be a string, capped so nobody sends a novel as a "quote"
-
-            let replyTo = typeof data.replyTo === 'string' ? data.replyTo.trim() : null;
-
-            if (replyTo && replyTo.length > 500) replyTo = replyTo.slice(0, 500);
-            if (!replyTo) replyTo = null;
-
-            const replyToRole = ['creator', 'challenger'].includes(data.replyToRole) ? data.replyToRole : null;
-
-            io.to(data.roomId).emit('new_argument', {
-
-                message, senderId: socket.id, senderRole,
-                replyTo, replyToRole
-
-            });
-
-            supabase.from('past_arguments').insert({
-
+        // await the insert so we have the row's real id before broadcasting —
+        // without this, the client has nothing to send back later for edit_argument
+        const { data: inserted, error } = await supabase
+            .from('past_arguments')
+            .insert({
                 room_id: data.roomId,
                 sender_role: senderRole,
                 message,
-
                 reply_to: replyTo,
-                reply_to_role: replyToRole
-
-            }).then(({ error }) => {
-
-                if (error) console.error('Failed to save argument to past_arguments:', error);
+                reply_to_role: replyToRole,
+                reply_to_id: replyToId       // NEW
                 
+            })
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Failed to save argument to past_arguments:', error);
+            return; // don't broadcast a message that was never persisted
+        }
+
+        io.to(data.roomId).emit('new_argument', {
+            id: inserted.id,                 // NEW — this is what makes editing possible
+            message, senderId: socket.id, senderRole,
+            replyTo, replyToRole,
+            replyToId                        // NEW
+        });
+
+        const recipientRole = senderRole === 'creator' ? 'challenger' : 'creator';
+        const recipientProfileId = recipientRole === 'creator' ? match.creatorProfileId : match.challengerProfileId;
+
+        const recipientSocketId = recipientRole === 'creator' ? match.creatorSocketId : match.challengerSocketId;
+        const recipientSocket = io.sockets.sockets.get(recipientSocketId);
+
+        const recipientInRoom = recipientSocket?.rooms.has(data.roomId);
+
+        if (recipientProfileId && !recipientInRoom) {
+            sendPush(recipientProfileId, {
+                title: 'New reply in your debate',
+                body: message.slice(0, 100),
+                url: `/live?match=${data.roomId}`
             });
 
+        }
 
-
-            const recipientRole = senderRole === 'creator' ? 'challenger' : 'creator';
-            const recipientProfileId = recipientRole === 'creator' ? match.creatorProfileId : match.challengerProfileId;
-
-            const recipientSocketId = recipientRole === 'creator' ? match.creatorSocketId : match.challengerSocketId;
-            const recipientSocket = io.sockets.sockets.get(recipientSocketId);
-
-            const recipientInRoom = recipientSocket?.rooms.has(data.roomId);
-
-            if (recipientProfileId && !recipientInRoom) {
-
-                sendPush(recipientProfileId, {
-                    title: 'New reply in your debate',
-
-                    body: message.slice(0, 100),
-                    url: `/live?match=${data.roomId}`
-
-                });
-            }
     });
+
+
+
+    socket.on('edit_argument', async (data) => {
+
+        const roomId = data?.roomId;
+        const argumentId = data?.argumentId;
+        const newMessage = typeof data?.message === 'string' ? data.message.trim() : '';
+
+        if (!roomId || !argumentId || !newMessage || newMessage.length > 2000) return;
+
+        const match = activeMatches.find(m => m.roomId === roomId);
+        if (!match) return;
+
+        let senderRole = null;
+        if (socket.id === match.creatorSocketId) senderRole = 'creator';
+        else if (socket.id === match.challengerSocketId) senderRole = 'challenger';
+        if (!senderRole) return; // only debaters can edit, never spectators
+
+        // .eq('sender_role', senderRole) means you can only ever touch rows
+        // that belong to *your* side of this room — a challenger can't edit
+        // a creator's line even if they somehow guessed the id.
+        const { data: row, error } = await supabase
+            .from('past_arguments')
+            .update({ message: newMessage, edited_at: new Date().toISOString() })
+            .eq('id', argumentId)
+            .eq('room_id', roomId)
+            .eq('sender_role', senderRole)
+            .select()
+            .single();
+
+        if (error || !row) {
+            console.error('Failed to edit argument:', error);
+            return;
+        }
+
+        io.to(roomId).emit('argument_edited', {
+            argumentId,
+            message: newMessage
+        });
+    });
+
+
 
 
 

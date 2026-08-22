@@ -1928,6 +1928,35 @@
         word-wrap: break-word;
     }
 
+    .edited-tag{
+
+        font-size: .68rem;
+        color: rgba(255,255,255,.5);
+
+        font-style: italic;
+
+        margin-left: 6px;
+    }
+
+    .msg-body{ position: relative; }
+
+
+    .edit-textarea{
+        width: 100%;
+        background: rgba(0,0,0,.2);
+        border: 1px solid rgba(255,255,255,.25);
+        border-radius: 10px;
+        color: white;
+        font-family: Inter, system-ui, sans-serif;
+        font-size: 15px;
+        padding: 8px 10px;
+        resize: none;
+        outline: none;
+    }
+    .argument.editing{ cursor: default; }
+
+
+
     @keyframes liveCommentIn{
         from{ opacity: 0; transform: translateX(20px); }  /* slides in from the right */
         to{ opacity: 1; transform: translateX(0); }
@@ -2785,9 +2814,15 @@ recordView(roomId);
 
         messages.forEach(arg => {
 
-            chat.appendChild(createMessageBubble(arg.message, arg.sender_role,
+            chat.appendChild(createMessageBubble(
+
+                arg.message, arg.sender_role,
+
+                arg.reply_to ? { text: arg.reply_to, senderRole: arg.reply_to_role, id: arg.reply_to_id } : null,
             
-            arg.reply_to ? { text: arg.reply_to, senderRole: arg.reply_to_role } : null));
+                arg.id, arg.edited_at
+
+            ));
 
         });
 
@@ -2798,6 +2833,65 @@ recordView(roomId);
         
 
     });
+
+
+    socket.on('new_argument', (data) => {
+
+        matchArguments.push({
+            id: data.id,
+            message: data.message,
+            sender_role: data.senderRole,
+
+            created_at: new Date().toISOString(),
+            reply_to: data.replyTo,
+            reply_to_role: data.replyToRole
+
+        });
+
+        chat.appendChild(createMessageBubble(
+
+            data.message, data.senderRole,
+
+            data.replyTo ? { text: data.replyTo, senderRole: data.replyToRole, id: data.replyToId } : null ,
+
+            data.id
+        ));
+
+        chat.scrollTop = chat.scrollHeight;
+    });
+
+    // live edits from anyone (mainly relevant if you ever open this to opponents seeing "(edited)" too)
+
+    socket.on('argument_edited', (data) => {
+
+        const bubble = chat.querySelector(`.argument[data-arg-id="${data.argumentId}"]`);
+        if (bubble) {
+
+            const body = bubble.querySelector('.msg-body');
+            if (body) {
+
+                body.textContent = data.message;
+                const tag = document.createElement('span');
+                tag.className = 'edited-tag';
+
+                tag.textContent = ' (edited)';
+                body.appendChild(tag);
+
+            }
+        }
+
+            document.querySelectorAll(`.reply-quote[data-reply-ref="${data.argumentId}"] .reply-quote-text`)
+                .forEach(el => {
+                    el.textContent = data.message.length > 100 ? data.message.slice(0, 100) + '…' : data.message;
+                });
+
+            const argRef = matchArguments.find(a => a.id === data.argumentId);
+            if (argRef) argRef.message = data.message;
+
+        });
+
+
+
 
 
 
@@ -2883,7 +2977,12 @@ recordView(roomId);
 
                 arg.sender_role,
 
-                arg.reply_to ? { text : arg.reply_to, senderRole: arg.reply_to_role } : null
+                arg.reply_to ? { text : arg.reply_to, senderRole: arg.reply_to_role, id: arg.reply_to_id  } : null,
+
+                arg.id,
+
+                arg.edited_at
+
 
         ));
 
@@ -2993,6 +3092,8 @@ recordView(roomId);
         e.preventDefault();
         e.returnValue = '';
     });
+
+
 }
 
     function showForfeitModal() {
@@ -3056,9 +3157,12 @@ recordView(roomId);
 
                 roomId,
                 message: messageInput.value,
+
                 replyTo: replyingTo ? replyingTo.text : null,
 
-                replyToRole: replyingTo ? replyingTo.senderRole : null
+                replyToRole: replyingTo ? replyingTo.senderRole : null,
+
+                replyToId: replyingTo ? replyingTo.id : null   
 
             });
 
@@ -4169,33 +4273,7 @@ function showClipModal(canvas, topicText) {
     // Also stop typing indicator immediately when message is sent
 
 
-    socket.on(
 
-        'new_argument',
-        (data) => {
-
-            matchArguments.push({                              // ADD THIS
-                message: data.message,                          // ADD THIS
-                sender_role: data.senderRole,                    // ADD THIS
-                created_at: new Date().toISOString(),            // ADD THIS
-                reply_to: data.replyTo,                           // ADD THIS
-                reply_to_role: data.replyToRole                  // ADD THIS
-            }); 
-
-            
-
-            chat.appendChild(createMessageBubble(data.message, data.senderRole,
-
-                data.replyTo ? { text: data.replyTo, senderRole: data.replyToRole } : null
-
-            ));
-             
-            // div.dataset.ts = Date.now();
-
-            chat.scrollTop = chat.scrollHeight
-
-        }
-    );
 
     let turnUIInterval;
 
@@ -4270,7 +4348,7 @@ function showClipModal(canvas, topicText) {
     }
 
 
-    function createMessageBubble(text, senderRole, replyTo){
+    function createMessageBubble(text, senderRole, replyTo, argumentId, editedAt){
 
         const div = document.createElement('div');
 
@@ -4299,7 +4377,11 @@ function showClipModal(canvas, topicText) {
             const quote = document.createElement('div');
             quote.className = 'reply-quote';
 
+            if (replyTo.id) quote.dataset.replyRef = replyTo.id;   // NEW
+
+
             const name = document.createElement('div');
+
             name.className = 'reply-quote-name';
 
             name.textContent = replyTo.senderRole === 'creator' ? 'Pro' : 'Against';
@@ -4316,8 +4398,23 @@ function showClipModal(canvas, topicText) {
         }
 
         const body = document.createElement('div');
+
+        body.className = 'msg-body';
+
+
         body.textContent = text;
         div.appendChild(body);
+
+        if (editedAt) {
+
+            const editedTag = document.createElement('span');
+            editedTag.className = 'edited-tag';
+
+            editedTag.textContent = ' (edited)';
+            body.appendChild(editedTag);
+        }
+
+        
 
         const icon = document.createElement('div');
         icon.className = 'reply-icon';
@@ -4325,11 +4422,25 @@ function showClipModal(canvas, topicText) {
         div.appendChild(icon);
 
         if (!isReplay && !isSpectator && mySide){
-            attachSwipeToReply(div, text, senderRole);
+
+            attachSwipeToReply(div, text, senderRole, argumentId );
+
+        }
+
+
+        const myRole = role === 'creator' ? 'creator' : (role === 'challenger' ? 'challenger' : null);
+
+        if (!isReplay && !isSpectator && argumentId && senderRole === myRole){
+            attachEditHandler(div, body, argumentId);
         }
 
         return div;
+
+        
     }
+
+    
+
 
 
 
@@ -4338,7 +4449,7 @@ function showClipModal(canvas, topicText) {
 
     const SWIPE_REPLY_MAX = 90;
 
-    function attachSwipeToReply(el, text, senderRole){
+    function attachSwipeToReply(el, text, senderRole, argumentId ){
 
         let startX = 0, currentX = 0, dragging = false, pointerId = null;
 
@@ -4392,7 +4503,8 @@ function showClipModal(canvas, topicText) {
             if (Math.abs(currentX) >= SWIPE_REPLY_THRESHOLD){
 
                 if (navigator.vibrate) navigator.vibrate(15);
-                setReplyTarget(text, senderRole);
+
+                setReplyTarget(text, senderRole, argumentId);
 
             }
 
@@ -4480,6 +4592,92 @@ function showClipModal(canvas, topicText) {
     }
 
 
+    function attachEditHandler(bubbleEl, bodyEl, argumentId){
+
+        function enterEditMode(){
+            if (bubbleEl.classList.contains('editing')) return;
+            bubbleEl.classList.add('editing');
+
+            // grab the current text, ignoring the "(edited)" tag node
+            const editedTagNode = bodyEl.querySelector('.edited-tag');
+            const currentText = editedTagNode
+                ? bodyEl.textContent.slice(0, bodyEl.textContent.length - editedTagNode.textContent.length)
+                : bodyEl.textContent;
+
+            const originalHTML = bodyEl.innerHTML;
+
+            const textarea = document.createElement('textarea');
+            textarea.value = currentText;
+            textarea.className = 'edit-textarea';
+            textarea.rows = Math.min(6, Math.max(1, currentText.split('\n').length));
+
+            bodyEl.replaceWith(textarea);
+            textarea.focus();
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+            function exit(save){
+                const newBody = document.createElement('div');
+                newBody.className = 'msg-body';
+
+                if (save) {
+                    const newText = textarea.value.trim();
+                    if (newText && newText !== currentText) {
+                        socket.emit('edit_argument', { roomId: currentRoomId, argumentId, message: newText });
+                        newBody.textContent = newText;
+                        const tag = document.createElement('span');
+                        tag.className = 'edited-tag';
+                        tag.textContent = ' (edited)';
+                        newBody.appendChild(tag);
+
+                        const argRef = matchArguments.find(a => a.id === argumentId);
+                        if (argRef) argRef.message = newText;
+                    } else {
+                        newBody.innerHTML = originalHTML;
+                    }
+                } else {
+                    newBody.innerHTML = originalHTML;
+                }
+
+                textarea.replaceWith(newBody);
+                bubbleEl.classList.remove('editing');
+
+                if (!isReplay && !isSpectator && mySide){
+
+                    // re-arm swipe-to-reply, since the DOM node changed
+
+                    attachSwipeToReply(bubbleEl, newBody.textContent.replace(' (edited)', ''), bubbleEl.classList.contains('right') ? 'creator' : 'challenger', argumentId);
+                }
+
+
+                attachEditHandler(bubbleEl, newBody, argumentId);
+            }
+
+
+            textarea.addEventListener('keydown', (e) => {
+
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); exit(true); }
+
+                if (e.key === 'Escape') { e.preventDefault(); exit(false); }
+            });
+
+            textarea.addEventListener('blur', () => exit(true));
+
+        }
+
+        bubbleEl.addEventListener('dblclick', enterEditMode);
+
+        let pressTimer = null;
+        bubbleEl.addEventListener('touchstart', () => {
+            pressTimer = setTimeout(enterEditMode, 500);
+        }, { passive: true });
+        ['touchend', 'touchmove', 'touchcancel'].forEach(evt =>
+            bubbleEl.addEventListener(evt, () => clearTimeout(pressTimer))
+        );
+    }
+
+
+
+
 
 
 
@@ -4493,9 +4691,11 @@ function showClipModal(canvas, topicText) {
 
 
 
-    function setReplyTarget(text, senderRole){
+    function setReplyTarget(text, senderRole, argumentId )
+    
+    {
 
-        replyingTo = { text, senderRole };
+        replyingTo = { text, senderRole , id: argumentId  };
 
         const label = senderRole === (role === 'creator' ? 'creator' : 'challenger')
 
