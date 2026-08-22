@@ -2571,6 +2571,8 @@
 
     }
 
+
+
     const inviteCode = params.get('invite');
 
 
@@ -2755,15 +2757,36 @@
     // Fire authenticate in the background — join_room doesn't need to wait for it,
     // it identifies debaters by socket.id, not by profile.
 
+    function waitForGetIdToken() {
+        return new Promise(resolve => {
+            const check = () => {
+                if (typeof window.getIdToken === 'function') resolve();
+                else setTimeout(check, 30);
+            };
+            check();
+        });
+    }
+
+
+
     async function joinRoomOnConnect() {
 
+        await waitForGetIdToken();
+
         const idToken = await window.getIdToken();
+
         if (idToken) {
+
             socket.emit('authenticate', idToken);
+
         }
+
         if (!isReplay) {
+
             socket.emit("join_room", { roomId: currentRoomId, role });
+
         }
+
 }
 
 
@@ -4355,6 +4378,9 @@ function showClipModal(canvas, topicText) {
         div.classList.add('argument');
 
         div.classList.add(senderRole === 'creator' ? 'right' : 'left');
+
+        if (argumentId) div.dataset.argId = argumentId;   // ADD THIS LINE
+
 
         const identity = senderRole === 'creator' ? participants.creator : participants.challenger;
 
